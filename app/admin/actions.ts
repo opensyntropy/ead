@@ -2,7 +2,7 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
-const ADMIN_PASSWORD = 'admin123'
+const ADMIN_PASSWORD = 'sintropira123'
 
 export async function adminLogin(formData: FormData) {
   const password = formData.get('password') as string
