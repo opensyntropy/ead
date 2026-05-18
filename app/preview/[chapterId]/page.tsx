@@ -2,7 +2,7 @@ import { CHAPTERS } from '@/config/chapters'
 import { notFound } from 'next/navigation'
 import { readFile } from 'fs/promises'
 import path from 'path'
-import MarkdownReader from '@/app/ebook/[chapterId]/MarkdownReader'
+import MarkdownReader from '@/app/ebook/(reader)/[chapterId]/MarkdownReader'
 
 export const dynamic = 'force-dynamic'
 
