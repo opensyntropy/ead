@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     await service.auth.admin.generateLink({
       type: 'magiclink',
       email,
-      options: { redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL}/ead` },
+      options: { redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL}/ebook` },
     })
   }
 

@@ -38,7 +38,7 @@ export default function Sidebar({ chapters, hasEbook, hasCourse, userEmail }: Pr
     <nav className="flex flex-col h-full">
       {/* Header */}
       <div className="px-6 py-6 border-b border-[#b7e4c7]">
-        <Link href="/ead" className="block">
+        <Link href="/ebook" className="block">
           <span className="text-[10px] tracking-widest uppercase text-[#52b788] font-medium">Plataforma EAD</span>
           <h1 className="text-base font-serif font-bold text-[#1b4332] leading-tight mt-0.5">
             Agricultura<br />Sintropica
@@ -58,7 +58,7 @@ export default function Sidebar({ chapters, hasEbook, hasCourse, userEmail }: Pr
         )}
 
         {(hasEbook || hasCourse) && chapters.map(ch => {
-          const chapterPath = `/ead/${ch.id}`
+          const chapterPath = `/ebook/${ch.id}`
           const isChapterActive = pathname === chapterPath
           const hasVideos = ch.videos.length > 0
           const isExpanded = expanded === ch.id || isChapterActive
@@ -90,7 +90,7 @@ export default function Sidebar({ chapters, hasEbook, hasCourse, userEmail }: Pr
 
               {/* Videos sub-list */}
               {isExpanded && hasVideos && ch.videos.map(v => {
-                const videoPath = `/ead/${ch.id}/video/${v.id}`
+                const videoPath = `/ebook/${ch.id}/video/${v.id}`
                 const isVideoActive = pathname === videoPath
                 return (
                   <Link

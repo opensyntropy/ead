@@ -10,7 +10,7 @@ function LoginForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const searchParams = useSearchParams()
-  const next = searchParams.get('next') ?? '/ead'
+  const next = searchParams.get('next') ?? '/ebook'
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

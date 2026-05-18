@@ -24,8 +24,8 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
-  // Protege /ead (admin é protegido por cookie em page.tsx)
-  if (pathname.startsWith('/ead') && !user) {
+  // Protege /ebook (admin é protegido por cookie em page.tsx)
+  if (pathname.startsWith('/ebook') && !user) {
     const loginUrl = request.nextUrl.clone()
     loginUrl.pathname = '/login'
     loginUrl.searchParams.set('next', pathname)
@@ -36,5 +36,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/ead/:path*'],
+  matcher: ['/ebook/:path*'],
 }
