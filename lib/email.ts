@@ -1,7 +1,7 @@
 import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL!
+const BASE_URL = (process.env.NEXT_PUBLIC_BASE_URL ?? 'https://ead.opensyntropy.earth').replace(/\/$/, '')
 
 export async function sendDownloadEmail(email: string, token: string) {
   const downloadUrl = `${BASE_URL}/api/download?token=${token}`
