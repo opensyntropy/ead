@@ -7,7 +7,7 @@ export async function sendDownloadEmail(email: string, token: string) {
   const downloadUrl = `${BASE_URL}/api/download?token=${token}`
   const reenviarUrl = `${BASE_URL}/reenviar`
 
-  await resend.emails.send({
+  const { error: sendError } = await resend.emails.send({
     from: process.env.NODE_ENV === 'production'
       ? 'Michel Bottan <ebook@opensyntropy.com>'
       : 'Michel Bottan <onboarding@resend.dev>',
@@ -83,6 +83,7 @@ export async function sendDownloadEmail(email: string, token: string) {
 </body>
 </html>`,
   })
+  if (sendError) throw new Error(`Resend error: ${JSON.stringify(sendError)}`)
 }
 
 const CALENDLY_SESSION_URL = 'https://calendly.com/michel-bottan/consultoria-individual-1-hora'
@@ -91,7 +92,7 @@ export async function sendSessionPurchaseEmail(email: string, downloadToken: str
   const downloadUrl = `${BASE_URL}/api/download?token=${downloadToken}`
   const reenviarUrl = `${BASE_URL}/reenviar`
 
-  await resend.emails.send({
+  const { error: sendError2 } = await resend.emails.send({
     from: process.env.NODE_ENV === 'production'
       ? 'Michel Bottan <ebook@opensyntropy.com>'
       : 'Michel Bottan <onboarding@resend.dev>',
@@ -176,10 +177,11 @@ export async function sendSessionPurchaseEmail(email: string, downloadToken: str
 </body>
 </html>`,
   })
+  if (sendError2) throw new Error(`Resend error: ${JSON.stringify(sendError2)}`)
 }
 
 export async function sendPurchaseNotification(buyerEmail: string, productId: string, paymentId: string) {
-  await resend.emails.send({
+  const { error: sendError3 } = await resend.emails.send({
     from: process.env.NODE_ENV === 'production'
       ? 'OpenSyntropy <ebook@opensyntropy.com>'
       : 'OpenSyntropy <onboarding@resend.dev>',
@@ -193,4 +195,5 @@ export async function sendPurchaseNotification(buyerEmail: string, productId: st
   <strong>ID Asaas:</strong> ${paymentId}
 </p>`,
   })
+  if (sendError3) throw new Error(`Resend error: ${JSON.stringify(sendError3)}`)
 }
