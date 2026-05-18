@@ -4,6 +4,8 @@ import { createDownloadToken } from '@/lib/download'
 import { sendDownloadEmail } from '@/lib/email'
 import type { ProductId } from '@/config/products'
 
+export const maxDuration = 60
+
 // Asaas envia um token no header ou query param para validação
 function validateWebhook(request: Request): boolean {
   const token = request.headers.get('asaas-access-token')
@@ -42,32 +44,35 @@ export async function POST(request: Request) {
   const supabase = await createServiceClient()
 
   // Garante que o usuário existe no Supabase Auth
-  const { data: users } = await supabase.auth.admin.listUsers()
-  let userId: string | null = users.users.find(u => u.email === email)?.id ?? null
-
-  if (!userId) {
-    const { data: newUser, error } = await supabase.auth.admin.createUser({
-      email,
-      email_confirm: true,
-    })
-    if (error || !newUser.user) {
-      console.error('Webhook: erro ao criar usuário', error)
-      return NextResponse.json({ error: 'Erro ao criar usuário' }, { status: 500 })
+  let userId: string | null = null
+  const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+    email,
+    email_confirm: true,
+  })
+  if (createError) {
+    // Usuário já existe — busca via listUsers
+    const { data: list } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 })
+    userId = list?.users?.find(u => u.email === email)?.id ?? null
+    if (!userId) {
+      // Continua mesmo sem userId — acesso pelo EAD ficará pendente, mas email será enviado
+      console.warn('Webhook: usuário não encontrado via listUsers, prosseguindo sem userId')
     }
-    userId = newUser.user.id
+  } else {
+    userId = newUser.user?.id ?? null
   }
 
   // Insere o produto (ignora duplicatas via upsert)
-  const { error: upsertError } = await supabase
-    .from('user_products')
-    .upsert(
-      { user_id: userId, product: productId, asaas_payment_id: payment.id },
-      { onConflict: 'user_id,product' }
-    )
-
-  if (upsertError) {
-    console.error('Webhook: erro ao inserir user_products', upsertError)
-    return NextResponse.json({ error: 'Erro ao registrar acesso' }, { status: 500 })
+  if (userId) {
+    const { error: upsertError } = await supabase
+      .from('user_products')
+      .upsert(
+        { user_id: userId, product: productId, asaas_payment_id: payment.id },
+        { onConflict: 'user_id,product' }
+      )
+    if (upsertError) {
+      console.error('Webhook: erro ao inserir user_products', upsertError)
+      return NextResponse.json({ error: 'Erro ao registrar acesso' }, { status: 500 })
+    }
   }
 
   // Envia e-mail com link de download para produtos que incluam ebook

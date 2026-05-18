@@ -107,7 +107,6 @@ export async function createCreditCardCharge(params: {
   value: number
   description: string
   externalReference: string
-  redirectUrl: string
   creditCard: {
     holderName: string
     number: string
@@ -137,7 +136,6 @@ export async function createCreditCardCharge(params: {
       dueDate: dueDateStr,
       description: params.description,
       externalReference: params.externalReference,
-      callback: { successUrl: params.redirectUrl },
       creditCard: params.creditCard,
       creditCardHolderInfo: params.creditCardHolderInfo,
     }),

@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { PRODUCTS, type ProductId } from '@/config/products'
 import { findOrCreateCustomer, createCreditCardCharge, createPixCharge, getPixQrCode } from '@/lib/asaas'
+import { createServiceClient } from '@/lib/supabase/server'
+import { createDownloadToken } from '@/lib/download'
+import { sendDownloadEmail } from '@/lib/email'
 
 export async function POST(request: Request) {
   const body = await request.json()
@@ -55,14 +58,12 @@ export async function POST(request: Request) {
 
     const [expiryMonth, expiryYearShort] = cardExpiry.split('/')
     const expiryYear = expiryYearShort.length === 2 ? `20${expiryYearShort}` : expiryYearShort
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL!
 
     const charge = await createCreditCardCharge({
       customerId: customer.id,
       value: product.price,
       description: product.asaasDescription,
       externalReference: `${productId}:${email}`,
-      redirectUrl: `${baseUrl}/ead?welcome=1`,
       creditCard: {
         holderName: name || email.split('@')[0],
         number: cardNumber.replace(/\s/g, ''),
@@ -79,10 +80,70 @@ export async function POST(request: Request) {
       },
     })
 
-    return NextResponse.json({ cardSuccess: true, chargeStatus: charge.status })
+    let postError: string | null = null
+    if (charge.status === 'CONFIRMED') {
+      try {
+        await grantAccessAndSendEmail(email, productId as ProductId, charge.id)
+      } catch (postErr) {
+        postError = postErr instanceof Error ? postErr.message : String(postErr)
+        console.error('Erro pós-pagamento (acesso/email):', postError)
+      }
+    }
+
+    return NextResponse.json({ cardSuccess: true, chargeStatus: charge.status, postError })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error('Asaas checkout error:', msg)
-    return NextResponse.json({ error: 'Erro ao criar cobrança', detail: msg }, { status: 500 })
+    return NextResponse.json({ error: friendlyAsaasError(msg) }, { status: 500 })
   }
+}
+
+async function grantAccessAndSendEmail(email: string, productId: ProductId, paymentId: string) {
+  const supabase = await createServiceClient()
+  let userId: string | null = null
+
+  // Tenta criar/encontrar usuário, mas não bloqueia o envio do email se falhar
+  try {
+    const { data: users } = await supabase.auth.admin.listUsers()
+    userId = users?.users?.find(u => u.email === email)?.id ?? null
+
+    if (!userId) {
+      const { data: newUser } = await supabase.auth.admin.createUser({ email, email_confirm: true })
+      userId = newUser?.user?.id ?? null
+    }
+
+    if (userId) {
+      await supabase.from('user_products').upsert(
+        { user_id: userId, product: productId, asaas_payment_id: paymentId },
+        { onConflict: 'user_id,product' }
+      )
+    }
+  } catch (authErr) {
+    console.error('Aviso: erro ao registrar usuário (acesso será liberado pelo webhook):', authErr)
+  }
+
+  if (productId === 'ebook' || productId === 'bundle') {
+    const token = await createDownloadToken(email, 'ebook')
+    await sendDownloadEmail(email, token)
+  }
+}
+
+function friendlyAsaasError(raw: string): string {
+  try {
+    const errors: { code: string; description: string }[] = JSON.parse(raw)
+    const desc = errors[0]?.description ?? ''
+
+    if (/cpf|cnpj/i.test(desc)) return 'CPF inválido. Verifique o número digitado.'
+    if (/cartão recusado|declined|card_declined/i.test(desc)) return 'Cartão recusado. Verifique os dados ou tente outro cartão.'
+    if (/número.*cartão|card.*number|invalid_card/i.test(desc)) return 'Número de cartão inválido.'
+    if (/vencid|expirad|expired/i.test(desc)) return 'Cartão vencido. Verifique a data de validade.'
+    if (/cvv|cvc|security code/i.test(desc)) return 'CVV inválido.'
+    if (/saldo|funds/i.test(desc)) return 'Saldo insuficiente no cartão.'
+    if (/cep|postal|endereço/i.test(desc)) return 'CEP ou endereço inválido.'
+    if (/domínio|domain/i.test(desc)) return 'Erro de configuração. Entre em contato com o suporte.'
+    if (desc) return desc
+
+  } catch { /* não é JSON, retorna mensagem genérica */ }
+
+  return 'Não foi possível processar o pagamento. Tente novamente ou use outro cartão.'
 }

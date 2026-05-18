@@ -722,32 +722,7 @@ export default function EbookLandingPage() {
         </div>
       </section>
 
-      {/* ── DEPOIMENTOS ──────────────────────────────────────── */}
-      <section style={{ backgroundColor: DARK }} className="py-28 px-6">
-        <div className="max-w-5xl mx-auto">
-          <h2 className="font-serif font-black text-white text-center mb-16" style={{ fontSize: 'clamp(2rem, 4vw, 3rem)' }}>
-            Quem já leu:
-          </h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            {TESTIMONIALS.map((t, i) => (
-              <div key={i} className="rounded-3xl p-8 flex flex-col gap-5" style={{ backgroundColor: '#1A3410', border: '1px solid #345A18' }}>
-                <div className="flex gap-0.5 text-2xl" style={{ color: LIME }}>★★★★★</div>
-                <p className="text-gray-200 text-lg leading-relaxed italic flex-1">"{t.text}"</p>
-                <div className="flex items-center gap-4 pt-2 border-t border-white/10">
-                  <div className="w-11 h-11 rounded-full flex items-center justify-center font-black text-lg flex-shrink-0"
-                    style={{ backgroundColor: LIME, color: DARK }}>
-                    {t.name[1] || '?'}
-                  </div>
-                  <div>
-                    <p className="font-bold text-white text-base">{t.name}</p>
-                    <p className="text-sm text-gray-400">{t.role}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ── DEPOIMENTOS (oculto temporariamente) ──────────────── */}
 
       {/* ── AUTOR ─────────────────────────────────────────────── */}
       <section style={{ backgroundColor: CREAM }} className="py-28 px-6">

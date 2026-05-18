@@ -8,8 +8,10 @@ export async function sendDownloadEmail(email: string, token: string) {
   const reenviarUrl = `${BASE_URL}/reenviar`
 
   await resend.emails.send({
-    from: 'Michel Bottan <ebook@opensyntropy.com>',
-    to: email,
+    from: process.env.NODE_ENV === 'production'
+      ? 'Michel Bottan <ebook@opensyntropy.com>'
+      : 'Michel Bottan <onboarding@resend.dev>',
+    to: process.env.NODE_ENV === 'production' ? email : 'devops@opensyntropy.earth',
     subject: 'Seu Guia de Introdução à Agrofloresta Sintrópica',
     html: `
 <!DOCTYPE html>

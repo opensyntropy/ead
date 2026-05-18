@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
+import { generateWatermarkedPDF } from '@/lib/watermark'
+import { readFile } from 'fs/promises'
+import path from 'path'
+
+export const maxDuration = 30
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
@@ -13,7 +18,7 @@ export async function GET(request: Request) {
 
   const { data: row, error } = await supabase
     .from('download_tokens')
-    .select('*')
+    .select('email, product, used')
     .eq('token', token)
     .single()
 
@@ -25,26 +30,27 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/reenviar?erro=token-usado`)
   }
 
-  // Marca como usado antes de gerar o link (evita race conditions)
-  const { error: updateError } = await supabase
+  // Marca como usado atomicamente (evita race conditions)
+  const { data: updated, error: updateError } = await supabase
     .from('download_tokens')
     .update({ used: true })
     .eq('token', token)
-    .eq('used', false) // garante atomicidade
+    .eq('used', false)
+    .select('token')
 
-  if (updateError) {
+  if (updateError || !updated?.length) {
     return NextResponse.redirect(`${origin}/reenviar?erro=token-usado`)
   }
 
-  const fileName = `${row.product}.pdf`
-  const { data: signed, error: storageError } = await supabase.storage
-    .from('ebooks')
-    .createSignedUrl(fileName, 120) // 120s para iniciar o download
+  const masterPath = path.join(process.cwd(), 'ebook.pdf')
+  const pdfBytes = new Uint8Array(await readFile(masterPath))
+  const watermarked = await generateWatermarkedPDF(pdfBytes, row.email)
 
-  if (storageError || !signed) {
-    console.error('Storage error:', storageError)
-    return NextResponse.json({ error: 'Erro ao gerar link de download' }, { status: 500 })
-  }
-
-  return NextResponse.redirect(signed.signedUrl)
+  return new Response(watermarked.buffer as ArrayBuffer, {
+    headers: {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': 'attachment; filename="Agricultura-Sintropica.pdf"',
+      'Content-Length': String(watermarked.length),
+    },
+  })
 }
