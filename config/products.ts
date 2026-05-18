@@ -3,8 +3,8 @@ export const PRODUCTS = {
     id: 'ebook',
     name: 'Ebook',
     description: 'Leitura completa do ebook Agricultura Sintropica com todos os capítulos e infográficos.',
-    price: 4700, // centavos
-    priceFormatted: 'R$ 47',
+    price: 5700, // centavos
+    priceFormatted: 'R$ 57',
     asaasDescription: 'Ebook Agricultura Sintropica',
   },
   course: {
@@ -22,6 +22,14 @@ export const PRODUCTS = {
     price: 12700,
     priceFormatted: 'R$ 127',
     asaasDescription: 'Bundle Completo Agricultura Sintropica',
+  },
+  session: {
+    id: 'session',
+    name: 'Ebook + Sessão Individual',
+    description: 'Ebook completo + 1 hora de sessão individual com Michel Bottan.',
+    price: 19700,
+    priceFormatted: 'R$ 197',
+    asaasDescription: 'Ebook + Sessão Individual 1hr — Agricultura Sintrópica',
   },
 } as const
 

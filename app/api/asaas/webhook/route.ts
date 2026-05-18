@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { createDownloadToken } from '@/lib/download'
-import { sendDownloadEmail, sendPurchaseNotification } from '@/lib/email'
+import { sendDownloadEmail, sendSessionPurchaseEmail, sendPurchaseNotification } from '@/lib/email'
 import type { ProductId } from '@/config/products'
 
 export const maxDuration = 60
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true })
   }
 
-  const validProducts: ProductId[] = ['ebook', 'course', 'bundle']
+  const validProducts: ProductId[] = ['ebook', 'course', 'bundle', 'session']
   if (!validProducts.includes(productId as ProductId)) {
     console.error('Webhook: produto desconhecido', productId)
     return NextResponse.json({ ok: true })
@@ -84,12 +84,25 @@ export async function POST(request: Request) {
       console.error('Webhook: erro ao enviar e-mail', emailErr)
     }
   }
+  if (productId === 'session') {
+    try {
+      const token = await createDownloadToken(email, 'ebook')
+      await sendSessionPurchaseEmail(email, token)
+    } catch (emailErr) {
+      console.error('Webhook: erro ao enviar e-mail de sessão', emailErr)
+    }
+  }
 
   try {
     await sendPurchaseNotification(email, productId, payment.id)
   } catch (err) {
     console.error('Webhook: erro ao enviar notificação de venda', err)
   }
+
+  // Marca PIX como confirmado
+  await supabase.from('pix_charges')
+    .update({ status: 'confirmed', confirmed_at: new Date().toISOString() })
+    .eq('asaas_payment_id', payment.id)
 
   console.log(`Acesso liberado: ${email} → ${productId}`)
   return NextResponse.json({ ok: true })

@@ -23,21 +23,34 @@ interface RefundRequest {
   created_at: string
 }
 
+interface PixCharge {
+  id: string
+  asaas_payment_id: string
+  email: string
+  name: string | null
+  product: string
+  status: string
+  created_at: string
+}
+
 export default async function AdminPage() {
   const jar = await cookies()
   if (jar.get('admin_session')?.value !== '1') redirect('/admin/login')
 
   const service = await createServiceClient()
 
-  const [productsRes, refundsRes, usersRes] = await Promise.all([
+  const [productsRes, refundsRes, usersRes, pixRes] = await Promise.all([
     service.from('user_products').select('*').order('created_at', { ascending: false }),
     service.from('refund_requests').select('*').order('created_at', { ascending: false }),
     service.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+    service.from('pix_charges').select('*').order('created_at', { ascending: false }),
   ])
 
   const products = productsRes.data
   const refunds = refundsRes.data
   const authUsers = usersRes.data?.users ?? []
+  const pixRows: PixCharge[] = pixRes.data ?? []
+  const pendingPix = pixRows.filter(p => p.status === 'pending')
 
   const emailMap = Object.fromEntries(authUsers.map(u => [u.id, u.email ?? '']))
   const rows: UserProduct[] = (products ?? []).map(p => ({ ...p, email: emailMap[p.user_id] ?? p.user_id }))
@@ -52,6 +65,50 @@ export default async function AdminPage() {
           <button type="submit" className="text-sm text-gray-400 hover:text-gray-600">Sair</button>
         </form>
       </div>
+
+      {/* PIX pendentes */}
+      {pendingPix.length > 0 && (
+        <div className="mb-10">
+          <h2 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-3">
+            PIX aguardando confirmação
+            <span className="bg-yellow-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+              {pendingPix.length} pendente{pendingPix.length > 1 ? 's' : ''}
+            </span>
+          </h2>
+          <div className="bg-white rounded-xl border border-yellow-200 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-yellow-50 text-yellow-800 text-xs uppercase tracking-wide">
+                <tr>
+                  <th className="text-left px-4 py-3">Email</th>
+                  <th className="text-left px-4 py-3">Nome</th>
+                  <th className="text-left px-4 py-3">Produto</th>
+                  <th className="text-left px-4 py-3">Data</th>
+                  <th className="px-4 py-3">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pendingPix.map(row => (
+                  <tr key={row.id} className="border-t border-yellow-50 hover:bg-gray-50">
+                    <td className="px-4 py-3 font-medium text-gray-800">{row.email}</td>
+                    <td className="px-4 py-3 text-gray-500">{row.name ?? '—'}</td>
+                    <td className="px-4 py-3">
+                      <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                        {row.product}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-400 text-xs">
+                      {new Date(row.created_at).toLocaleDateString('pt-BR')}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <AdminActions mode="confirm-pix" id={row.id} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Pedidos de devolução */}
       <div className="mb-10">

@@ -85,6 +85,99 @@ export async function sendDownloadEmail(email: string, token: string) {
   })
 }
 
+const CALENDLY_SESSION_URL = 'https://calendly.com/michel-bottan/consultoria-individual-1-hora'
+
+export async function sendSessionPurchaseEmail(email: string, downloadToken: string) {
+  const downloadUrl = `${BASE_URL}/api/download?token=${downloadToken}`
+  const reenviarUrl = `${BASE_URL}/reenviar`
+
+  await resend.emails.send({
+    from: process.env.NODE_ENV === 'production'
+      ? 'Michel Bottan <ebook@opensyntropy.com>'
+      : 'Michel Bottan <onboarding@resend.dev>',
+    to: process.env.NODE_ENV === 'production' ? email : 'devops@opensyntropy.earth',
+    subject: 'Seu Guia + Link para Agendar sua Sessão',
+    html: `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F2F0E9;font-family:Georgia,serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F2F0E9;padding:40px 0">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;max-width:560px;width:100%">
+
+        <tr>
+          <td style="background:#141F0C;padding:36px 40px;text-align:center">
+            <p style="margin:0;color:#7DC142;font-size:13px;letter-spacing:3px;text-transform:uppercase;font-family:Arial,sans-serif">OpenSyntropy</p>
+            <h1 style="margin:12px 0 0;color:#ffffff;font-size:24px;font-weight:700;line-height:1.3">
+              Ebook + Sessão Individual
+            </h1>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:40px 40px 32px">
+            <p style="margin:0 0 20px;color:#1a1a1a;font-size:16px;line-height:1.7">Olá,</p>
+            <p style="margin:0 0 28px;color:#1a1a1a;font-size:16px;line-height:1.7">
+              Obrigado pela sua compra. Seu guia está pronto e você já pode agendar sua sessão de 1 hora comigo.
+            </p>
+
+            <p style="margin:0 0 8px;color:#476B18;font-size:13px;font-family:Arial,sans-serif;font-weight:700;letter-spacing:1px;text-transform:uppercase">
+              1. Baixar o Guia
+            </p>
+            <p style="margin:0 0 8px;color:#555;font-size:14px;line-height:1.6;padding:16px;background:#f8f8f4;border-left:3px solid #7DC142;border-radius:4px">
+              Este link é de <strong>uso único</strong>. Guarde o PDF após baixar.
+            </p>
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px">
+              <tr><td align="center">
+                <a href="${downloadUrl}" style="display:inline-block;background:#7DC142;color:#141F0C;font-family:Arial,sans-serif;font-size:16px;font-weight:700;text-decoration:none;padding:16px 36px;border-radius:10px">
+                  Baixar meu Guia →
+                </a>
+              </td></tr>
+            </table>
+
+            <p style="margin:0 0 8px;color:#476B18;font-size:13px;font-family:Arial,sans-serif;font-weight:700;letter-spacing:1px;text-transform:uppercase">
+              2. Agendar a Sessão
+            </p>
+            <p style="margin:0 0 16px;color:#1a1a1a;font-size:15px;line-height:1.6">
+              Escolha o melhor horário para você diretamente pelo link abaixo:
+            </p>
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr><td align="center">
+                <a href="${CALENDLY_SESSION_URL}" style="display:inline-block;background:#141F0C;color:#7DC142;font-family:Arial,sans-serif;font-size:16px;font-weight:700;text-decoration:none;padding:16px 36px;border-radius:10px">
+                  Agendar minha Sessão →
+                </a>
+              </td></tr>
+            </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:0 40px 40px">
+            <hr style="border:none;border-top:1px solid #e8e8e0;margin:0 0 28px">
+            <p style="margin:0;color:#888;font-size:13px;font-family:Arial,sans-serif;line-height:1.6">
+              Precisa baixar o guia novamente? <a href="${reenviarUrl}" style="color:#476B18">${reenviarUrl}</a>
+            </p>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="background:#f4f3ee;padding:20px 40px;text-align:center">
+            <p style="margin:0;color:#aaa;font-size:12px;font-family:Arial,sans-serif">
+              Michel Bottan · OpenSyntropy<br>
+              Você recebeu este e-mail porque realizou uma compra em opensyntropy.com
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+  })
+}
+
 export async function sendPurchaseNotification(buyerEmail: string, productId: string, paymentId: string) {
   await resend.emails.send({
     from: process.env.NODE_ENV === 'production'

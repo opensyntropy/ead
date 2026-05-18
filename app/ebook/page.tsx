@@ -235,6 +235,7 @@ function formatCep(value: string) {
 }
 
 function CheckoutForm() {
+  const [selectedProduct, setSelectedProduct] = useState<'ebook' | 'session'>('ebook')
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
   const [cpf, setCpf] = useState('')
@@ -245,7 +246,6 @@ function CheckoutForm() {
   const [copied, setCopied] = useState(false)
   const [cardSuccess, setCardSuccess] = useState(false)
 
-  // Card fields
   const [cardNumber, setCardNumber] = useState('')
   const [cardExpiry, setCardExpiry] = useState('')
   const [cardCvv, setCardCvv] = useState('')
@@ -253,17 +253,18 @@ function CheckoutForm() {
   const [cardAddressNumber, setCardAddressNumber] = useState('')
 
   const inputCls = "border-2 border-gray-200 rounded-xl px-5 py-4 text-base text-gray-800 bg-white focus:outline-none focus:border-[#7DC142] transition-colors"
+  const price = selectedProduct === 'ebook' ? 57 : 197
 
   async function handleBuy(e: React.FormEvent) {
     e.preventDefault()
-    ;(window as any).fbq?.('track', 'InitiateCheckout', { value: 47, currency: 'BRL', num_items: 1 })
+    ;(window as any).fbq?.('track', 'InitiateCheckout', { value: price, currency: 'BRL', num_items: 1 })
     setLoading(true)
     setError('')
     const res = await fetch('/api/asaas/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        productId: 'ebook', email, name, cpf, paymentMethod,
+        productId: selectedProduct, email, name, cpf, paymentMethod,
         ...(paymentMethod === 'card' ? { cardNumber, cardExpiry, cardCvv, cardPostalCode, cardAddressNumber } : {}),
       }),
     })
@@ -271,10 +272,10 @@ function CheckoutForm() {
     setLoading(false)
     if (data.pixQrCode) {
       setPixData({ qrCode: data.pixQrCode, payload: data.pixPayload })
-      ;(window as any).fbq?.('track', 'Purchase', { value: 47, currency: 'BRL' })
+      ;(window as any).fbq?.('track', 'Purchase', { value: price, currency: 'BRL' })
     } else if (data.cardSuccess) {
       setCardSuccess(true)
-      ;(window as any).fbq?.('track', 'Purchase', { value: 47, currency: 'BRL' })
+      ;(window as any).fbq?.('track', 'Purchase', { value: price, currency: 'BRL' })
     } else {
       setError(data.error ?? 'Erro ao processar pagamento. Tente novamente.')
     }
@@ -289,7 +290,7 @@ function CheckoutForm() {
 
   if (pixData) {
     return (
-      <div className="flex flex-col gap-6 items-center text-center">
+      <div className="bg-white px-8 py-6 flex flex-col gap-6 items-center text-center">
         <img src={`data:image/png;base64,${pixData.qrCode}`} alt="QR Code PIX" className="w-52 h-52 rounded-2xl border-2 border-[#7DC142]" />
         <div className="w-full">
           <p className="text-sm text-gray-400 mb-2 uppercase tracking-widest font-semibold">PIX Copia e Cola</p>
@@ -302,7 +303,7 @@ function CheckoutForm() {
         </div>
         <div className="w-full rounded-2xl px-6 py-5 text-left" style={{ backgroundColor: '#f0fdf4', border: '2px solid #d8f3dc' }}>
           <p className="font-bold text-[#141F0C] text-base">Aguardando pagamento</p>
-          <p className="text-[#476B18] text-sm mt-1 leading-relaxed">Você receberá um e-mail de acesso assim que o PIX for confirmado.</p>
+          <p className="text-[#476B18] text-sm mt-1 leading-relaxed">Você receberá um e-mail assim que o PIX for confirmado.</p>
         </div>
       </div>
     )
@@ -310,60 +311,114 @@ function CheckoutForm() {
 
   if (cardSuccess) {
     return (
-      <div className="w-full rounded-2xl px-6 py-8 text-center flex flex-col gap-3" style={{ backgroundColor: '#f0fdf4', border: '2px solid #d8f3dc' }}>
+      <div className="bg-white px-8 py-8 w-full text-center flex flex-col gap-3">
         <p className="text-3xl">✓</p>
         <p className="font-bold text-[#141F0C] text-lg">Pagamento confirmado!</p>
-        <p className="text-[#476B18] text-sm leading-relaxed">Você receberá um e-mail com o link de acesso ao ebook em instantes.</p>
+        <p className="text-[#476B18] text-sm leading-relaxed">Você receberá um e-mail em instantes.</p>
       </div>
     )
   }
 
   return (
-    <form onSubmit={handleBuy} className="flex flex-col gap-4 w-full">
-      <input type="text" required placeholder="Seu nome completo" value={name} onChange={e => setName(e.target.value)} className={inputCls} />
-      <input type="email" required placeholder="Seu melhor e-mail" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
-      <input type="text" required inputMode="numeric" placeholder="CPF (somente números)" value={cpf}
-        onChange={e => setCpf(formatCpf(e.target.value))} className={inputCls} />
+    <>
+      {/* cabeçalho escuro com seletor de produto e preço */}
+      <div className="px-8 py-7 text-center" style={{ backgroundColor: '#0D1608' }}>
+        <div className="flex rounded-xl overflow-hidden mb-6 border border-white/10">
+          <button type="button" onClick={() => setSelectedProduct('ebook')}
+            className="flex-1 py-3 px-3 text-center transition-colors"
+            style={selectedProduct === 'ebook' ? { backgroundColor: LIME, color: DARK } : { color: 'rgba(255,255,255,0.55)' }}>
+            <div className="font-black text-sm leading-tight">Ebook</div>
+            <div className="text-xs font-semibold mt-0.5">R$57</div>
+          </button>
+          <button type="button" onClick={() => setSelectedProduct('session')}
+            className="flex-1 py-3 px-3 text-center transition-colors border-l border-white/10"
+            style={selectedProduct === 'session' ? { backgroundColor: LIME, color: DARK } : { color: 'rgba(255,255,255,0.55)' }}>
+            <div className="font-black text-sm leading-tight">Ebook + Sessão 1hr</div>
+            <div className="text-xs font-semibold mt-0.5">R$197</div>
+          </button>
+        </div>
 
-      <div className="flex rounded-xl overflow-hidden border-2 border-gray-200">
-        <button type="button" onClick={() => setPaymentMethod('pix')}
-          className="flex-1 py-3.5 text-base font-bold transition-colors"
-          style={paymentMethod === 'pix' ? { backgroundColor: LIME, color: '#fff' } : { backgroundColor: '#fff', color: FOREST }}>
-          PIX
-        </button>
-        <button type="button" onClick={() => setPaymentMethod('card')}
-          className="flex-1 py-3.5 text-base font-bold transition-colors border-l-2 border-gray-200"
-          style={paymentMethod === 'card' ? { backgroundColor: LIME, color: '#fff' } : { backgroundColor: '#fff', color: FOREST }}>
-          Cartão de crédito
-        </button>
+        {selectedProduct === 'ebook' ? (
+          <>
+            <div className="flex items-center justify-center gap-4 mb-1">
+              <span className="text-gray-500 text-lg line-through">R$ 97</span>
+              <span className="text-xs font-black px-2.5 py-1 rounded-full" style={{ backgroundColor: LIME + '22', color: LIME }}>41% OFF</span>
+            </div>
+            <div className="font-black text-white leading-none" style={{ fontSize: 'clamp(3.5rem, 14vw, 6rem)' }}>
+              R$<span style={{ color: LIME }}>57</span>
+            </div>
+            <p className="text-gray-400 text-sm mt-2">Pagamento único · PIX ou cartão · Acesso permanente</p>
+          </>
+        ) : (
+          <>
+            <div className="font-black text-white leading-none" style={{ fontSize: 'clamp(3.5rem, 14vw, 6rem)' }}>
+              R$<span style={{ color: LIME }}>197</span>
+            </div>
+            <p className="text-gray-400 text-sm mt-2">Ebook completo + 1hr de sessão individual · Pagamento único</p>
+          </>
+        )}
       </div>
 
-      {paymentMethod === 'card' && (
-        <div className="flex flex-col gap-3">
-          <input type="text" required inputMode="numeric" placeholder="Número do cartão" value={cardNumber}
-            onChange={e => setCardNumber(formatCardNumber(e.target.value))} className={inputCls} />
-          <div className="flex gap-3">
-            <input type="text" required inputMode="numeric" placeholder="Validade (MM/AA)" value={cardExpiry}
-              onChange={e => setCardExpiry(formatExpiry(e.target.value))} className={inputCls + ' flex-1'} />
-            <input type="text" required inputMode="numeric" placeholder="CVV" value={cardCvv}
-              onChange={e => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))} className={inputCls + ' w-28'} />
+      {/* formulário */}
+      <div className="bg-white px-8 pt-7 pb-8">
+        {selectedProduct === 'session' && (
+          <div className="mb-5 rounded-2xl px-5 py-4 text-sm leading-relaxed" style={{ backgroundColor: '#f0fdf4', border: '1.5px solid #d8f3dc', color: '#2d5a1b' }}>
+            <p className="font-black text-base mb-1" style={{ color: DARK }}>O que é a sessão?</p>
+            <p>1 hora de consultoria individual sobre agrofloresta sintrópica — para tirar dúvidas iniciais do seu projeto: escolha de espécies, desenho de consórcio, leitura de área ou qualquer outra questão que estiver travando o seu próximo passo.</p>
           </div>
-          <div className="flex gap-3">
-            <input type="text" required inputMode="numeric" placeholder="CEP" value={cardPostalCode}
-              onChange={e => setCardPostalCode(formatCep(e.target.value))} className={inputCls + ' flex-1'} />
-            <input type="text" required placeholder="Número" value={cardAddressNumber}
-              onChange={e => setCardAddressNumber(e.target.value)} className={inputCls + ' w-28'} />
-          </div>
-        </div>
-      )}
+        )}
+        <form onSubmit={handleBuy} className="flex flex-col gap-4 w-full">
+          <input type="text" required placeholder="Seu nome completo" value={name} onChange={e => setName(e.target.value)} className={inputCls} />
+          <input type="email" required placeholder="Seu melhor e-mail" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
+          <input type="text" required inputMode="numeric" placeholder="CPF (somente números)" value={cpf}
+            onChange={e => setCpf(formatCpf(e.target.value))} className={inputCls} />
 
-      {error && <p className="text-red-500 text-sm font-medium">{error}</p>}
-      <button type="submit" disabled={loading}
-        className="py-5 px-8 rounded-xl font-bold text-lg text-white transition-all disabled:opacity-60 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-100"
-        style={{ backgroundColor: LIME, color: DARK }}>
-        {loading ? 'Aguarde...' : paymentMethod === 'pix' ? 'Pagar com PIX →' : 'Pagar com cartão →'}
-      </button>
-    </form>
+          <div className="flex rounded-xl overflow-hidden border-2 border-gray-200">
+            <button type="button" onClick={() => setPaymentMethod('pix')}
+              className="flex-1 py-3.5 text-base font-bold transition-colors"
+              style={paymentMethod === 'pix' ? { backgroundColor: LIME, color: '#fff' } : { backgroundColor: '#fff', color: FOREST }}>
+              PIX
+            </button>
+            <button type="button" onClick={() => setPaymentMethod('card')}
+              className="flex-1 py-3.5 text-base font-bold transition-colors border-l-2 border-gray-200"
+              style={paymentMethod === 'card' ? { backgroundColor: LIME, color: '#fff' } : { backgroundColor: '#fff', color: FOREST }}>
+              Cartão de crédito
+            </button>
+          </div>
+
+          {paymentMethod === 'card' && (
+            <div className="flex flex-col gap-3">
+              <input type="text" required inputMode="numeric" placeholder="Número do cartão" value={cardNumber}
+                onChange={e => setCardNumber(formatCardNumber(e.target.value))} className={inputCls} />
+              <div className="flex gap-3">
+                <input type="text" required inputMode="numeric" placeholder="Validade (MM/AA)" value={cardExpiry}
+                  onChange={e => setCardExpiry(formatExpiry(e.target.value))} className={inputCls + ' flex-1'} />
+                <input type="text" required inputMode="numeric" placeholder="CVV" value={cardCvv}
+                  onChange={e => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))} className={inputCls + ' w-28'} />
+              </div>
+              <div className="flex gap-3">
+                <input type="text" required inputMode="numeric" placeholder="CEP" value={cardPostalCode}
+                  onChange={e => setCardPostalCode(formatCep(e.target.value))} className={inputCls + ' flex-1'} />
+                <input type="text" required placeholder="Número" value={cardAddressNumber}
+                  onChange={e => setCardAddressNumber(e.target.value)} className={inputCls + ' w-28'} />
+              </div>
+            </div>
+          )}
+
+          {error && <p className="text-red-500 text-sm font-medium">{error}</p>}
+          <button type="submit" disabled={loading}
+            className="py-5 px-8 rounded-xl font-bold text-lg text-white transition-all disabled:opacity-60 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-100"
+            style={{ backgroundColor: LIME, color: DARK }}>
+            {loading ? 'Aguarde...' : paymentMethod === 'pix' ? 'Pagar com PIX →' : 'Pagar com cartão →'}
+          </button>
+        </form>
+
+        <div className="mt-6 flex items-center justify-center gap-2 text-xs text-gray-400">
+          <span style={{ color: LIME }}>★★★★★</span>
+          <span>Garantia de 7 dias · sem perguntas · sem burocracia</span>
+        </div>
+      </div>
+    </>
   )
 }
 
@@ -464,7 +519,7 @@ export default function EbookLandingPage() {
   const nextPage = useCallback(() => setLightbox(i => i !== null ? (i + 1) % PAGES.length : null), [])
 
   useEffect(() => {
-    ;(window as any).fbq?.('track', 'ViewContent', { content_name: 'Guia Agrofloresta Sintrópica', content_type: 'product', value: 47, currency: 'BRL' })
+    ;(window as any).fbq?.('track', 'ViewContent', { content_name: 'Guia Agrofloresta Sintrópica', content_type: 'product', value: 57, currency: 'BRL' })
   }, [])
 
   return (
@@ -787,43 +842,12 @@ export default function EbookLandingPage() {
 
           {/* card de compra */}
           <div className="rounded-3xl overflow-hidden shadow-2xl" style={{ border: `2px solid ${LIME}30` }}>
-
-            {/* faixa de preço */}
-            <div className="px-8 py-7 text-center" style={{ backgroundColor: '#0D1608' }}>
-              <div className="flex items-center justify-center gap-4 mb-1">
-                <span className="text-gray-500 text-lg line-through">R$ 77</span>
-                <span className="text-xs font-black px-2.5 py-1 rounded-full" style={{ backgroundColor: LIME + '22', color: LIME }}>
-                  39% OFF
-                </span>
-              </div>
-              <div className="font-black text-white leading-none" style={{ fontSize: 'clamp(3.5rem, 14vw, 6rem)' }}>
-                R$<span style={{ color: LIME }}>47</span>
-              </div>
-              <p className="text-gray-400 text-sm mt-2">
-                Pagamento único · PIX ou cartão · Acesso permanente
-              </p>
-              <p className="text-xs mt-1.5" style={{ color: LIME + 'aa' }}>
-                menos de R$ 2 por capítulo
-              </p>
-            </div>
-
-            {/* corpo do card */}
-            <div className="bg-white px-8 pt-7 pb-8">
-
-
-              <CheckoutForm />
-
-              {/* micro prova social */}
-              <div className="mt-6 flex items-center justify-center gap-2 text-xs text-gray-400">
-                <span style={{ color: LIME }}>★★★★★</span>
-                <span>Garantia de 7 dias · sem perguntas · sem burocracia</span>
-              </div>
-            </div>
+            <CheckoutForm />
           </div>
 
           {/* nota de urgência abaixo do card */}
           <p className="text-center text-xs text-gray-500 mt-5 leading-relaxed">
-            Após o período de lançamento o preço volta a <strong className="text-gray-400">R$ 77</strong>.
+            Após o período de lançamento o preço volta a <strong className="text-gray-400">R$ 97</strong>.
             Compre agora e garanta o valor atual para sempre.
           </p>
         </div>

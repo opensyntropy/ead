@@ -2,7 +2,7 @@
 import { useState } from 'react'
 
 interface Props {
-  mode?: 'add' | 'resolve-refund'
+  mode?: 'add' | 'resolve-refund' | 'confirm-pix'
   id?: string
   email?: string
   product?: string
@@ -52,6 +52,32 @@ export default function AdminActions({ mode, id, email, product, userId, status 
     })
     setLoading(false)
     if (res.ok) window.location.reload()
+  }
+
+  async function handleConfirmPix() {
+    if (!confirm('Confirmar pagamento e liberar acesso + enviar email?')) return
+    setLoading(true)
+    const res = await fetch('/api/admin/pix-confirm', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pixChargeId: id }),
+    })
+    setLoading(false)
+    if (res.ok) { setDone(true); window.location.reload() }
+    else alert('Erro ao confirmar. Tente novamente.')
+  }
+
+  if (mode === 'confirm-pix') {
+    if (done) return <span className="text-xs text-green-600">Confirmado ✓</span>
+    return (
+      <button
+        onClick={handleConfirmPix}
+        disabled={loading}
+        className="text-xs text-yellow-700 hover:text-yellow-900 font-medium disabled:opacity-50"
+      >
+        {loading ? '...' : 'Confirmar + enviar email'}
+      </button>
+    )
   }
 
   if (mode === 'resolve-refund') {

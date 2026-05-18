@@ -3,7 +3,7 @@ import { PRODUCTS, type ProductId } from '@/config/products'
 import { findOrCreateCustomer, createCreditCardCharge, createPixCharge, getPixQrCode } from '@/lib/asaas'
 import { createServiceClient } from '@/lib/supabase/server'
 import { createDownloadToken } from '@/lib/download'
-import { sendDownloadEmail } from '@/lib/email'
+import { sendDownloadEmail, sendSessionPurchaseEmail } from '@/lib/email'
 
 export async function POST(request: Request) {
   const body = await request.json()
@@ -44,6 +44,14 @@ export async function POST(request: Request) {
         externalReference: `${productId}:${email}`,
       })
       const qr = await getPixQrCode(charge.id)
+
+      // Registra tentativa de PIX para rastreamento (confirmação vem pelo webhook)
+      const supabase = await createServiceClient()
+      await supabase.from('pix_charges').upsert(
+        { asaas_payment_id: charge.id, email, name: name || email.split('@')[0], product: productId, status: 'pending' },
+        { onConflict: 'asaas_payment_id' }
+      )
+
       return NextResponse.json({
         pixQrCode: qr.encodedImage,
         pixPayload: qr.payload,
@@ -125,6 +133,10 @@ async function grantAccessAndSendEmail(email: string, productId: ProductId, paym
   if (productId === 'ebook' || productId === 'bundle') {
     const token = await createDownloadToken(email, 'ebook')
     await sendDownloadEmail(email, token)
+  }
+  if (productId === 'session') {
+    const token = await createDownloadToken(email, 'ebook')
+    await sendSessionPurchaseEmail(email, token)
   }
 }
 
