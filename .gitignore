@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# conteúdo pago e arquivos originais
+ebook.pdf
+public/hero_capa.heif
