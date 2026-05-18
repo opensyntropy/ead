@@ -29,11 +29,15 @@ export default async function AdminPage() {
 
   const service = await createServiceClient()
 
-  const [{ data: products }, { data: refunds }, { data: { users: authUsers } }] = await Promise.all([
+  const [productsRes, refundsRes, usersRes] = await Promise.all([
     service.from('user_products').select('*').order('created_at', { ascending: false }),
     service.from('refund_requests').select('*').order('created_at', { ascending: false }),
-    service.auth.admin.listUsers(),
+    service.auth.admin.listUsers({ page: 1, perPage: 1000 }),
   ])
+
+  const products = productsRes.data
+  const refunds = refundsRes.data
+  const authUsers = usersRes.data?.users ?? []
 
   const emailMap = Object.fromEntries(authUsers.map(u => [u.id, u.email ?? '']))
   const rows: UserProduct[] = (products ?? []).map(p => ({ ...p, email: emailMap[p.user_id] ?? p.user_id }))
