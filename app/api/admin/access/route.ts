@@ -1,13 +1,13 @@
-import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import type { ProductId } from '@/config/products'
+import { createDownloadToken } from '@/lib/download'
+import { sendDownloadEmail } from '@/lib/email'
 
 async function checkAdmin(): Promise<boolean> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return false
-  const { data } = await supabase.from('admins').select('user_id').eq('user_id', user.id).single()
-  return !!data
+  const jar = await cookies()
+  return jar.get('admin_session')?.value === '1'
 }
 
 // POST: adicionar acesso manual
@@ -17,32 +17,34 @@ export async function POST(request: Request) {
   const { email, product } = await request.json() as { email: string; product: ProductId }
   const service = await createServiceClient()
 
-  // Garante usuário existente
-  const { data: { users } } = await service.auth.admin.listUsers()
-  let userId = users.find(u => u.email === email)?.id
-
-  if (!userId) {
-    const { data: newUser, error } = await service.auth.admin.createUser({
-      email,
-      email_confirm: true,
-    })
-    if (error || !newUser.user) {
-      return NextResponse.json({ error: 'Erro ao criar usuário' }, { status: 500 })
-    }
-    userId = newUser.user.id
-
-    await service.auth.admin.generateLink({
-      type: 'magiclink',
-      email,
-      options: { redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL}/ebook` },
-    })
+  // Cria ou encontra usuário
+  let userId: string | null = null
+  const { data: newUser, error: createError } = await service.auth.admin.createUser({ email, email_confirm: true })
+  if (createError) {
+    const { data: list } = await service.auth.admin.listUsers({ page: 1, perPage: 1000 })
+    userId = list?.users?.find(u => u.email === email)?.id ?? null
+  } else {
+    userId = newUser.user?.id ?? null
   }
+
+  if (!userId) return NextResponse.json({ error: 'Erro ao criar/encontrar usuário' }, { status: 500 })
 
   const { error } = await service
     .from('user_products')
     .upsert({ user_id: userId, product }, { onConflict: 'user_id,product' })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Envia email de download
+  if (product === 'ebook' || product === 'bundle') {
+    try {
+      const token = await createDownloadToken(email, 'ebook')
+      await sendDownloadEmail(email, token)
+    } catch (emailErr) {
+      console.error('Erro ao enviar email de download:', emailErr)
+    }
+  }
+
   return NextResponse.json({ ok: true })
 }
 
