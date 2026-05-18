@@ -84,3 +84,20 @@ export async function sendDownloadEmail(email: string, token: string) {
 </html>`,
   })
 }
+
+export async function sendPurchaseNotification(buyerEmail: string, productId: string, paymentId: string) {
+  await resend.emails.send({
+    from: process.env.NODE_ENV === 'production'
+      ? 'OpenSyntropy <ebook@opensyntropy.com>'
+      : 'OpenSyntropy <onboarding@resend.dev>',
+    to: 'michel.bottan@gmail.com',
+    subject: `Nova venda: ${productId} — ${buyerEmail}`,
+    html: `
+<p style="font-family:Arial,sans-serif;font-size:15px;line-height:1.6">
+  <strong>Nova compra confirmada</strong><br><br>
+  <strong>Produto:</strong> ${productId}<br>
+  <strong>Comprador:</strong> ${buyerEmail}<br>
+  <strong>ID Asaas:</strong> ${paymentId}
+</p>`,
+  })
+}

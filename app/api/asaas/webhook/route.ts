@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { createDownloadToken } from '@/lib/download'
-import { sendDownloadEmail } from '@/lib/email'
+import { sendDownloadEmail, sendPurchaseNotification } from '@/lib/email'
 import type { ProductId } from '@/config/products'
 
 export const maxDuration = 60
@@ -83,6 +83,12 @@ export async function POST(request: Request) {
     } catch (emailErr) {
       console.error('Webhook: erro ao enviar e-mail', emailErr)
     }
+  }
+
+  try {
+    await sendPurchaseNotification(email, productId, payment.id)
+  } catch (err) {
+    console.error('Webhook: erro ao enviar notificação de venda', err)
   }
 
   console.log(`Acesso liberado: ${email} → ${productId}`)

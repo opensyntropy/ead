@@ -588,12 +588,6 @@ export default function EbookLandingPage() {
             ))}
           </div>
 
-          <div className="text-center max-w-2xl mx-auto rounded-2xl px-8 py-7" style={{ backgroundColor: LIME }}>
-            <p className="text-lg leading-relaxed font-medium" style={{ color: DARK }}>
-              "Quando comecei, não me faltava entusiasmo. Me faltava um fio condutor: algo que me levasse de ponta a ponta, do porquê ao como, sem pular etapas."
-            </p>
-            <p className="mt-4 font-bold text-sm uppercase tracking-widest" style={{ color: DARK, opacity: 0.6 }}>Michel Bottan, autor</p>
-          </div>
         </div>
       </section>
 
