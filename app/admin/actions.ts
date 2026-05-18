@@ -10,7 +10,7 @@ export async function adminLogin(formData: FormData) {
     redirect('/admin/login?error=1')
   }
   const jar = await cookies()
-  jar.set('admin_session', '1', { httpOnly: true, path: '/admin', maxAge: 60 * 60 * 8 })
+  jar.set('admin_session', '1', { httpOnly: true, path: '/', maxAge: 60 * 60 * 8 })
   redirect('/admin')
 }
 
