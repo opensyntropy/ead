@@ -9,7 +9,7 @@ export async function sendDownloadEmail(email: string, token: string) {
 
   const { error: sendError } = await resend.emails.send({
     from: process.env.NODE_ENV === 'production'
-      ? 'Michel Bottan <ebook@opensyntropy.com>'
+      ? 'Michel Bottan <nao-responda@opensyntropy.earth>'
       : 'Michel Bottan <onboarding@resend.dev>',
     to: process.env.NODE_ENV === 'production' ? email : 'devops@opensyntropy.earth',
     subject: 'Seu Guia de Introdução à Agrofloresta Sintrópica',
@@ -72,7 +72,7 @@ export async function sendDownloadEmail(email: string, token: string) {
           <td style="background:#f4f3ee;padding:20px 40px;text-align:center">
             <p style="margin:0;color:#aaa;font-size:12px;font-family:Arial,sans-serif">
               Michel Bottan · OpenSyntropy<br>
-              Você recebeu este e-mail porque realizou uma compra em opensyntropy.com
+              Você recebeu este e-mail porque realizou uma compra em opensyntropy.earth
             </p>
           </td>
         </tr>
@@ -94,7 +94,7 @@ export async function sendSessionPurchaseEmail(email: string, downloadToken: str
 
   const { error: sendError2 } = await resend.emails.send({
     from: process.env.NODE_ENV === 'production'
-      ? 'Michel Bottan <ebook@opensyntropy.com>'
+      ? 'Michel Bottan <nao-responda@opensyntropy.earth>'
       : 'Michel Bottan <onboarding@resend.dev>',
     to: process.env.NODE_ENV === 'production' ? email : 'devops@opensyntropy.earth',
     subject: 'Seu Guia + Link para Agendar sua Sessão',
@@ -166,7 +166,7 @@ export async function sendSessionPurchaseEmail(email: string, downloadToken: str
           <td style="background:#f4f3ee;padding:20px 40px;text-align:center">
             <p style="margin:0;color:#aaa;font-size:12px;font-family:Arial,sans-serif">
               Michel Bottan · OpenSyntropy<br>
-              Você recebeu este e-mail porque realizou uma compra em opensyntropy.com
+              Você recebeu este e-mail porque realizou uma compra em opensyntropy.earth
             </p>
           </td>
         </tr>
@@ -183,7 +183,7 @@ export async function sendSessionPurchaseEmail(email: string, downloadToken: str
 export async function sendPurchaseNotification(buyerEmail: string, productId: string, paymentId: string) {
   const { error: sendError3 } = await resend.emails.send({
     from: process.env.NODE_ENV === 'production'
-      ? 'OpenSyntropy <ebook@opensyntropy.com>'
+      ? 'OpenSyntropy <nao-responda@opensyntropy.earth>'
       : 'OpenSyntropy <onboarding@resend.dev>',
     to: 'michel.bottan@gmail.com',
     subject: `Nova venda: ${productId} — ${buyerEmail}`,
