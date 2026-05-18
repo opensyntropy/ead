@@ -38,8 +38,13 @@ export default function AdminActions({ mode, id, email, product, userId, status 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: newEmail, product: newProduct }),
     })
+    const data = await res.json()
     setLoading(false)
-    if (res.ok) { setNewEmail(''); window.location.reload() }
+    if (res.ok) {
+      if (data.emailError) alert(`Acesso concedido, mas erro no email: ${data.emailError}`)
+      setNewEmail('')
+      window.location.reload()
+    }
   }
 
   async function handleResolveRefund() {

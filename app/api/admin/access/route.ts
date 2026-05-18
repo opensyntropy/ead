@@ -36,16 +36,18 @@ export async function POST(request: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   // Envia email de download
+  let emailError: string | null = null
   if (product === 'ebook' || product === 'bundle') {
     try {
       const token = await createDownloadToken(email, 'ebook')
       await sendDownloadEmail(email, token)
     } catch (emailErr) {
-      console.error('Erro ao enviar email de download:', emailErr)
+      emailError = emailErr instanceof Error ? emailErr.message : String(emailErr)
+      console.error('Erro ao enviar email de download:', emailError)
     }
   }
 
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true, emailError })
 }
 
 // DELETE: revogar acesso
