@@ -3,7 +3,7 @@ import { PRODUCTS, type ProductId } from '@/config/products'
 import { findOrCreateCustomer, createCreditCardCharge, createPixCharge, getPixQrCode } from '@/lib/asaas'
 import { createServiceClient } from '@/lib/supabase/server'
 import { createDownloadToken } from '@/lib/download'
-import { sendDownloadEmail, sendSessionPurchaseEmail } from '@/lib/email'
+import { sendDownloadEmail, sendSessionPurchaseEmail, sendPurchaseNotification } from '@/lib/email'
 
 export async function POST(request: Request) {
   const body = await request.json()
@@ -146,6 +146,12 @@ async function grantAccessAndSendEmail(email: string, productId: ProductId, paym
   if (productId === 'session') {
     const token = await createDownloadToken(email, 'ebook')
     await sendSessionPurchaseEmail(email, token)
+  }
+
+  try {
+    await sendPurchaseNotification(email, productId, paymentId)
+  } catch (err) {
+    console.error('Erro ao enviar notificação de venda:', err)
   }
 }
 
