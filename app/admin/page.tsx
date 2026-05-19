@@ -49,6 +49,7 @@ interface UserProduct {
   asaas_payment_id: string | null
   created_at: string
   email?: string
+  name?: string
 }
 
 interface RefundRequest {
@@ -90,10 +91,15 @@ export default async function AdminPage() {
   const pixRows: PixCharge[] = pixRes.data ?? []
   const pendingPix = pixRows.filter(p => p.status === 'pending')
   const emailMap = Object.fromEntries(authUsers.map(u => [u.id, u.email ?? '']))
-  const rows: UserProduct[] = (productsRes.data ?? []).map(p => ({ ...p, email: emailMap[p.user_id] ?? p.user_id }))
+  const rows: UserProduct[] = (productsRes.data ?? []).map(p => ({
+    ...p,
+    email: emailMap[p.user_id] ?? p.user_id,
+    name: p.asaas_payment_id ? pixNameMap[p.asaas_payment_id] : undefined,
+  }))
   const refundRows: RefundRequest[] = refundsRes.data ?? []
   const pendingRefunds = refundRows.filter(r => r.status === 'pending').length
   const pixUtmMap = Object.fromEntries(pixRows.map(p => [p.asaas_payment_id, p]))
+  const pixNameMap = Object.fromEntries(pixRows.filter(p => p.name).map(p => [p.asaas_payment_id, p.name!]))
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -235,6 +241,7 @@ export default async function AdminPage() {
               <thead className="bg-[#f0fdf4] text-[#1b4332] text-xs uppercase tracking-wide">
                 <tr>
                   <th className="text-left px-4 py-3">Email</th>
+                  <th className="text-left px-4 py-3">Nome</th>
                   <th className="text-left px-4 py-3">Produto</th>
                   <th className="text-left px-4 py-3">Origem</th>
                   <th className="text-left px-4 py-3">Data</th>
@@ -245,6 +252,7 @@ export default async function AdminPage() {
                 {rows.map(row => (
                   <tr key={row.id} className="hover:bg-[#f0fdf4]/60 transition-colors">
                     <td className="px-4 py-3 font-medium text-gray-800">{row.email}</td>
+                    <td className="px-4 py-3 text-gray-600 text-sm">{row.name ?? <span className="text-gray-300">—</span>}</td>
                     <td className="px-4 py-3">
                       <ProductBadge product={row.product} />
                     </td>
@@ -261,7 +269,7 @@ export default async function AdminPage() {
                 ))}
                 {rows.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-10 text-center text-gray-300 text-sm">
+                    <td colSpan={6} className="px-4 py-10 text-center text-gray-300 text-sm">
                       Nenhum acesso cadastrado ainda.
                     </td>
                   </tr>
