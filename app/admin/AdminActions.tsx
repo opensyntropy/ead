@@ -73,12 +73,12 @@ export default function AdminActions({ mode, id, email, product, userId, status 
   }
 
   if (mode === 'confirm-pix') {
-    if (done) return <span className="text-xs text-green-600">Confirmado ✓</span>
+    if (done) return <span className="text-sm text-green-600 font-medium">Confirmado ✓</span>
     return (
       <button
         onClick={handleConfirmPix}
         disabled={loading}
-        className="text-xs text-yellow-700 hover:text-yellow-900 font-medium disabled:opacity-50"
+        className="text-sm text-yellow-700 hover:text-yellow-900 font-semibold disabled:opacity-50"
       >
         {loading ? '...' : 'Confirmar + enviar email'}
       </button>
@@ -86,12 +86,12 @@ export default function AdminActions({ mode, id, email, product, userId, status 
   }
 
   if (mode === 'resolve-refund') {
-    if (status === 'resolved') return <span className="text-xs text-gray-400">Resolvido</span>
+    if (status === 'resolved') return <span className="text-sm text-gray-400">Resolvido</span>
     return (
       <button
         onClick={handleResolveRefund}
         disabled={loading}
-        className="text-xs text-green-600 hover:text-green-800 disabled:opacity-50"
+        className="text-sm text-green-600 hover:text-green-800 font-semibold disabled:opacity-50"
       >
         {loading ? '...' : 'Marcar resolvido'}
       </button>
@@ -100,24 +100,24 @@ export default function AdminActions({ mode, id, email, product, userId, status 
 
   if (mode === 'add') {
     return (
-      <form onSubmit={handleAdd} className="flex flex-wrap gap-3 items-end">
+      <form onSubmit={handleAdd} className="flex flex-col gap-4">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Email</label>
+          <label className="block text-sm font-semibold text-gray-600 mb-1.5">Email</label>
           <input
             type="email"
             required
             value={newEmail}
             onChange={e => setNewEmail(e.target.value)}
             placeholder="aluno@email.com"
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#52b788]"
+            className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[#52b788]"
           />
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Produto</label>
+          <label className="block text-sm font-semibold text-gray-600 mb-1.5">Produto</label>
           <select
             value={newProduct}
             onChange={e => setNewProduct(e.target.value as typeof newProduct)}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#52b788]"
+            className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[#52b788]"
           >
             <option value="ebook">Ebook</option>
             <option value="course">Curso</option>
@@ -127,21 +127,21 @@ export default function AdminActions({ mode, id, email, product, userId, status 
         <button
           type="submit"
           disabled={loading}
-          className="bg-[#1b4332] text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-[#2d6a4f] disabled:opacity-60"
+          className="w-full bg-[#1b4332] text-white rounded-lg px-4 py-3 text-base font-semibold hover:bg-[#2d6a4f] disabled:opacity-60 transition-colors"
         >
-          {loading ? '...' : 'Adicionar'}
+          {loading ? '...' : 'Adicionar acesso'}
         </button>
       </form>
     )
   }
 
-  if (done) return <span className="text-xs text-gray-400">Revogado</span>
+  if (done) return <span className="text-sm text-gray-400">Revogado</span>
 
   return (
     <button
       onClick={handleRevoke}
       disabled={loading}
-      className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50"
+      className="text-sm text-red-500 hover:text-red-700 font-semibold disabled:opacity-50"
     >
       {loading ? '...' : 'Revogar'}
     </button>

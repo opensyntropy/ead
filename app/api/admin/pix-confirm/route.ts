@@ -1,6 +1,6 @@
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { createDownloadToken } from '@/lib/download'
-import { sendDownloadEmail, sendPurchaseNotification } from '@/lib/email'
+import { sendDownloadEmail, sendSessionPurchaseEmail, sendPurchaseNotification } from '@/lib/email'
 import { NextResponse } from 'next/server'
 import type { ProductId } from '@/config/products'
 
@@ -53,12 +53,23 @@ export async function POST(request: Request) {
     )
   }
 
-  if (product === 'ebook' || product === 'bundle') {
-    const token = await createDownloadToken(email, 'ebook')
-    await sendDownloadEmail(email, token)
+  try {
+    if (product === 'ebook' || product === 'bundle') {
+      const token = await createDownloadToken(email, 'ebook')
+      await sendDownloadEmail(email, token)
+    } else if (product === 'session' || product === 'session_upsell') {
+      const token = await createDownloadToken(email, 'ebook')
+      await sendSessionPurchaseEmail(email, token)
+    }
+  } catch (emailErr) {
+    console.error('pix-confirm: erro ao enviar email ao comprador:', emailErr)
   }
 
-  await sendPurchaseNotification(email, product, charge.asaas_payment_id)
+  try {
+    await sendPurchaseNotification(email, product, charge.asaas_payment_id)
+  } catch (notifErr) {
+    console.error('pix-confirm: erro ao enviar notificação:', notifErr)
+  }
 
   await supabase.from('pix_charges')
     .update({ status: 'confirmed', confirmed_at: new Date().toISOString() })

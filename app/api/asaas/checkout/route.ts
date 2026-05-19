@@ -52,14 +52,17 @@ export async function POST(request: Request) {
 
       // Registra tentativa de PIX para rastreamento (confirmação vem pelo webhook)
       const supabase = await createServiceClient()
-      await supabase.from('pix_charges').upsert(
+      console.log('[pix_charges] tentando inserir charge.id:', charge.id)
+      const { data: pixInsertData, error: pixInsertError } = await supabase.from('pix_charges').upsert(
         {
           asaas_payment_id: charge.id, email, name: name || email.split('@')[0],
           product: productId, status: 'pending',
           utm_source, utm_medium, utm_campaign, utm_content,
         },
         { onConflict: 'asaas_payment_id' }
-      )
+      ).select()
+      if (pixInsertError) console.error('[pix_charges] ERRO no insert:', JSON.stringify(pixInsertError))
+      else console.log('[pix_charges] inserido com sucesso:', pixInsertData)
 
       return NextResponse.json({
         pixQrCode: qr.encodedImage,

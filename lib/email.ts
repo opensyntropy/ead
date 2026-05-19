@@ -197,3 +197,104 @@ export async function sendPurchaseNotification(buyerEmail: string, productId: st
   })
   if (sendError3) throw new Error(`Resend error: ${JSON.stringify(sendError3)}`)
 }
+
+const FROM = process.env.NODE_ENV === 'production'
+  ? 'Michel Bottan <nao-responda@opensyntropy.earth>'
+  : 'Michel Bottan <onboarding@resend.dev>'
+
+function emailHtml(downloadUrl: string, resendUrl: string, content: {
+  tagline: string; title: string; greeting: string; body: string;
+  importantLabel: string; importantText: string; btnText: string;
+  resendLabel: string; footer: string;
+}) {
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F2F0E9;font-family:Georgia,serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F2F0E9;padding:40px 0">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;max-width:560px;width:100%">
+        <tr>
+          <td style="background:#141F0C;padding:36px 40px;text-align:center">
+            <p style="margin:0;color:#7DC142;font-size:13px;letter-spacing:3px;text-transform:uppercase;font-family:Arial,sans-serif">OpenSyntropy</p>
+            <h1 style="margin:12px 0 0;color:#fff;font-size:22px;font-weight:700;line-height:1.3">${content.title}</h1>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:40px 40px 32px">
+            <p style="margin:0 0 20px;color:#1a1a1a;font-size:16px;line-height:1.7">${content.greeting}</p>
+            <p style="margin:0 0 20px;color:#1a1a1a;font-size:16px;line-height:1.7">${content.body}</p>
+            <p style="margin:0 0 8px;color:#476B18;font-size:13px;font-family:Arial,sans-serif;font-weight:700;letter-spacing:1px;text-transform:uppercase">${content.importantLabel}</p>
+            <p style="margin:0 0 32px;color:#555;font-size:14px;line-height:1.6;padding:16px;background:#f8f8f4;border-left:3px solid #7DC142;border-radius:4px">${content.importantText}</p>
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr><td align="center">
+                <a href="${downloadUrl}" style="display:inline-block;background:#7DC142;color:#141F0C;font-family:Arial,sans-serif;font-size:17px;font-weight:700;text-decoration:none;padding:18px 40px;border-radius:10px">${content.btnText}</a>
+              </td></tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:0 40px 40px">
+            <hr style="border:none;border-top:1px solid #e8e8e0;margin:0 0 28px">
+            <p style="margin:0;color:#888;font-size:13px;font-family:Arial,sans-serif;line-height:1.6">
+              ${content.resendLabel} <a href="${resendUrl}" style="color:#476B18">${resendUrl}</a>
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#f4f3ee;padding:20px 40px;text-align:center">
+            <p style="margin:0;color:#aaa;font-size:12px;font-family:Arial,sans-serif">${content.footer}</p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`
+}
+
+export async function sendDownloadEmailEn(email: string, token: string) {
+  const downloadUrl = `${BASE_URL}/api/download?token=${token}`
+  const resendUrl = `${BASE_URL}/reenviar`
+  const to = process.env.NODE_ENV === 'production' ? email : 'devops@opensyntropy.earth'
+
+  const { error } = await resend.emails.send({
+    from: FROM, to,
+    subject: 'Your Guide to Syntropic Agroforestry',
+    html: emailHtml(downloadUrl, resendUrl, {
+      tagline: 'OpenSyntropy',
+      title: 'Introduction to Syntropic Agroforestry',
+      greeting: 'Hello,',
+      body: 'Thank you for your purchase. Your guide is ready to download.',
+      importantLabel: 'Important',
+      importantText: 'This download link is <strong>single-use</strong>. Once clicked, it cannot be used again. Save the PDF in a safe place after downloading.',
+      btnText: 'Download my Guide →',
+      resendLabel: 'Need to download again in the future? Visit:',
+      footer: 'Michel Bottan · OpenSyntropy<br>You received this email because you made a purchase at opensyntropy.earth',
+    }),
+  })
+  if (error) throw new Error(`Resend error: ${JSON.stringify(error)}`)
+}
+
+export async function sendDownloadEmailEs(email: string, token: string) {
+  const downloadUrl = `${BASE_URL}/api/download?token=${token}`
+  const resendUrl = `${BASE_URL}/reenviar`
+  const to = process.env.NODE_ENV === 'production' ? email : 'devops@opensyntropy.earth'
+
+  const { error } = await resend.emails.send({
+    from: FROM, to,
+    subject: 'Tu Guía de Introducción a la Agroforestería Sintrópica',
+    html: emailHtml(downloadUrl, resendUrl, {
+      tagline: 'OpenSyntropy',
+      title: 'Introducción a la Agroforestería Sintrópica',
+      greeting: 'Hola,',
+      body: 'Gracias por tu compra. Tu guía está lista para descargar.',
+      importantLabel: 'Importante',
+      importantText: 'Este enlace de descarga es de <strong>un solo uso</strong>. Una vez que hagas clic, no podrá usarse nuevamente. Guarda el PDF en un lugar seguro después de descargarlo.',
+      btnText: 'Descargar mi Guía →',
+      resendLabel: '¿Necesitas descargar de nuevo en el futuro? Visita:',
+      footer: 'Michel Bottan · OpenSyntropy<br>Recibiste este correo porque realizaste una compra en opensyntropy.earth',
+    }),
+  })
+  if (error) throw new Error(`Resend error: ${JSON.stringify(error)}`)
+}

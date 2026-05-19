@@ -29,6 +29,7 @@ interface PixCharge {
 interface Props {
   rows: UserProduct[]
   pixUtmMap: Record<string, PixCharge>
+  downloadedEmails: string[]
 }
 
 const SESSION_PRODUCTS = new Set(['session', 'session_upsell'])
@@ -73,17 +74,18 @@ function OriginBadge({ row }: { row?: { utm_source?: string | null; utm_medium?:
   )
 }
 
-function AccessTable({ rows, pixUtmMap, emptyMsg }: { rows: UserProduct[]; pixUtmMap: Record<string, PixCharge>; emptyMsg: string }) {
+function AccessTable({ rows, pixUtmMap, downloadedSet, emptyMsg }: { rows: UserProduct[]; pixUtmMap: Record<string, PixCharge>; downloadedSet: Set<string>; emptyMsg: string }) {
   return (
     <div className="bg-white rounded-xl border border-[#b7e4c7] overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead className="bg-[#f0fdf4] text-[#1b4332] text-xs uppercase tracking-wide">
+      <table className="w-full text-base">
+        <thead className="bg-[#f0fdf4] text-[#1b4332] text-sm uppercase tracking-wide font-semibold">
           <tr>
             <th className="text-left px-4 py-3">Email</th>
             <th className="text-left px-4 py-3">Nome</th>
             <th className="text-left px-4 py-3">Produto</th>
             <th className="text-left px-4 py-3">Origem</th>
             <th className="text-left px-4 py-3">Data</th>
+            <th className="text-left px-4 py-3">Download</th>
             <th className="px-4 py-3 text-right">Ações</th>
           </tr>
         </thead>
@@ -91,14 +93,19 @@ function AccessTable({ rows, pixUtmMap, emptyMsg }: { rows: UserProduct[]; pixUt
           {rows.map(row => (
             <tr key={row.id} className="hover:bg-[#f0fdf4]/60 transition-colors">
               <td className="px-4 py-3 font-medium text-gray-800">{row.email}</td>
-              <td className="px-4 py-3 text-gray-600 text-sm">{row.name ?? <span className="text-gray-300">—</span>}</td>
+              <td className="px-4 py-3 text-gray-600">{row.name ?? <span className="text-gray-300">—</span>}</td>
               <td className="px-4 py-3"><ProductBadge product={row.product} /></td>
               <td className="px-4 py-3">
                 {row.asaas_payment_id
                   ? <OriginBadge row={pixUtmMap[row.asaas_payment_id]} />
-                  : <span className="text-xs text-gray-300">manual</span>}
+                  : <span className="text-sm text-gray-300">manual</span>}
               </td>
-              <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">{fmt(row.created_at)}</td>
+              <td className="px-4 py-3 text-gray-400 text-sm whitespace-nowrap">{fmt(row.created_at)}</td>
+              <td className="px-4 py-3">
+                {downloadedSet.has(row.email ?? '')
+                  ? <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Baixado</span>
+                  : <span className="text-gray-300 text-xs">—</span>}
+              </td>
               <td className="px-4 py-3 text-right">
                 <AdminActions id={row.id} email={row.email ?? ''} product={row.product} userId={row.user_id} />
               </td>
@@ -106,7 +113,7 @@ function AccessTable({ rows, pixUtmMap, emptyMsg }: { rows: UserProduct[]; pixUt
           ))}
           {rows.length === 0 && (
             <tr>
-              <td colSpan={6} className="px-4 py-10 text-center text-gray-300 text-sm">{emptyMsg}</td>
+              <td colSpan={7} className="px-4 py-10 text-center text-gray-300 text-base">{emptyMsg}</td>
             </tr>
           )}
         </tbody>
@@ -115,8 +122,9 @@ function AccessTable({ rows, pixUtmMap, emptyMsg }: { rows: UserProduct[]; pixUt
   )
 }
 
-export default function AdminAccessTabs({ rows, pixUtmMap }: Props) {
+export default function AdminAccessTabs({ rows, pixUtmMap, downloadedEmails }: Props) {
   const [tab, setTab] = useState<'ebooks' | 'sessions'>('ebooks')
+  const downloadedSet = new Set(downloadedEmails)
 
   const ebookRows = rows.filter(r => !SESSION_PRODUCTS.has(r.product))
   const sessionRows = rows.filter(r => SESSION_PRODUCTS.has(r.product))
@@ -129,26 +137,26 @@ export default function AdminAccessTabs({ rows, pixUtmMap }: Props) {
   return (
     <div>
       <div className="flex items-center gap-1 mb-4">
-        <div className="w-1 h-5 rounded-full bg-[#52b788]" />
+        <div className="w-1 h-6 rounded-full bg-[#52b788]" />
         <div className="ml-2 flex gap-1 rounded-lg border border-gray-200 bg-gray-50 p-1">
           {tabs.map(t => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
-              className="px-4 py-1.5 rounded-md text-sm font-semibold transition-colors"
+              className="px-4 py-2 rounded-md text-base font-bold transition-colors"
               style={tab === t.id
                 ? { backgroundColor: '#1b4332', color: '#fff' }
                 : { color: '#6b7280' }}
             >
               {t.label}
-              <span className="ml-1.5 text-xs font-normal opacity-70">({t.count})</span>
+              <span className="ml-1.5 text-sm font-normal opacity-70">({t.count})</span>
             </button>
           ))}
         </div>
       </div>
       {tab === 'ebooks'
-        ? <AccessTable rows={ebookRows} pixUtmMap={pixUtmMap} emptyMsg="Nenhum acesso de ebook cadastrado." />
-        : <AccessTable rows={sessionRows} pixUtmMap={pixUtmMap} emptyMsg="Nenhuma sessão cadastrada ainda." />
+        ? <AccessTable rows={ebookRows} pixUtmMap={pixUtmMap} downloadedSet={downloadedSet} emptyMsg="Nenhum acesso de ebook cadastrado." />
+        : <AccessTable rows={sessionRows} pixUtmMap={pixUtmMap} downloadedSet={downloadedSet} emptyMsg="Nenhuma sessão cadastrada ainda." />
       }
     </div>
   )

@@ -12,137 +12,84 @@ export async function GET() {
           width: 1200,
           height: 630,
           display: 'flex',
-          position: 'relative',
+          backgroundColor: '#0f2318',
           fontFamily: 'Georgia, serif',
         }}
       >
-        {/* Background image */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={`${baseUrl}/hero_capa.jpg`}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            objectPosition: 'center',
-          }}
-          alt=""
-        />
-
-        {/* Dark overlay */}
+        {/* Left: text */}
         <div
           style={{
-            position: 'absolute',
-            inset: 0,
-            background: 'linear-gradient(135deg, rgba(10,20,5,0.88) 0%, rgba(10,20,5,0.60) 100%)',
-          }}
-        />
-
-        {/* Content */}
-        <div
-          style={{
-            position: 'relative',
+            flex: 1,
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            padding: '60px 80px',
-            width: '100%',
+            padding: '56px 56px 56px 72px',
           }}
         >
-          {/* Top: brand */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                backgroundColor: '#7DC142',
-              }}
-            />
-            <span
-              style={{
-                color: '#7DC142',
-                fontSize: 16,
-                fontWeight: 700,
-                letterSpacing: '0.2em',
-                textTransform: 'uppercase',
-              }}
-            >
+          {/* Brand */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: '#7DC142' }} />
+            <span style={{ color: '#7DC142', fontSize: 15, fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase' }}>
               OpenSyntropy
             </span>
           </div>
 
-          {/* Middle: title */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <span
-              style={{
-                color: 'rgba(255,255,255,0.6)',
-                fontSize: 20,
-                fontWeight: 600,
-                letterSpacing: '0.15em',
-                textTransform: 'uppercase',
-              }}
-            >
+          {/* Title */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <span style={{ color: 'rgba(255,255,255,0.55)', fontSize: 18, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase' }}>
               Guia de Introdução à
             </span>
-            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1 }}>
-              <span
-                style={{
-                  color: '#ffffff',
-                  fontSize: 80,
-                  fontWeight: 900,
-                  letterSpacing: '-0.01em',
-                }}
-              >
-                AGROFLORESTA
+            <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.05 }}>
+              <span style={{ color: '#ffffff', fontSize: 66, fontWeight: 900, letterSpacing: '-0.01em' }}>
+                AGRO
               </span>
-              <span
-                style={{
-                  color: '#7DC142',
-                  fontSize: 68,
-                  fontWeight: 900,
-                  letterSpacing: '-0.01em',
-                }}
-              >
+              <span style={{ color: '#ffffff', fontSize: 66, fontWeight: 900, letterSpacing: '-0.01em' }}>
+                FLORESTA
+              </span>
+              <span style={{ color: '#7DC142', fontSize: 56, fontWeight: 900, letterSpacing: '-0.01em' }}>
                 SINTRÓPICA
               </span>
             </div>
-            <span
-              style={{
-                color: 'rgba(255,255,255,0.55)',
-                fontSize: 22,
-                fontWeight: 400,
-                marginTop: 8,
-              }}
-            >
-              207 páginas · 27 capítulos · 25+ infográficos · Michel Bottan
+            <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: 18, marginTop: 12 }}>
+              207 páginas · 27 capítulos · 25+ infográficos
+            </span>
+            <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 18, fontWeight: 600 }}>
+              Michel Bottan
             </span>
           </div>
 
-          {/* Bottom: CTA pill */}
+          {/* Bottom tag */}
           <div style={{ display: 'flex' }}>
-            <div
-              style={{
-                backgroundColor: '#7DC142',
-                color: '#141F0C',
-                fontSize: 18,
-                fontWeight: 800,
-                padding: '14px 32px',
-                borderRadius: 999,
-                letterSpacing: '0.05em',
-              }}
-            >
+            <div style={{ backgroundColor: '#7DC142', color: '#0f2318', fontSize: 16, fontWeight: 800, padding: '12px 28px', borderRadius: 999, letterSpacing: '0.04em' }}>
               opensyntropy.com
             </div>
           </div>
         </div>
+
+        {/* Right: book cover */}
+        <div
+          style={{
+            width: 340,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '32px 40px 32px 0',
+          }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={`${baseUrl}/capa_livro.png`}
+            style={{
+              height: 530,
+              width: 'auto',
+              borderRadius: 8,
+              boxShadow: '0 24px 64px rgba(0,0,0,0.7)',
+            }}
+            alt=""
+          />
+        </div>
       </div>
     ),
-    {
-      width: 1200,
-      height: 630,
-    }
+    { width: 1200, height: 630 }
   )
 }
