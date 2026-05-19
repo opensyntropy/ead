@@ -11,7 +11,14 @@ create table if not exists public.pix_charges (
 
 alter table public.pix_charges enable row level security;
 
-create policy "service role full access"
-  on public.pix_charges
-  for all
-  using (auth.role() = 'service_role');
+do $$ begin
+  if not exists (
+    select 1 from pg_policies
+    where schemaname = 'public' and tablename = 'pix_charges' and policyname = 'service role full access'
+  ) then
+    create policy "service role full access"
+      on public.pix_charges
+      for all
+      using (auth.role() = 'service_role');
+  end if;
+end $$;
