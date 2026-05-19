@@ -147,7 +147,7 @@ const PAIN_CARDS = [
   },
   {
     label: 'Solo e Planejamento',
-    title: 'Do solo ao consórcio produtivo',
+    title: 'Do solo ao consórcio',
     desc: 'Você aprende a construir fertilidade de dentro para fora, a ler a sua terra e a desenhar um consórcio funcional do zero.',
   },
   {
