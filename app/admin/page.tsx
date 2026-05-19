@@ -2,6 +2,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import AdminActions from './AdminActions'
+import AdminAccessTabs from './AdminAccessTabs'
 import { adminLogout } from './actions'
 
 export const dynamic = 'force-dynamic'
@@ -234,50 +235,7 @@ export default async function AdminPage() {
         </div>
 
         {/* Acessos ativos */}
-        <div>
-          <SectionHeader title="Acessos ativos" count={rows.length} />
-          <div className="bg-white rounded-xl border border-[#b7e4c7] overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-[#f0fdf4] text-[#1b4332] text-xs uppercase tracking-wide">
-                <tr>
-                  <th className="text-left px-4 py-3">Email</th>
-                  <th className="text-left px-4 py-3">Nome</th>
-                  <th className="text-left px-4 py-3">Produto</th>
-                  <th className="text-left px-4 py-3">Origem</th>
-                  <th className="text-left px-4 py-3">Data</th>
-                  <th className="px-4 py-3 text-right">Ações</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#d8f3dc]">
-                {rows.map(row => (
-                  <tr key={row.id} className="hover:bg-[#f0fdf4]/60 transition-colors">
-                    <td className="px-4 py-3 font-medium text-gray-800">{row.email}</td>
-                    <td className="px-4 py-3 text-gray-600 text-sm">{row.name ?? <span className="text-gray-300">—</span>}</td>
-                    <td className="px-4 py-3">
-                      <ProductBadge product={row.product} />
-                    </td>
-                    <td className="px-4 py-3">
-                      {row.asaas_payment_id
-                        ? <OriginBadge row={pixUtmMap[row.asaas_payment_id]} />
-                        : <span className="text-xs text-gray-300">manual</span>}
-                    </td>
-                    <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">{fmt(row.created_at)}</td>
-                    <td className="px-4 py-3 text-right">
-                      <AdminActions id={row.id} email={row.email ?? ''} product={row.product} userId={row.user_id} />
-                    </td>
-                  </tr>
-                ))}
-                {rows.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="px-4 py-10 text-center text-gray-300 text-sm">
-                      Nenhum acesso cadastrado ainda.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <AdminAccessTabs rows={rows} pixUtmMap={pixUtmMap} />
 
         {/* Adicionar acesso manual */}
         <div className="bg-white rounded-xl border border-dashed border-[#b7e4c7] p-6">
