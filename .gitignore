@@ -41,5 +41,4 @@ yarn-error.log*
 next-env.d.ts
 
 # conteúdo pago e arquivos originais
-ebook.pdf
 public/hero_capa.heif
