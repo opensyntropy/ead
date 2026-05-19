@@ -1,5 +1,6 @@
 'use client'
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 
 const PAGES = [
@@ -235,6 +236,7 @@ function formatCep(value: string) {
 }
 
 function CheckoutForm() {
+  const searchParams = useSearchParams()
   const [selectedProduct, setSelectedProduct] = useState<'ebook' | 'session'>('ebook')
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
@@ -245,12 +247,29 @@ function CheckoutForm() {
   const [pixData, setPixData] = useState<{ qrCode: string; payload: string } | null>(null)
   const [copied, setCopied] = useState(false)
   const [cardSuccess, setCardSuccess] = useState(false)
+  const [utmParams, setUtmParams] = useState<Record<string, string>>({})
 
   const [cardNumber, setCardNumber] = useState('')
   const [cardExpiry, setCardExpiry] = useState('')
   const [cardCvv, setCardCvv] = useState('')
   const [cardPostalCode, setCardPostalCode] = useState('')
   const [cardAddressNumber, setCardAddressNumber] = useState('')
+
+  useEffect(() => {
+    const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content']
+    const fromUrl: Record<string, string> = {}
+    UTM_KEYS.forEach(k => { const v = searchParams.get(k); if (v) fromUrl[k] = v })
+
+    if (Object.keys(fromUrl).length > 0) {
+      sessionStorage.setItem('utm', JSON.stringify(fromUrl))
+      setUtmParams(fromUrl)
+    } else {
+      try {
+        const stored = sessionStorage.getItem('utm')
+        if (stored) setUtmParams(JSON.parse(stored))
+      } catch { /* ignore */ }
+    }
+  }, [searchParams])
 
   const inputCls = "border-2 border-gray-200 rounded-xl px-5 py-4 text-base text-gray-800 bg-white focus:outline-none focus:border-[#7DC142] transition-colors"
   const price = selectedProduct === 'ebook' ? 57 : 197
@@ -265,6 +284,7 @@ function CheckoutForm() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         productId: selectedProduct, email, name, cpf, paymentMethod,
+        ...utmParams,
         ...(paymentMethod === 'card' ? { cardNumber, cardExpiry, cardCvv, cardPostalCode, cardAddressNumber } : {}),
       }),
     })
@@ -842,7 +862,9 @@ export default function EbookLandingPage() {
 
           {/* card de compra */}
           <div className="rounded-3xl overflow-hidden shadow-2xl" style={{ border: `2px solid ${LIME}30` }}>
-            <CheckoutForm />
+            <Suspense>
+              <CheckoutForm />
+            </Suspense>
           </div>
 
           {/* nota de urgência abaixo do card */}
