@@ -94,9 +94,12 @@ export default async function AdminPage() {
   const emailMap = Object.fromEntries(authUsers.map(u => [u.id, u.email ?? '']))
   const pixUtmMap = Object.fromEntries(pixRows.map(p => [p.asaas_payment_id, p]))
   const pixNameMap = Object.fromEntries(pixRows.filter(p => p.name).map(p => [p.asaas_payment_id, p.name!]))
+  const pixEmailMap = Object.fromEntries(pixRows.map(p => [p.asaas_payment_id, p.email]))
   const rows: UserProduct[] = (productsRes.data ?? []).map(p => ({
     ...p,
-    email: emailMap[p.user_id] ?? p.user_id,
+    email: emailMap[p.user_id]
+      || (p.asaas_payment_id ? pixEmailMap[p.asaas_payment_id] : undefined)
+      || p.user_id,
     name: p.asaas_payment_id ? pixNameMap[p.asaas_payment_id] : undefined,
   }))
   const refundRows: RefundRequest[] = refundsRes.data ?? []
