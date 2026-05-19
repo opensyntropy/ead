@@ -286,14 +286,16 @@ export default async function AdminPage() {
 }
 
 function ProductBadge({ product }: { product: string }) {
-  const styles: Record<string, string> = {
-    bundle: 'bg-[#1b4332] text-white',
-    ebook: 'bg-[#d8f3dc] text-[#1b4332]',
-    session: 'bg-blue-100 text-blue-700',
+  const config: Record<string, { label: string; cls: string }> = {
+    ebook:   { label: 'Ebook',            cls: 'bg-[#d8f3dc] text-[#1b4332]' },
+    session: { label: 'Ebook + Sessão',   cls: 'bg-blue-100 text-blue-700' },
+    bundle:  { label: 'Bundle',           cls: 'bg-[#1b4332] text-white' },
+    course:  { label: 'Curso',            cls: 'bg-purple-100 text-purple-700' },
   }
+  const { label, cls } = config[product] ?? { label: product, cls: 'bg-gray-100 text-gray-600' }
   return (
-    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${styles[product] ?? 'bg-gray-100 text-gray-600'}`}>
-      {product}
+    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${cls}`}>
+      {label}
     </span>
   )
 }
