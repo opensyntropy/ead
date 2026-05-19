@@ -92,6 +92,8 @@ export default async function AdminPage() {
   const pixRows: PixCharge[] = pixRes.data ?? []
   const pendingPix = pixRows.filter(p => p.status === 'pending')
   const emailMap = Object.fromEntries(authUsers.map(u => [u.id, u.email ?? '']))
+  const pixUtmMap = Object.fromEntries(pixRows.map(p => [p.asaas_payment_id, p]))
+  const pixNameMap = Object.fromEntries(pixRows.filter(p => p.name).map(p => [p.asaas_payment_id, p.name!]))
   const rows: UserProduct[] = (productsRes.data ?? []).map(p => ({
     ...p,
     email: emailMap[p.user_id] ?? p.user_id,
@@ -99,8 +101,6 @@ export default async function AdminPage() {
   }))
   const refundRows: RefundRequest[] = refundsRes.data ?? []
   const pendingRefunds = refundRows.filter(r => r.status === 'pending').length
-  const pixUtmMap = Object.fromEntries(pixRows.map(p => [p.asaas_payment_id, p]))
-  const pixNameMap = Object.fromEntries(pixRows.filter(p => p.name).map(p => [p.asaas_payment_id, p.name!]))
 
   return (
     <div className="min-h-screen bg-gray-50">
