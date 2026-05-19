@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true })
   }
 
-  const validProducts: ProductId[] = ['ebook', 'course', 'bundle', 'session']
+  const validProducts: ProductId[] = ['ebook', 'course', 'bundle', 'session', 'session_upsell']
   if (!validProducts.includes(productId as ProductId)) {
     console.error('Webhook: produto desconhecido', productId)
     return NextResponse.json({ ok: true })
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
       console.error('Webhook: erro ao enviar e-mail', emailErr)
     }
   }
-  if (productId === 'session') {
+  if (productId === 'session' || productId === 'session_upsell') {
     try {
       const token = await createDownloadToken(email, 'ebook')
       await sendSessionPurchaseEmail(email, token)

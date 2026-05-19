@@ -237,7 +237,6 @@ function formatCep(value: string) {
 
 function CheckoutForm() {
   const searchParams = useSearchParams()
-  const [selectedProduct, setSelectedProduct] = useState<'ebook' | 'session'>('ebook')
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
   const [cpf, setCpf] = useState('')
@@ -254,6 +253,19 @@ function CheckoutForm() {
   const [cardCvv, setCardCvv] = useState('')
   const [cardPostalCode, setCardPostalCode] = useState('')
   const [cardAddressNumber, setCardAddressNumber] = useState('')
+
+  // Upsell (sessão pós-compra)
+  const [upsellPaymentMethod, setUpsellPaymentMethod] = useState<'pix' | 'card'>('pix')
+  const [upsellLoading, setUpsellLoading] = useState(false)
+  const [upsellPixData, setUpsellPixData] = useState<{ qrCode: string; payload: string } | null>(null)
+  const [upsellSuccess, setUpsellSuccess] = useState(false)
+  const [upsellCopied, setUpsellCopied] = useState(false)
+  const [upsellError, setUpsellError] = useState('')
+  const [upsellCardNumber, setUpsellCardNumber] = useState('')
+  const [upsellCardExpiry, setUpsellCardExpiry] = useState('')
+  const [upsellCardCvv, setUpsellCardCvv] = useState('')
+  const [upsellCardPostalCode, setUpsellCardPostalCode] = useState('')
+  const [upsellCardAddressNumber, setUpsellCardAddressNumber] = useState('')
 
   useEffect(() => {
     const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content']
@@ -272,18 +284,17 @@ function CheckoutForm() {
   }, [searchParams])
 
   const inputCls = "border-2 border-gray-200 rounded-xl px-5 py-4 text-base text-gray-800 bg-white focus:outline-none focus:border-[#7DC142] transition-colors"
-  const price = selectedProduct === 'ebook' ? 57 : 197
 
   async function handleBuy(e: React.FormEvent) {
     e.preventDefault()
-    ;(window as any).fbq?.('track', 'InitiateCheckout', { value: price, currency: 'BRL', num_items: 1 })
+    ;(window as any).fbq?.('track', 'InitiateCheckout', { value: 57, currency: 'BRL', num_items: 1 })
     setLoading(true)
     setError('')
     const res = await fetch('/api/asaas/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        productId: selectedProduct, email, name, cpf, paymentMethod,
+        productId: 'ebook', email, name, cpf, paymentMethod,
         ...utmParams,
         ...(paymentMethod === 'card' ? { cardNumber, cardExpiry, cardCvv, cardPostalCode, cardAddressNumber } : {}),
       }),
@@ -292,12 +303,43 @@ function CheckoutForm() {
     setLoading(false)
     if (data.pixQrCode) {
       setPixData({ qrCode: data.pixQrCode, payload: data.pixPayload })
-      ;(window as any).fbq?.('track', 'Purchase', { value: price, currency: 'BRL' })
+      ;(window as any).fbq?.('track', 'Purchase', { value: 57, currency: 'BRL' })
     } else if (data.cardSuccess) {
       setCardSuccess(true)
-      ;(window as any).fbq?.('track', 'Purchase', { value: price, currency: 'BRL' })
+      ;(window as any).fbq?.('track', 'Purchase', { value: 57, currency: 'BRL' })
     } else {
       setError(data.error ?? 'Erro ao processar pagamento. Tente novamente.')
+    }
+  }
+
+  async function handleUpsell(e: React.FormEvent) {
+    e.preventDefault()
+    setUpsellLoading(true)
+    setUpsellError('')
+    const res = await fetch('/api/asaas/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        productId: 'session_upsell', email, name, cpf,
+        paymentMethod: upsellPaymentMethod,
+        ...utmParams,
+        ...(upsellPaymentMethod === 'card' ? {
+          cardNumber: upsellCardNumber,
+          cardExpiry: upsellCardExpiry,
+          cardCvv: upsellCardCvv,
+          cardPostalCode: upsellCardPostalCode,
+          cardAddressNumber: upsellCardAddressNumber,
+        } : {}),
+      }),
+    })
+    const data = await res.json()
+    setUpsellLoading(false)
+    if (data.pixQrCode) {
+      setUpsellPixData({ qrCode: data.pixQrCode, payload: data.pixPayload })
+    } else if (data.cardSuccess) {
+      setUpsellSuccess(true)
+    } else {
+      setUpsellError(data.error ?? 'Erro ao processar. Tente novamente.')
     }
   }
 
@@ -325,68 +367,60 @@ function CheckoutForm() {
           <p className="font-bold text-[#141F0C] text-base">Aguardando pagamento</p>
           <p className="text-[#476B18] text-sm mt-1 leading-relaxed">Você receberá um e-mail assim que o PIX for confirmado.</p>
         </div>
+        <UpsellBump
+          upsellPaymentMethod={upsellPaymentMethod} setUpsellPaymentMethod={setUpsellPaymentMethod}
+          upsellLoading={upsellLoading} upsellPixData={upsellPixData} upsellSuccess={upsellSuccess}
+          upsellCopied={upsellCopied} setUpsellCopied={setUpsellCopied} upsellError={upsellError}
+          upsellCardNumber={upsellCardNumber} setUpsellCardNumber={setUpsellCardNumber}
+          upsellCardExpiry={upsellCardExpiry} setUpsellCardExpiry={setUpsellCardExpiry}
+          upsellCardCvv={upsellCardCvv} setUpsellCardCvv={setUpsellCardCvv}
+          upsellCardPostalCode={upsellCardPostalCode} setUpsellCardPostalCode={setUpsellCardPostalCode}
+          upsellCardAddressNumber={upsellCardAddressNumber} setUpsellCardAddressNumber={setUpsellCardAddressNumber}
+          handleUpsell={handleUpsell}
+        />
       </div>
     )
   }
 
   if (cardSuccess) {
     return (
-      <div className="bg-white px-8 py-8 w-full text-center flex flex-col gap-3">
-        <p className="text-3xl">✓</p>
-        <p className="font-bold text-[#141F0C] text-lg">Pagamento confirmado!</p>
-        <p className="text-[#476B18] text-sm leading-relaxed">Você receberá um e-mail em instantes.</p>
+      <div className="bg-white px-8 py-8 w-full flex flex-col gap-6">
+        <div className="text-center flex flex-col gap-3">
+          <p className="text-3xl">✓</p>
+          <p className="font-bold text-[#141F0C] text-lg">Pagamento confirmado!</p>
+          <p className="text-[#476B18] text-sm leading-relaxed">Você receberá um e-mail em instantes.</p>
+        </div>
+        <UpsellBump
+          upsellPaymentMethod={upsellPaymentMethod} setUpsellPaymentMethod={setUpsellPaymentMethod}
+          upsellLoading={upsellLoading} upsellPixData={upsellPixData} upsellSuccess={upsellSuccess}
+          upsellCopied={upsellCopied} setUpsellCopied={setUpsellCopied} upsellError={upsellError}
+          upsellCardNumber={upsellCardNumber} setUpsellCardNumber={setUpsellCardNumber}
+          upsellCardExpiry={upsellCardExpiry} setUpsellCardExpiry={setUpsellCardExpiry}
+          upsellCardCvv={upsellCardCvv} setUpsellCardCvv={setUpsellCardCvv}
+          upsellCardPostalCode={upsellCardPostalCode} setUpsellCardPostalCode={setUpsellCardPostalCode}
+          upsellCardAddressNumber={upsellCardAddressNumber} setUpsellCardAddressNumber={setUpsellCardAddressNumber}
+          handleUpsell={handleUpsell}
+        />
       </div>
     )
   }
 
   return (
     <>
-      {/* cabeçalho escuro com seletor de produto e preço */}
+      {/* cabeçalho escuro com preço */}
       <div className="px-8 py-7 text-center" style={{ backgroundColor: '#0D1608' }}>
-        <div className="flex rounded-xl overflow-hidden mb-6 border border-white/10">
-          <button type="button" onClick={() => setSelectedProduct('ebook')}
-            className="flex-1 py-3 px-3 text-center transition-colors"
-            style={selectedProduct === 'ebook' ? { backgroundColor: LIME, color: DARK } : { color: 'rgba(255,255,255,0.55)' }}>
-            <div className="font-black text-sm leading-tight">Ebook</div>
-            <div className="text-xs font-semibold mt-0.5">R$57</div>
-          </button>
-          <button type="button" onClick={() => setSelectedProduct('session')}
-            className="flex-1 py-3 px-3 text-center transition-colors border-l border-white/10"
-            style={selectedProduct === 'session' ? { backgroundColor: LIME, color: DARK } : { color: 'rgba(255,255,255,0.55)' }}>
-            <div className="font-black text-sm leading-tight">Ebook + Sessão 1hr</div>
-            <div className="text-xs font-semibold mt-0.5">R$197</div>
-          </button>
+        <div className="flex items-center justify-center gap-4 mb-1">
+          <span className="text-gray-500 text-lg line-through">R$ 97</span>
+          <span className="text-xs font-black px-2.5 py-1 rounded-full" style={{ backgroundColor: LIME + '22', color: LIME }}>41% OFF</span>
         </div>
-
-        {selectedProduct === 'ebook' ? (
-          <>
-            <div className="flex items-center justify-center gap-4 mb-1">
-              <span className="text-gray-500 text-lg line-through">R$ 97</span>
-              <span className="text-xs font-black px-2.5 py-1 rounded-full" style={{ backgroundColor: LIME + '22', color: LIME }}>41% OFF</span>
-            </div>
-            <div className="font-black text-white leading-none" style={{ fontSize: 'clamp(3.5rem, 14vw, 6rem)' }}>
-              R$<span style={{ color: LIME }}>57</span>
-            </div>
-            <p className="text-gray-400 text-sm mt-2">Pagamento único · PIX ou cartão · Acesso permanente</p>
-          </>
-        ) : (
-          <>
-            <div className="font-black text-white leading-none" style={{ fontSize: 'clamp(3.5rem, 14vw, 6rem)' }}>
-              R$<span style={{ color: LIME }}>197</span>
-            </div>
-            <p className="text-gray-400 text-sm mt-2">Ebook completo + 1hr de sessão individual · Pagamento único</p>
-          </>
-        )}
+        <div className="font-black text-white leading-none" style={{ fontSize: 'clamp(3.5rem, 14vw, 6rem)' }}>
+          R$<span style={{ color: LIME }}>57</span>
+        </div>
+        <p className="text-gray-400 text-sm mt-2">Pagamento único · PIX ou cartão · Acesso permanente</p>
       </div>
 
       {/* formulário */}
       <div className="bg-white px-8 pt-7 pb-8">
-        {selectedProduct === 'session' && (
-          <div className="mb-5 rounded-2xl px-5 py-4 text-sm leading-relaxed" style={{ backgroundColor: '#f0fdf4', border: '1.5px solid #d8f3dc', color: '#2d5a1b' }}>
-            <p className="font-black text-base mb-1" style={{ color: DARK }}>O que é a sessão?</p>
-            <p>1 hora de consultoria individual sobre agrofloresta sintrópica — para tirar dúvidas iniciais do seu projeto: escolha de espécies, desenho de consórcio, leitura de área ou qualquer outra questão que estiver travando o seu próximo passo.</p>
-          </div>
-        )}
         <form onSubmit={handleBuy} className="flex flex-col gap-4 w-full">
           <input type="text" required placeholder="Seu nome completo" value={name} onChange={e => setName(e.target.value)} className={inputCls} />
           <input type="email" required placeholder="Seu melhor e-mail" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
@@ -439,6 +473,129 @@ function CheckoutForm() {
         </div>
       </div>
     </>
+  )
+}
+
+interface UpsellBumpProps {
+  upsellPaymentMethod: 'pix' | 'card'
+  setUpsellPaymentMethod: (v: 'pix' | 'card') => void
+  upsellLoading: boolean
+  upsellPixData: { qrCode: string; payload: string } | null
+  upsellSuccess: boolean
+  upsellCopied: boolean
+  setUpsellCopied: (v: boolean) => void
+  upsellError: string
+  upsellCardNumber: string; setUpsellCardNumber: (v: string) => void
+  upsellCardExpiry: string; setUpsellCardExpiry: (v: string) => void
+  upsellCardCvv: string; setUpsellCardCvv: (v: string) => void
+  upsellCardPostalCode: string; setUpsellCardPostalCode: (v: string) => void
+  upsellCardAddressNumber: string; setUpsellCardAddressNumber: (v: string) => void
+  handleUpsell: (e: React.FormEvent) => void
+}
+
+function UpsellBump({
+  upsellPaymentMethod, setUpsellPaymentMethod,
+  upsellLoading, upsellPixData, upsellSuccess,
+  upsellCopied, setUpsellCopied, upsellError,
+  upsellCardNumber, setUpsellCardNumber,
+  upsellCardExpiry, setUpsellCardExpiry,
+  upsellCardCvv, setUpsellCardCvv,
+  upsellCardPostalCode, setUpsellCardPostalCode,
+  upsellCardAddressNumber, setUpsellCardAddressNumber,
+  handleUpsell,
+}: UpsellBumpProps) {
+  const inputCls = "border-2 border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 bg-white focus:outline-none focus:border-[#7DC142] transition-colors"
+
+  function handleCopyUpsell() {
+    if (!upsellPixData) return
+    navigator.clipboard.writeText(upsellPixData.payload)
+    setUpsellCopied(true)
+    setTimeout(() => setUpsellCopied(false), 2000)
+  }
+
+  if (upsellSuccess) {
+    return (
+      <div className="w-full rounded-2xl px-6 py-5 text-center" style={{ backgroundColor: '#f0fdf4', border: '2px solid #d8f3dc' }}>
+        <p className="text-2xl mb-2">✓</p>
+        <p className="font-bold text-[#141F0C] text-base">Sessão adicionada!</p>
+        <p className="text-[#476B18] text-sm mt-1">Você receberá o link de agendamento por e-mail em instantes.</p>
+      </div>
+    )
+  }
+
+  if (upsellPixData) {
+    return (
+      <div className="w-full rounded-2xl px-6 py-5 flex flex-col gap-4" style={{ border: '2px dashed #7DC142', backgroundColor: '#f0fdf4' }}>
+        <p className="font-bold text-[#141F0C] text-sm text-center">PIX da sessão — escaneie para concluir</p>
+        <div className="flex justify-center">
+          <img src={`data:image/png;base64,${upsellPixData.qrCode}`} alt="QR Code PIX Sessão" className="w-44 h-44 rounded-xl border-2 border-[#7DC142]" />
+        </div>
+        <div className="flex gap-2 items-stretch">
+          <input readOnly value={upsellPixData.payload} className="flex-1 border-2 border-gray-200 rounded-xl px-3 py-2.5 text-xs text-gray-600 bg-white font-mono truncate" />
+          <button type="button" onClick={handleCopyUpsell} className="px-3 py-2.5 text-white rounded-xl text-xs font-bold flex-shrink-0" style={{ backgroundColor: LIME }}>
+            {upsellCopied ? '✓' : 'Copiar'}
+          </button>
+        </div>
+        <p className="text-xs text-[#476B18] text-center">Você receberá o link de agendamento assim que o PIX for confirmado.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="w-full rounded-2xl px-6 py-5 flex flex-col gap-4" style={{ border: '2px dashed #7DC142', backgroundColor: '#f9fff5' }}>
+      <div className="flex items-start gap-3">
+        <span className="text-lg mt-0.5">💡</span>
+        <div>
+          <p className="font-black text-[#141F0C] text-base leading-tight">Oferta especial · só agora</p>
+          <p className="text-[#476B18] text-sm mt-1 leading-relaxed">
+            Adicione <strong>1hr de consultoria individual</strong> sobre agrofloresta sintrópica — tire dúvidas do seu projeto: escolha de espécies, desenho de consórcio, leitura de área.
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        <span className="text-gray-400 text-sm line-through">R$197</span>
+        <span className="font-black text-[#141F0C] text-xl">R$140</span>
+        <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: LIME + '22', color: LIME }}>oferta exclusiva</span>
+      </div>
+      <form onSubmit={handleUpsell} className="flex flex-col gap-3">
+        <div className="flex rounded-xl overflow-hidden border-2 border-gray-200">
+          <button type="button" onClick={() => setUpsellPaymentMethod('pix')}
+            className="flex-1 py-3 text-sm font-bold transition-colors"
+            style={upsellPaymentMethod === 'pix' ? { backgroundColor: LIME, color: '#fff' } : { backgroundColor: '#fff', color: FOREST }}>
+            PIX
+          </button>
+          <button type="button" onClick={() => setUpsellPaymentMethod('card')}
+            className="flex-1 py-3 text-sm font-bold transition-colors border-l-2 border-gray-200"
+            style={upsellPaymentMethod === 'card' ? { backgroundColor: LIME, color: '#fff' } : { backgroundColor: '#fff', color: FOREST }}>
+            Cartão
+          </button>
+        </div>
+        {upsellPaymentMethod === 'card' && (
+          <div className="flex flex-col gap-2">
+            <input type="text" required inputMode="numeric" placeholder="Número do cartão" value={upsellCardNumber}
+              onChange={e => setUpsellCardNumber(formatCardNumber(e.target.value))} className={inputCls} />
+            <div className="flex gap-2">
+              <input type="text" required inputMode="numeric" placeholder="Validade (MM/AA)" value={upsellCardExpiry}
+                onChange={e => setUpsellCardExpiry(formatExpiry(e.target.value))} className={inputCls + ' flex-1'} />
+              <input type="text" required inputMode="numeric" placeholder="CVV" value={upsellCardCvv}
+                onChange={e => setUpsellCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))} className={inputCls + ' w-24'} />
+            </div>
+            <div className="flex gap-2">
+              <input type="text" required inputMode="numeric" placeholder="CEP" value={upsellCardPostalCode}
+                onChange={e => setUpsellCardPostalCode(formatCep(e.target.value))} className={inputCls + ' flex-1'} />
+              <input type="text" required placeholder="Número" value={upsellCardAddressNumber}
+                onChange={e => setUpsellCardAddressNumber(e.target.value)} className={inputCls + ' w-24'} />
+            </div>
+          </div>
+        )}
+        {upsellError && <p className="text-red-500 text-xs font-medium">{upsellError}</p>}
+        <button type="submit" disabled={upsellLoading}
+          className="py-4 rounded-xl font-bold text-base transition-all disabled:opacity-60 shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-100"
+          style={{ backgroundColor: LIME, color: DARK }}>
+          {upsellLoading ? 'Aguarde...' : 'Adicionar sessão por R$140 →'}
+        </button>
+      </form>
+    </div>
   )
 }
 

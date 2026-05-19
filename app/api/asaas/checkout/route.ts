@@ -143,7 +143,7 @@ async function grantAccessAndSendEmail(email: string, productId: ProductId, paym
     const token = await createDownloadToken(email, 'ebook')
     await sendDownloadEmail(email, token)
   }
-  if (productId === 'session') {
+  if (productId === 'session' || productId === 'session_upsell') {
     const token = await createDownloadToken(email, 'ebook')
     await sendSessionPurchaseEmail(email, token)
   }

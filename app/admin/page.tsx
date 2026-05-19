@@ -296,7 +296,8 @@ export default async function AdminPage() {
 function ProductBadge({ product }: { product: string }) {
   const config: Record<string, { label: string; cls: string }> = {
     ebook:   { label: 'Ebook',            cls: 'bg-[#d8f3dc] text-[#1b4332]' },
-    session: { label: 'Ebook + Sessão',   cls: 'bg-blue-100 text-blue-700' },
+    session:        { label: 'Ebook + Sessão',   cls: 'bg-blue-100 text-blue-700' },
+    session_upsell: { label: 'Sessão (upsell)', cls: 'bg-indigo-100 text-indigo-700' },
     bundle:  { label: 'Bundle',           cls: 'bg-[#1b4332] text-white' },
     course:  { label: 'Curso',            cls: 'bg-purple-100 text-purple-700' },
   }
