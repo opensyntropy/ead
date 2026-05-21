@@ -287,7 +287,7 @@ function CheckoutForm() {
 
   async function handleBuy(e: React.FormEvent) {
     e.preventDefault()
-    ;(window as any).fbq?.('track', 'InitiateCheckout', { value: 57, currency: 'BRL', num_items: 1 })
+    ;(window as any).fbq?.('track', 'InitiateCheckout', { value: 67, currency: 'BRL', num_items: 1 })
     setLoading(true)
     setError('')
     const res = await fetch('/api/asaas/checkout', {
@@ -303,10 +303,10 @@ function CheckoutForm() {
     setLoading(false)
     if (data.pixQrCode) {
       setPixData({ qrCode: data.pixQrCode, payload: data.pixPayload })
-      ;(window as any).fbq?.('track', 'Purchase', { value: 57, currency: 'BRL' })
+      ;(window as any).fbq?.('track', 'Purchase', { value: 67, currency: 'BRL' })
     } else if (data.cardSuccess) {
       setCardSuccess(true)
-      ;(window as any).fbq?.('track', 'Purchase', { value: 57, currency: 'BRL' })
+      ;(window as any).fbq?.('track', 'Purchase', { value: 67, currency: 'BRL' })
     } else {
       setError(data.error ?? 'Erro ao processar pagamento. Tente novamente.')
     }
@@ -410,11 +410,11 @@ function CheckoutForm() {
       {/* cabeçalho escuro com preço */}
       <div className="px-8 py-7 text-center" style={{ backgroundColor: '#0D1608' }}>
         <div className="flex items-center justify-center gap-4 mb-1">
-          <span className="text-gray-500 text-lg line-through">R$ 97</span>
+          <span className="text-gray-500 text-lg line-through">R$ 107</span>
           <span className="text-xs font-black px-2.5 py-1 rounded-full" style={{ backgroundColor: LIME + '22', color: LIME }}>41% OFF</span>
         </div>
         <div className="font-black text-white leading-none" style={{ fontSize: 'clamp(3.5rem, 14vw, 6rem)' }}>
-          R$<span style={{ color: LIME }}>57</span>
+          R$<span style={{ color: LIME }}>67</span>
         </div>
         <p className="text-gray-400 text-sm mt-2">Pagamento único · PIX ou cartão · Acesso permanente</p>
       </div>
@@ -696,7 +696,7 @@ export default function EbookLandingPage() {
   const nextPage = useCallback(() => setLightbox(i => i !== null ? (i + 1) % PAGES.length : null), [])
 
   useEffect(() => {
-    ;(window as any).fbq?.('track', 'ViewContent', { content_name: 'Guia Agrofloresta Sintrópica', content_type: 'product', value: 57, currency: 'BRL' })
+    ;(window as any).fbq?.('track', 'ViewContent', { content_name: 'Guia Agrofloresta Sintrópica', content_type: 'product', value: 67, currency: 'BRL' })
   }, [])
 
   return (
@@ -1026,7 +1026,7 @@ export default function EbookLandingPage() {
 
           {/* nota de urgência abaixo do card */}
           <p className="text-center text-xs text-gray-500 mt-5 leading-relaxed">
-            Após o período de lançamento o preço volta a <strong className="text-gray-400">R$ 97</strong>.
+            Após o período de lançamento o preço volta a <strong className="text-gray-400">R$ 107</strong>.
             Compre agora e garanta o valor atual para sempre.
           </p>
         </div>

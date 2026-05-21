@@ -180,6 +180,70 @@ export async function sendSessionPurchaseEmail(email: string, downloadToken: str
   if (sendError2) throw new Error(`Resend error: ${JSON.stringify(sendError2)}`)
 }
 
+export async function sendRecoveryEmail(email: string, name: string | null, productName: string, checkoutUrl: string) {
+  const greeting = name ? `Olá, ${name.split(' ')[0]},` : 'Olá,'
+  const { error } = await resend.emails.send({
+    from: process.env.NODE_ENV === 'production'
+      ? 'Michel Bottan <nao-responda@opensyntropy.earth>'
+      : 'Michel Bottan <onboarding@resend.dev>',
+    to: process.env.NODE_ENV === 'production' ? email : 'devops@opensyntropy.earth',
+    subject: `Você não finalizou sua compra — ${productName}`,
+    html: `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F2F0E9;font-family:Georgia,serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F2F0E9;padding:40px 0">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;max-width:560px;width:100%">
+
+        <tr>
+          <td style="background:#141F0C;padding:36px 40px;text-align:center">
+            <p style="margin:0;color:#7DC142;font-size:13px;letter-spacing:3px;text-transform:uppercase;font-family:Arial,sans-serif">OpenSyntropy</p>
+            <h1 style="margin:12px 0 0;color:#ffffff;font-size:24px;font-weight:700;line-height:1.3">
+              Falta pouco para finalizar
+            </h1>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:40px 40px 32px">
+            <p style="margin:0 0 20px;color:#1a1a1a;font-size:16px;line-height:1.7">${greeting}</p>
+            <p style="margin:0 0 20px;color:#1a1a1a;font-size:16px;line-height:1.7">
+              Você iniciou a compra de <strong>${productName}</strong> mas não chegou a finalizar o pagamento.
+            </p>
+            <p style="margin:0 0 32px;color:#1a1a1a;font-size:16px;line-height:1.7">
+              Se ainda tiver interesse, o botão abaixo leva direto para o checkout:
+            </p>
+
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr><td align="center">
+                <a href="${checkoutUrl}" style="display:inline-block;background:#7DC142;color:#141F0C;font-family:Arial,sans-serif;font-size:17px;font-weight:700;text-decoration:none;padding:18px 40px;border-radius:10px">
+                  Finalizar minha compra →
+                </a>
+              </td></tr>
+            </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="background:#f4f3ee;padding:20px 40px;text-align:center">
+            <p style="margin:0;color:#aaa;font-size:12px;font-family:Arial,sans-serif">
+              Michel Bottan · OpenSyntropy<br>
+              Você recebeu este e-mail porque iniciou uma compra em opensyntropy.earth
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+  })
+  if (error) throw new Error(`Resend error: ${JSON.stringify(error)}`)
+}
+
 export async function sendPurchaseNotification(buyerEmail: string, productId: string, paymentId: string) {
   const { error: sendError3 } = await resend.emails.send({
     from: process.env.NODE_ENV === 'production'

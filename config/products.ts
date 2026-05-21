@@ -3,8 +3,8 @@ export const PRODUCTS = {
     id: 'ebook',
     name: 'Ebook',
     description: 'Leitura completa do ebook Agricultura Sintropica com todos os capítulos e infográficos.',
-    price: 5700, // centavos
-    priceFormatted: 'R$ 57',
+    price: 6700, // centavos
+    priceFormatted: 'R$ 67',
     asaasDescription: 'Ebook Agricultura Sintropica',
   },
   course: {
