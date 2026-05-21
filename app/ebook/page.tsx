@@ -722,7 +722,7 @@ export default function EbookLandingPage() {
 
           {/* 1 — título (mobile: row 1 | desktop: col 1 row 1) */}
           <div className="md:row-start-1 md:col-start-1 min-w-0 text-center md:text-left">
-            <p className="text-white text-base md:text-lg font-semibold uppercase tracking-[0.2em] mb-3 md:mb-4">
+            <p className="font-sans text-white text-base md:text-lg font-semibold uppercase tracking-[0.2em] mb-3 md:mb-4">
               Guia de Introdução à
             </p>
             <h1 className="leading-none" style={{ fontFamily: 'var(--font-display)' }}>
@@ -752,11 +752,11 @@ export default function EbookLandingPage() {
 
           {/* 3 — corpo: citação + para quem + CTA (mobile: row 3 | desktop: col 1 row 2) */}
           <div className="md:row-start-2 md:col-start-1 min-w-0 text-center md:text-left">
-            <p className="text-xl md:text-2xl text-gray-300 leading-relaxed mb-5 italic font-light">
+            <p className="font-sans text-xl md:text-2xl text-gray-200 leading-snug mb-5 italic font-semibold">
               "Você está aqui porque algo em você já decidiu."
             </p>
 
-            <div className="mb-8 flex flex-col gap-3 text-left">
+            <div className="mb-0 flex flex-col gap-2.5 text-left">
               {[
                 'Em transição para o campo e sem saber por onde começar.',
                 'Quer criar abundância real, para si e para quem vem depois.',
@@ -764,17 +764,11 @@ export default function EbookLandingPage() {
                 'Ainda não tem terra, mas sabe que vai ter.',
               ].map((line, i) => (
                 <div key={i} className="flex items-start gap-3">
-                  <span className="mt-[6px] w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: LIME }} />
-                  <p className="text-gray-200 text-lg md:text-xl leading-snug">{line}</p>
+                  <span className="mt-[7px] w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: LIME }} />
+                  <p className="font-sans text-gray-100 text-lg md:text-xl leading-snug font-semibold">{line}</p>
                 </div>
               ))}
             </div>
-
-            <a href="#comprar"
-              className="inline-block text-center font-black text-xl md:text-2xl px-10 py-5 rounded-2xl shadow-2xl hover:brightness-110 active:scale-[0.99] transition-all"
-              style={{ backgroundColor: LIME, color: DARK }}>
-              Quero este guia →
-            </a>
           </div>
 
         </div>

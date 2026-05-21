@@ -13,7 +13,8 @@ const lora = Lora({
 const lato = Lato({
   variable: '--font-sans',
   subsets: ['latin'],
-  weight: ['300', '400', '700'],
+  weight: ['300', '400', '700', '900'],
+  style: ['normal', 'italic'],
   display: 'swap',
 })
 
