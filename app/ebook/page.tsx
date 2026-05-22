@@ -825,14 +825,15 @@ export default function EbookLandingPage() {
       <section style={{ backgroundColor: CREAM }} className="pb-24 px-6">
         <div className="max-w-2xl mx-auto">
           <p className="font-sans text-sm md:text-base uppercase tracking-widest mb-8 font-bold text-center" style={{ color: FOREST }}>
-            Este guia é para você se reconhece algum destes pensamentos:
+            Este guia é para você. Especialmente se:
           </p>
           <div className="flex flex-col gap-4">
             {[
               'Quero começar, mas tenho medo de tomar as decisões erradas logo no início.',
               'Preciso entender a lógica antes de plantar qualquer coisa.',
-              'Tenho terra. Cada ano sem um sistema funcionando é um ano perdido.',
-              'Ainda não tenho terra, mas quando vier, quero estar pronto.',
+              'Minha terra está parada sem produzir nada e não sei por onde começar.',
+              'Ainda não tenho terra, mas quero ir me preparando.',
+              'Quero comprar uma terra e preciso de mais conhecimento para saber como escolher.',
             ].map((line, i) => (
               <div key={i} className="flex items-start gap-4 rounded-2xl px-6 py-5 bg-white shadow-sm">
                 <span className="mt-[6px] w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: LIME }} />
