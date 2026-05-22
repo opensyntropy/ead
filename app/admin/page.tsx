@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import AdminActions from './AdminActions'
 import AdminAccessTabs from './AdminAccessTabs'
 import AdminHeader from './AdminHeader'
+import TrafficChart, { type ChartPoint } from './TrafficChart'
 
 export const dynamic = 'force-dynamic'
 
@@ -86,7 +87,7 @@ export default async function AdminPage() {
   const weekISO = new Date(Date.now() - 7 * 86400000).toISOString()
   const monthISO = new Date(Date.now() - 30 * 86400000).toISOString()
 
-  const [productsRes, refundsRes, pixRes, downloadsRes, visitsTodayRes, visitsWeekRes, visitsMonthRes, utmRes] = await Promise.all([
+  const [productsRes, refundsRes, pixRes, downloadsRes, visitsTodayRes, visitsWeekRes, visitsMonthRes, utmRes, visitsAllRes] = await Promise.all([
     service.from('user_products').select('*').order('created_at', { ascending: false }),
     service.from('refund_requests').select('*').order('created_at', { ascending: false }),
     service.from('pix_charges').select('*').order('created_at', { ascending: false }),
@@ -95,6 +96,7 @@ export default async function AdminPage() {
     service.from('page_visits').select('id', { count: 'exact', head: true }).eq('page', '/ebook').gte('created_at', weekISO),
     service.from('page_visits').select('id', { count: 'exact', head: true }).eq('page', '/ebook').gte('created_at', monthISO),
     service.from('page_visits').select('utm_source').eq('page', '/ebook').gte('created_at', monthISO),
+    service.from('page_visits').select('created_at').eq('page', '/ebook').gte('created_at', monthISO),
   ])
 
   const visitsToday = visitsTodayRes.count ?? 0
@@ -106,6 +108,27 @@ export default async function AdminPage() {
     utmCounts[src] = (utmCounts[src] ?? 0) + 1
   }
   const utmBreakdown = Object.entries(utmCounts).sort((a, b) => b[1] - a[1])
+
+  // Agrega por dia para o gráfico (últimos 30 dias)
+  const toDay = (iso: string) => iso.slice(0, 10)
+  const visitsByDay: Record<string, number> = {}
+  for (const row of (visitsAllRes.data ?? [])) visitsByDay[toDay(row.created_at)] = (visitsByDay[toDay(row.created_at)] ?? 0) + 1
+  const checkoutsByDay: Record<string, number> = {}
+  for (const row of (pixRes.data ?? [])) {
+    const d = toDay(row.created_at)
+    if (d >= toDay(monthISO)) checkoutsByDay[d] = (checkoutsByDay[d] ?? 0) + 1
+  }
+  const conversionsByDay: Record<string, number> = {}
+  for (const row of (productsRes.data ?? [])) {
+    const d = toDay(row.created_at)
+    if (d >= toDay(monthISO)) conversionsByDay[d] = (conversionsByDay[d] ?? 0) + 1
+  }
+  const chartData: ChartPoint[] = Array.from({ length: 30 }, (_, i) => {
+    const d = new Date(Date.now() - (29 - i) * 86400000)
+    const key = d.toISOString().slice(0, 10)
+    const label = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+    return { label, visits: visitsByDay[key] ?? 0, checkouts: checkoutsByDay[key] ?? 0, conversions: conversionsByDay[key] ?? 0 }
+  })
 
   const pixRows: PixCharge[] = pixRes.data ?? []
   const pendingPix = pixRows.filter(p => p.status === 'pending')
@@ -172,6 +195,8 @@ export default async function AdminPage() {
               <p className="text-4xl font-bold text-[#1b4332]">{visitsMonth}</p>
             </div>
           </div>
+          <TrafficChart data={chartData} />
+
           {utmBreakdown.length > 0 && (
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
               <table className="w-full text-base">
