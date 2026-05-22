@@ -54,6 +54,17 @@ export async function GET(request: Request) {
     }
   }
 
-  console.log(`cron/recovery: ${sent} e-mails enviados`)
-  return NextResponse.json({ sent })
+  // Arquiva PIX com recovery enviado há mais de 48h e ainda pendente
+  const expiryCutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
+  const { data: expired } = await supabase
+    .from('pix_charges')
+    .update({ status: 'expired' })
+    .eq('status', 'pending')
+    .not('recovery_sent_at', 'is', null)
+    .lt('recovery_sent_at', expiryCutoff)
+    .select('id')
+
+  const expiredCount = expired?.length ?? 0
+  console.log(`cron/recovery: ${sent} e-mails enviados, ${expiredCount} cobranças arquivadas`)
+  return NextResponse.json({ sent, expired: expiredCount })
 }

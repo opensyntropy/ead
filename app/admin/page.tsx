@@ -133,7 +133,7 @@ export default async function AdminPage() {
   const weekISO = new Date(Date.now() - 7 * 86400000).toISOString()
   const monthISO = new Date(Date.now() - 30 * 86400000).toISOString()
 
-  const [productsRes, refundsRes, pixRes, downloadsRes, visitsTodayRes, visitsWeekRes, visitsMonthRes, visitsRawRes] = await Promise.all([
+  const [productsRes, refundsRes, pixRes, downloadsRes, visitsTodayRes, visitsWeekRes, visitsMonthRes, visitsRawRes, expiredRes] = await Promise.all([
     service.from('user_products').select('*').order('created_at', { ascending: false }),
     service.from('refund_requests').select('*').order('created_at', { ascending: false }),
     service.from('pix_charges').select('*,payment_method,installment_count').order('created_at', { ascending: false }),
@@ -142,6 +142,7 @@ export default async function AdminPage() {
     service.from('page_visits').select('id', { count: 'exact', head: true }).eq('page', '/ebook').gte('created_at', weekISO),
     service.from('page_visits').select('id', { count: 'exact', head: true }).eq('page', '/ebook').gte('created_at', monthISO),
     service.from('page_visits').select('created_at,utm_source,utm_content,referer').eq('page', '/ebook').gte('created_at', monthISO),
+    service.from('pix_charges').select('id', { count: 'exact', head: true }).eq('status', 'expired').gte('created_at', monthISO),
   ])
 
   const visitsToday = visitsTodayRes.count ?? 0
@@ -167,6 +168,7 @@ export default async function AdminPage() {
   for (const r of visitsRawRes.data ?? []) {
     if (r.utm_content) adVisits[r.utm_content] = (adVisits[r.utm_content] ?? 0) + 1
   }
+  const expiredCount = expiredRes.count ?? 0
   const pixRows: PixCharge[] = pixRes.data ?? []
   const pendingPix = pixRows.filter(p => p.status === 'pending')
   const pixUtmMap = Object.fromEntries(pixRows.map(p => [p.asaas_payment_id, p]))
@@ -223,7 +225,7 @@ export default async function AdminPage() {
       <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
 
         {/* Stat cards */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
             <p className="text-sm text-gray-400 uppercase tracking-wide mb-1 font-medium">Acessos ativos</p>
             <p className="text-4xl font-bold text-[#1b4332]">{rows.length}</p>
@@ -231,6 +233,10 @@ export default async function AdminPage() {
           <div className={`bg-white rounded-xl border px-5 py-4 ${pendingPix.length > 0 ? 'border-yellow-300' : 'border-gray-200'}`}>
             <p className="text-sm text-gray-400 uppercase tracking-wide mb-1 font-medium">PIX pendentes</p>
             <p className={`text-4xl font-bold ${pendingPix.length > 0 ? 'text-yellow-600' : 'text-gray-300'}`}>{pendingPix.length}</p>
+          </div>
+          <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
+            <p className="text-sm text-gray-400 uppercase tracking-wide mb-1 font-medium">Não efetivados (30d)</p>
+            <p className={`text-4xl font-bold ${expiredCount > 0 ? 'text-orange-500' : 'text-gray-300'}`}>{expiredCount}</p>
           </div>
           <div className={`bg-white rounded-xl border px-5 py-4 ${pendingRefunds > 0 ? 'border-red-300' : 'border-gray-200'}`}>
             <p className="text-sm text-gray-400 uppercase tracking-wide mb-1 font-medium">Devoluções pendentes</p>
