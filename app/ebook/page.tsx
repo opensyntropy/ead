@@ -752,8 +752,8 @@ export default function EbookLandingPage() {
 
           {/* 3 — corpo: citação + para quem + CTA (mobile: row 3 | desktop: col 1 row 2) */}
           <div className="md:row-start-2 md:col-start-1 min-w-0 text-center md:text-left">
-            <p className="font-sans text-xl md:text-2xl text-gray-200 leading-snug mb-5 italic font-semibold">
-              "Você está aqui porque algo em você já decidiu."
+            <p className="font-sans text-xl md:text-2xl text-gray-200 leading-snug mb-5 font-semibold">
+              O primeiro guia de agrofloresta sintrópica que te conduz da teoria ao planejamento da sua agrofloresta.
             </p>
 
             <div className="mb-0 flex flex-col gap-2.5 text-left">
@@ -782,8 +782,6 @@ export default function EbookLandingPage() {
           <span>27 capítulos</span>
           <span>·</span>
           <span>25+ infográficos</span>
-          <span>·</span>
-          <span>Garantia 7 dias</span>
         </div>
       </div>
 
