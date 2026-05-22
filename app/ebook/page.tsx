@@ -750,18 +750,22 @@ export default function EbookLandingPage() {
             </div>
           </div>
 
-          {/* 3 — corpo: citação + para quem + CTA (mobile: row 3 | desktop: col 1 row 2) */}
+          {/* 3 — corpo: voz na cabeça + bullets como pensamentos internos */}
           <div className="md:row-start-2 md:col-start-1 min-w-0 text-center md:text-left">
-            <p className="font-sans text-xl md:text-2xl text-gray-200 leading-snug mb-5 font-semibold">
-              O primeiro guia de agrofloresta sintrópica que te conduz da teoria ao planejamento da sua agrofloresta.
+            <p className="font-sans text-xl md:text-2xl text-gray-200 leading-snug mb-5 font-semibold italic">
+              Uma terra sua, comida limpa, um futuro que faz mais sentido do que o que o mundo convencional oferece. Algo em você já decidiu.
+            </p>
+
+            <p className="font-sans text-sm md:text-base uppercase tracking-widest mb-3 font-bold" style={{ color: LIME }}>
+              Este guia é para você se reconhece algum destes pensamentos:
             </p>
 
             <div className="mb-0 flex flex-col gap-2.5 text-left">
               {[
-                'Em transição para o campo e sem saber por onde começar.',
-                'Quer criar abundância real, para si e para quem vem depois.',
-                'Tem terra e precisa de direção.',
-                'Ainda não tem terra, mas sabe que vai ter.',
+                '"Quero começar, mas tenho medo de tomar as decisões erradas logo no início."',
+                '"Preciso entender a lógica antes de plantar qualquer coisa."',
+                '"Tenho terra. Cada ano sem um sistema funcionando é um ano perdido."',
+                '"Ainda não tenho terra, mas quando vier, quero estar pronto."',
               ].map((line, i) => (
                 <div key={i} className="flex items-start gap-3">
                   <span className="mt-[7px] w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: LIME }} />
