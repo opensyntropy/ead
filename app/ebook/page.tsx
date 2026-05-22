@@ -273,6 +273,12 @@ function CheckoutForm() {
     const fromUrl: Record<string, string> = {}
     UTM_KEYS.forEach(k => { const v = searchParams.get(k); if (v) fromUrl[k] = v })
 
+    // fbclid como fallback de origem quando não há UTMs explícitos
+    if (!fromUrl.utm_source && searchParams.has('fbclid')) {
+      fromUrl.utm_source = 'facebook'
+      fromUrl.utm_medium = 'paid'
+    }
+
     if (Object.keys(fromUrl).length > 0) {
       sessionStorage.setItem('utm', JSON.stringify(fromUrl))
       setUtmParams(fromUrl)
@@ -480,6 +486,15 @@ function CheckoutForm() {
             style={{ backgroundColor: LIME, color: DARK }}>
             {loading ? 'Aguarde...' : paymentMethod === 'pix' ? 'Pagar com PIX →' : 'Pagar com cartão →'}
           </button>
+
+          {paymentMethod === 'card' && (
+            <div className="flex items-center justify-center gap-2 text-xs text-gray-400 bg-gray-50 rounded-xl py-3 px-4">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-green-500 flex-shrink-0">
+                <path fillRule="evenodd" d="M12 1.5a5.25 5.25 0 0 0-5.25 5.25v3a3 3 0 0 0-3 3v6.75a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3v-6.75a3 3 0 0 0-3-3v-3c0-2.9-2.35-5.25-5.25-5.25Zm3.75 8.25v-3a3.75 3.75 0 1 0-7.5 0v3h7.5Z" clipRule="evenodd" />
+              </svg>
+              <span>Pagamento 100% seguro · criptografia SSL · processado pela Asaas</span>
+            </div>
+          )}
         </form>
 
         <div className="mt-6 flex items-center justify-center gap-2 text-xs text-gray-400">
@@ -712,14 +727,19 @@ export default function EbookLandingPage() {
 
   useEffect(() => {
     const p = new URLSearchParams(window.location.search)
+    // fbclid é injetado automaticamente pelo Meta em qualquer clique de anúncio
+    const hasFbclid = p.has('fbclid')
+    const utmSource   = p.get('utm_source')   ?? (hasFbclid ? 'facebook' : null)
+    const utmMedium   = p.get('utm_medium')   ?? (hasFbclid ? 'paid' : null)
+    const utmCampaign = p.get('utm_campaign') ?? null
     fetch('/api/track', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         page: '/ebook',
-        utm_source: p.get('utm_source'),
-        utm_medium: p.get('utm_medium'),
-        utm_campaign: p.get('utm_campaign'),
+        utm_source: utmSource,
+        utm_medium: utmMedium,
+        utm_campaign: utmCampaign,
         referer: document.referrer || null,
       }),
     }).catch(() => {})
