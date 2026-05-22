@@ -60,6 +60,9 @@ export const metadata: Metadata = {
     description: 'O primeiro guia de ponta a ponta sobre agrofloresta sintrópica. 207 páginas, 27 capítulos, 25+ infográficos exclusivos.',
     images: ['/api/og'],
   },
+  other: {
+    'facebook-domain-verification': '3u0kow8o18m8ns1vfz1q3f723zb1v1',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
