@@ -42,34 +42,42 @@ function PaymentBadge({ method, installments }: { method: string | null; install
 
 function OriginBadge({ row }: { row?: { utm_source?: string | null; utm_medium?: string | null; utm_campaign?: string | null; utm_term?: string | null; utm_content?: string | null } }) {
   if (!row?.utm_source) return <span className="text-gray-300 text-xs">direto</span>
-  const colors: Record<string, string> = {
+
+  const srcColors: Record<string, string> = {
     facebook: 'bg-blue-100 text-blue-700',
     instagram: 'bg-pink-100 text-pink-700',
     google: 'bg-yellow-100 text-yellow-700',
     email: 'bg-purple-100 text-purple-700',
   }
-  const colorClass = colors[row.utm_source.toLowerCase()] ?? 'bg-gray-100 text-gray-600'
-  const title = [
-    `source: ${row.utm_source}`,
-    `medium: ${row.utm_medium ?? '—'}`,
-    `campaign: ${row.utm_campaign ?? '—'}`,
-    `adset: ${row.utm_term ?? '—'}`,
-    `ad: ${row.utm_content ?? '—'}`,
-  ].join(' · ')
+  const srcColor = srcColors[row.utm_source.toLowerCase()] ?? 'bg-gray-100 text-gray-600'
+
+  const fields: { label: string; value: string | null | undefined; bold?: boolean }[] = [
+    { label: 'source',   value: row.utm_source,   bold: true },
+    { label: 'medium',   value: row.utm_medium },
+    { label: 'campaign', value: row.utm_campaign },
+    { label: 'adset',    value: row.utm_term },
+    { label: 'ad',       value: row.utm_content },
+  ]
+
   return (
-    <div className="flex flex-col gap-0.5">
-      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${colorClass}`} title={title}>
-        {[row.utm_source, row.utm_campaign].filter(Boolean).join(' / ')}
+    <div className="flex flex-col gap-0.5 min-w-[180px]">
+      <span className={`inline-block self-start px-2 py-0.5 rounded-full text-xs font-semibold mb-0.5 ${srcColor}`}>
+        {row.utm_source}
       </span>
-      {row.utm_term && (
-        <span className="text-xs text-gray-400 pl-1 truncate max-w-[160px]" title={row.utm_term}>
-          adset: {row.utm_term}
-        </span>
-      )}
-      {row.utm_content && (
-        <span className="text-xs text-gray-400 pl-1 truncate max-w-[160px]" title={row.utm_content}>
-          {row.utm_content}
-        </span>
+      {fields.slice(1).map(({ label, value, bold }) =>
+        value ? (
+          <div key={label} className="flex items-baseline gap-1 text-xs">
+            <span className="text-gray-400 w-[52px] shrink-0">{label}</span>
+            <span className={`truncate max-w-[200px] ${bold ? 'font-semibold text-gray-700' : 'text-gray-600'}`} title={value}>
+              {value}
+            </span>
+          </div>
+        ) : (
+          <div key={label} className="flex items-baseline gap-1 text-xs">
+            <span className="text-gray-300 w-[52px] shrink-0">{label}</span>
+            <span className="text-gray-200">—</span>
+          </div>
+        )
       )}
     </div>
   )
@@ -123,6 +131,7 @@ interface PixCharge {
   utm_source: string | null
   utm_medium: string | null
   utm_campaign: string | null
+  utm_term: string | null
   utm_content: string | null
   payment_method: string | null
   installment_count: number | null

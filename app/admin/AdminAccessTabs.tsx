@@ -73,28 +73,39 @@ function PaymentBadge({ method, installments }: { method: string | null | undefi
 
 function OriginBadge({ row }: { row?: { utm_source?: string | null; utm_medium?: string | null; utm_campaign?: string | null; utm_term?: string | null; utm_content?: string | null } }) {
   if (!row?.utm_source) return <span className="text-gray-300 text-xs">direto</span>
-  const colors: Record<string, string> = {
+
+  const srcColors: Record<string, string> = {
     facebook: 'bg-blue-100 text-blue-700',
     instagram: 'bg-pink-100 text-pink-700',
     google: 'bg-yellow-100 text-yellow-700',
     email: 'bg-purple-100 text-purple-700',
   }
-  const colorClass = colors[row.utm_source.toLowerCase()] ?? 'bg-gray-100 text-gray-600'
-  const title = [`source: ${row.utm_source}`, `campaign: ${row.utm_campaign ?? '—'}`, `adset: ${row.utm_term ?? '—'}`, `ad: ${row.utm_content ?? '—'}`].join(' · ')
+  const srcColor = srcColors[row.utm_source.toLowerCase()] ?? 'bg-gray-100 text-gray-600'
+
+  const fields: { label: string; value: string | null | undefined }[] = [
+    { label: 'medium',   value: row.utm_medium },
+    { label: 'campaign', value: row.utm_campaign },
+    { label: 'adset',    value: row.utm_term },
+    { label: 'ad',       value: row.utm_content },
+  ]
+
   return (
-    <div className="flex flex-col gap-0.5">
-      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${colorClass}`} title={title}>
-        {[row.utm_source, row.utm_campaign].filter(Boolean).join(' / ')}
+    <div className="flex flex-col gap-0.5 min-w-[180px]">
+      <span className={`inline-block self-start px-2 py-0.5 rounded-full text-xs font-semibold mb-0.5 ${srcColor}`}>
+        {row.utm_source}
       </span>
-      {row.utm_term && (
-        <span className="text-xs text-gray-400 pl-1 truncate max-w-[160px]" title={row.utm_term}>
-          adset: {row.utm_term}
-        </span>
-      )}
-      {row.utm_content && (
-        <span className="text-xs text-gray-400 pl-1 truncate max-w-[160px]" title={row.utm_content}>
-          {row.utm_content}
-        </span>
+      {fields.map(({ label, value }) =>
+        value ? (
+          <div key={label} className="flex items-baseline gap-1 text-xs">
+            <span className="text-gray-400 w-[52px] shrink-0">{label}</span>
+            <span className="truncate max-w-[200px] text-gray-600" title={value}>{value}</span>
+          </div>
+        ) : (
+          <div key={label} className="flex items-baseline gap-1 text-xs">
+            <span className="text-gray-300 w-[52px] shrink-0">{label}</span>
+            <span className="text-gray-200">—</span>
+          </div>
+        )
       )}
     </div>
   )
@@ -106,21 +117,24 @@ function AccessTable({ rows, pixUtmMap, downloadedSet, emptyMsg }: { rows: UserP
       <table className="w-full text-base">
         <thead className="bg-[#f0fdf4] text-[#1b4332] text-sm uppercase tracking-wide font-semibold">
           <tr>
-            <th className="text-left px-4 py-3">Email</th>
+            <th className="text-left px-4 py-3">Ações</th>
             <th className="text-left px-4 py-3">Nome</th>
+            <th className="text-left px-4 py-3">Email</th>
             <th className="text-left px-4 py-3">Produto</th>
             <th className="text-left px-4 py-3">Pagamento</th>
-            <th className="text-left px-4 py-3">Origem</th>
-            <th className="text-left px-4 py-3">Data</th>
             <th className="text-left px-4 py-3">Download</th>
-            <th className="px-4 py-3 text-right">Ações</th>
+            <th className="text-left px-4 py-3">Data</th>
+            <th className="text-left px-4 py-3">Origem</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-[#d8f3dc]">
           {rows.map(row => (
             <tr key={row.id} className="hover:bg-[#f0fdf4]/60 transition-colors">
-              <td className="px-4 py-3 font-medium text-gray-800">{row.email}</td>
-              <td className="px-4 py-3 text-gray-600">{row.name ?? <span className="text-gray-300">—</span>}</td>
+              <td className="px-4 py-3">
+                <AdminActions id={row.id} email={row.email ?? ''} product={row.product} userId={row.user_id} />
+              </td>
+              <td className="px-4 py-3 text-gray-600 max-w-[140px] truncate" title={row.name ?? undefined}>{row.name ?? <span className="text-gray-300">—</span>}</td>
+              <td className="px-4 py-3 font-medium text-gray-800 max-w-[180px] truncate" title={row.email}>{row.email}</td>
               <td className="px-4 py-3"><ProductBadge product={row.product} /></td>
               <td className="px-4 py-3">
                 {row.asaas_payment_id
@@ -128,18 +142,15 @@ function AccessTable({ rows, pixUtmMap, downloadedSet, emptyMsg }: { rows: UserP
                   : <span className="text-gray-300 text-xs">manual</span>}
               </td>
               <td className="px-4 py-3">
-                {row.asaas_payment_id
-                  ? <OriginBadge row={pixUtmMap[row.asaas_payment_id]} />
-                  : <span className="text-sm text-gray-300">manual</span>}
-              </td>
-              <td className="px-4 py-3 text-gray-400 text-sm whitespace-nowrap">{fmt(row.created_at)}</td>
-              <td className="px-4 py-3">
                 {downloadedSet.has(row.email ?? '')
                   ? <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Baixado</span>
                   : <span className="text-gray-300 text-xs">—</span>}
               </td>
-              <td className="px-4 py-3 text-right">
-                <AdminActions id={row.id} email={row.email ?? ''} product={row.product} userId={row.user_id} />
+              <td className="px-4 py-3 text-gray-400 text-sm whitespace-nowrap">{fmt(row.created_at)}</td>
+              <td className="px-4 py-3">
+                {row.asaas_payment_id
+                  ? <OriginBadge row={pixUtmMap[row.asaas_payment_id]} />
+                  : <span className="text-sm text-gray-300">manual</span>}
               </td>
             </tr>
           ))}
