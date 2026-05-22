@@ -70,9 +70,8 @@ function PaymentBadge({ method, installments }: { method: string | null | undefi
   return <span className="text-gray-300 text-xs">—</span>
 }
 
-function OriginBadge({ row }: { row?: { utm_source?: string | null; utm_medium?: string | null; utm_campaign?: string | null } }) {
+function OriginBadge({ row }: { row?: { utm_source?: string | null; utm_medium?: string | null; utm_campaign?: string | null; utm_content?: string | null } }) {
   if (!row?.utm_source) return <span className="text-gray-300 text-xs">direto</span>
-  const label = [row.utm_source, row.utm_campaign].filter(Boolean).join(' / ')
   const colors: Record<string, string> = {
     facebook: 'bg-blue-100 text-blue-700',
     instagram: 'bg-pink-100 text-pink-700',
@@ -80,10 +79,18 @@ function OriginBadge({ row }: { row?: { utm_source?: string | null; utm_medium?:
     email: 'bg-purple-100 text-purple-700',
   }
   const colorClass = colors[row.utm_source.toLowerCase()] ?? 'bg-gray-100 text-gray-600'
+  const title = [`source: ${row.utm_source}`, `campaign: ${row.utm_campaign ?? '—'}`, `ad: ${row.utm_content ?? '—'}`].join(' · ')
   return (
-    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${colorClass}`} title={`medium: ${row.utm_medium ?? '—'}`}>
-      {label}
-    </span>
+    <div className="flex flex-col gap-0.5">
+      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${colorClass}`} title={title}>
+        {[row.utm_source, row.utm_campaign].filter(Boolean).join(' / ')}
+      </span>
+      {row.utm_content && (
+        <span className="text-xs text-gray-400 pl-1 truncate max-w-[160px]" title={row.utm_content}>
+          {row.utm_content}
+        </span>
+      )}
+    </div>
   )
 }
 
