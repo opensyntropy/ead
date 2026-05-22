@@ -766,8 +766,8 @@ export default function EbookLandingPage() {
 
           {/* 3 — corpo: voz na cabeça + bullets como pensamentos internos */}
           <div className="md:row-start-2 md:col-start-1 min-w-0 text-center md:text-left">
-            <p className="font-sans text-xl md:text-2xl text-gray-200 leading-snug mb-5 font-semibold italic">
-              Uma terra sua, comida limpa, um futuro que faz mais sentido do que o que o mundo convencional oferece. Algo em você já decidiu.
+            <p className="font-sans text-xl md:text-2xl text-gray-200 leading-snug mb-5 font-semibold">
+              A lógica da agrofloresta sintrópica, explicada do começo ao fim. Para você nunca mais plantar no escuro.
             </p>
 
             <p className="font-sans text-sm md:text-base uppercase tracking-widest mb-3 font-bold" style={{ color: LIME }}>
