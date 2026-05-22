@@ -269,7 +269,7 @@ function CheckoutForm() {
   const [upsellCardAddressNumber, setUpsellCardAddressNumber] = useState('')
 
   useEffect(() => {
-    const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content']
+    const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content']
     const fromUrl: Record<string, string> = {}
     UTM_KEYS.forEach(k => { const v = searchParams.get(k); if (v) fromUrl[k] = v })
 
@@ -736,6 +736,7 @@ export default function EbookLandingPage() {
     const utmSource   = p.get('utm_source')   ?? (hasFbclid ? 'facebook' : metaSource)
     const utmMedium   = p.get('utm_medium')   ?? (hasFbclid || metaSource ? 'paid' : null)
     const utmCampaign = p.get('utm_campaign') ?? null
+    const utmTerm     = p.get('utm_term')     ?? null
     const utmContent  = p.get('utm_content')  ?? null
     fetch('/api/track', {
       method: 'POST',
@@ -745,6 +746,7 @@ export default function EbookLandingPage() {
         utm_source: utmSource,
         utm_medium: utmMedium,
         utm_campaign: utmCampaign,
+        utm_term: utmTerm,
         utm_content: utmContent,
         referer: document.referrer || null,
       }),

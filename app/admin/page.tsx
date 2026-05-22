@@ -40,7 +40,7 @@ function PaymentBadge({ method, installments }: { method: string | null; install
   return <span className="text-gray-300 text-xs">—</span>
 }
 
-function OriginBadge({ row }: { row?: { utm_source?: string | null; utm_medium?: string | null; utm_campaign?: string | null; utm_content?: string | null } }) {
+function OriginBadge({ row }: { row?: { utm_source?: string | null; utm_medium?: string | null; utm_campaign?: string | null; utm_term?: string | null; utm_content?: string | null } }) {
   if (!row?.utm_source) return <span className="text-gray-300 text-xs">direto</span>
   const colors: Record<string, string> = {
     facebook: 'bg-blue-100 text-blue-700',
@@ -53,6 +53,7 @@ function OriginBadge({ row }: { row?: { utm_source?: string | null; utm_medium?:
     `source: ${row.utm_source}`,
     `medium: ${row.utm_medium ?? '—'}`,
     `campaign: ${row.utm_campaign ?? '—'}`,
+    `adset: ${row.utm_term ?? '—'}`,
     `ad: ${row.utm_content ?? '—'}`,
   ].join(' · ')
   return (
@@ -60,6 +61,11 @@ function OriginBadge({ row }: { row?: { utm_source?: string | null; utm_medium?:
       <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${colorClass}`} title={title}>
         {[row.utm_source, row.utm_campaign].filter(Boolean).join(' / ')}
       </span>
+      {row.utm_term && (
+        <span className="text-xs text-gray-400 pl-1 truncate max-w-[160px]" title={row.utm_term}>
+          adset: {row.utm_term}
+        </span>
+      )}
       {row.utm_content && (
         <span className="text-xs text-gray-400 pl-1 truncate max-w-[160px]" title={row.utm_content}>
           {row.utm_content}

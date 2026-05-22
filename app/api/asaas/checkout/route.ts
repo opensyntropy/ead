@@ -11,7 +11,7 @@ export async function POST(request: Request) {
     productId, email, name, cpf, paymentMethod = 'pix',
     cardNumber, cardExpiry, cardCvv, cardPostalCode, cardAddressNumber,
     installmentCount,
-    utm_source, utm_medium, utm_campaign, utm_content,
+    utm_source, utm_medium, utm_campaign, utm_term, utm_content,
   } = body as {
     productId: string
     email: string
@@ -27,6 +27,7 @@ export async function POST(request: Request) {
     utm_source?: string
     utm_medium?: string
     utm_campaign?: string
+    utm_term?: string
     utm_content?: string
   }
 
@@ -59,7 +60,7 @@ export async function POST(request: Request) {
         {
           asaas_payment_id: charge.id, email, name: name || email.split('@')[0],
           product: productId, status: 'pending', payment_method: 'pix',
-          utm_source, utm_medium, utm_campaign, utm_content,
+          utm_source, utm_medium, utm_campaign, utm_term, utm_content,
         },
         { onConflict: 'asaas_payment_id' }
       ).select()
@@ -111,7 +112,7 @@ export async function POST(request: Request) {
         product: productId, status: charge.status === 'CONFIRMED' ? 'confirmed' : 'pending',
         payment_method: 'card',
         installment_count: installmentCount && installmentCount > 1 ? installmentCount : null,
-        utm_source, utm_medium, utm_campaign, utm_content,
+        utm_source, utm_medium, utm_campaign, utm_term, utm_content,
       },
       { onConflict: 'asaas_payment_id' }
     )
