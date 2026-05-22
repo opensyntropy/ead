@@ -833,15 +833,15 @@ export default function EbookLandingPage() {
             {[
               {
                 title: 'Plantar diferente de como a natureza planta é ir contra ela.',
-                body: 'A natureza tem uma lógica própria e ela sempre prevalece. Quando você ignora essa lógica, seus cultivos trabalham contra um sistema que é maior do que qualquer técnica.',
+                body: 'A natureza tem uma lógica própria e ela sempre prevalece.',
               },
               {
                 title: 'Começar sem entender a lógica por trás é um gasto de energia.',
-                body: 'Você se esforça, planta, poda, irriga e os resultados não aparecem como esperado. Não porque você fez pouco, mas porque fez sem o fundamento que transforma esforço em sistema.',
+                body: 'Sem o fundamento, esforço não vira uma floresta produtiva.',
               },
               {
                 title: 'Cada ano parado é um ano perdido.',
-                body: 'Agrofloresta é construção de solo e de tempo. Um sistema mal planejado no início exige anos de correção. O tempo que você espera para começar certo não volta.',
+                body: 'Agrofloresta é construção de tempo. O ano que passa sem um sistema não volta.',
               },
             ].map(card => (
               <div key={card.title} className="flex flex-col gap-3">
