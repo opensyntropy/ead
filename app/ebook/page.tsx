@@ -727,10 +727,14 @@ export default function EbookLandingPage() {
 
   useEffect(() => {
     const p = new URLSearchParams(window.location.search)
-    // fbclid é injetado automaticamente pelo Meta em qualquer clique de anúncio
     const hasFbclid = p.has('fbclid')
-    const utmSource   = p.get('utm_source')   ?? (hasFbclid ? 'facebook' : null)
-    const utmMedium   = p.get('utm_medium')   ?? (hasFbclid ? 'paid' : null)
+    const ua = navigator.userAgent
+    // in-app browsers do Meta não enviam referrer mas o UA sempre os trai
+    const isInstagram = /Instagram/.test(ua)
+    const isFacebook  = /FBAN|FBAV|FB_IAB/.test(ua)
+    const metaSource  = isInstagram ? 'instagram' : isFacebook ? 'facebook' : null
+    const utmSource   = p.get('utm_source')   ?? (hasFbclid ? 'facebook' : metaSource)
+    const utmMedium   = p.get('utm_medium')   ?? (hasFbclid || metaSource ? 'paid' : null)
     const utmCampaign = p.get('utm_campaign') ?? null
     const utmContent  = p.get('utm_content')  ?? null
     fetch('/api/track', {

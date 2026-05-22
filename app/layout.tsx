@@ -36,10 +36,10 @@ const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://opensyntropy.com'
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
-  title: 'Agricultura Sintrópica — Guia Introdutório | OpenSyntropy',
+  title: 'Agrofloresta Sintrópica — Guia Introdutório | OpenSyntropy',
   description: 'O primeiro guia de ponta a ponta sobre agrofloresta sintrópica. 207 páginas, 27 capítulos, 25+ infográficos. Entenda a lógica da floresta antes de entrar nela. Por Michel Bottan.',
   openGraph: {
-    title: 'Agricultura Sintrópica — Guia Introdutório',
+    title: 'Agrofloresta Sintrópica — Guia Introdutório',
     description: 'O primeiro guia de ponta a ponta sobre agrofloresta sintrópica. 207 páginas, 27 capítulos, 25+ infográficos exclusivos. Por Michel Bottan.',
     url: BASE_URL,
     siteName: 'OpenSyntropy',
@@ -56,7 +56,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Agricultura Sintrópica — Guia Introdutório',
+    title: 'Agrofloresta Sintrópica — Guia Introdutório',
     description: 'O primeiro guia de ponta a ponta sobre agrofloresta sintrópica. 207 páginas, 27 capítulos, 25+ infográficos exclusivos.',
     images: ['/api/og'],
   },
