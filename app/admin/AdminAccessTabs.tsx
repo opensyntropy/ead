@@ -114,10 +114,9 @@ function OriginBadge({ row }: { row?: { utm_source?: string | null; utm_medium?:
 function AccessTable({ rows, pixUtmMap, downloadedSet, emptyMsg }: { rows: UserProduct[]; pixUtmMap: Record<string, PixCharge>; downloadedSet: Set<string>; emptyMsg: string }) {
   return (
     <div className="bg-white rounded-xl border border-[#b7e4c7] overflow-x-auto">
-      <table className="w-full text-base">
+      <table className="min-w-[900px] w-full text-base">
         <thead className="bg-[#f0fdf4] text-[#1b4332] text-sm uppercase tracking-wide font-semibold">
           <tr>
-            <th className="text-left px-4 py-3">Ações</th>
             <th className="text-left px-4 py-3">Nome</th>
             <th className="text-left px-4 py-3">Email</th>
             <th className="text-left px-4 py-3">Produto</th>
@@ -125,14 +124,12 @@ function AccessTable({ rows, pixUtmMap, downloadedSet, emptyMsg }: { rows: UserP
             <th className="text-left px-4 py-3">Download</th>
             <th className="text-left px-4 py-3">Data</th>
             <th className="text-left px-4 py-3">Origem</th>
+            <th className="px-4 py-3 text-right">Ações</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-[#d8f3dc]">
           {rows.map(row => (
             <tr key={row.id} className="hover:bg-[#f0fdf4]/60 transition-colors">
-              <td className="px-4 py-3">
-                <AdminActions id={row.id} email={row.email ?? ''} product={row.product} userId={row.user_id} />
-              </td>
               <td className="px-4 py-3 text-gray-600 max-w-[140px] truncate" title={row.name ?? undefined}>{row.name ?? <span className="text-gray-300">—</span>}</td>
               <td className="px-4 py-3 font-medium text-gray-800 max-w-[180px] truncate" title={row.email}>{row.email}</td>
               <td className="px-4 py-3"><ProductBadge product={row.product} /></td>
@@ -151,6 +148,9 @@ function AccessTable({ rows, pixUtmMap, downloadedSet, emptyMsg }: { rows: UserP
                 {row.asaas_payment_id
                   ? <OriginBadge row={pixUtmMap[row.asaas_payment_id]} />
                   : <span className="text-sm text-gray-300">manual</span>}
+              </td>
+              <td className="px-4 py-3 text-right">
+                <AdminActions id={row.id} email={row.email ?? ''} product={row.product} userId={row.user_id} />
               </td>
             </tr>
           ))}

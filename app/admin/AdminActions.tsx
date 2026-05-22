@@ -135,15 +135,20 @@ export default function AdminActions({ mode, id, email, product, userId, status 
     )
   }
 
-  if (done) return <span className="text-sm text-gray-400">Revogado</span>
+  if (done) return <span className="text-xs text-gray-400 italic">Revogado</span>
 
   return (
     <button
       onClick={handleRevoke}
       disabled={loading}
-      className="text-sm text-red-500 hover:text-red-700 font-semibold disabled:opacity-50"
+      title={`Revogar acesso "${product}" de ${email}`}
+      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 disabled:opacity-40 transition-colors"
     >
-      {loading ? '...' : 'Revogar'}
+      {loading
+        ? <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+        : <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      }
+      Revogar
     </button>
   )
 }
