@@ -776,10 +776,10 @@ export default function EbookLandingPage() {
 
             <div className="mb-0 flex flex-col gap-2.5 text-left">
               {[
-                '"Quero começar, mas tenho medo de tomar as decisões erradas logo no início."',
-                '"Preciso entender a lógica antes de plantar qualquer coisa."',
-                '"Tenho terra. Cada ano sem um sistema funcionando é um ano perdido."',
-                '"Ainda não tenho terra, mas quando vier, quero estar pronto."',
+                'Quero começar, mas tenho medo de tomar as decisões erradas logo no início.',
+                'Preciso entender a lógica antes de plantar qualquer coisa.',
+                'Tenho terra. Cada ano sem um sistema funcionando é um ano perdido.',
+                'Ainda não tenho terra, mas quando vier, quero estar pronto.',
               ].map((line, i) => (
                 <div key={i} className="flex items-start gap-3">
                   <span className="mt-[7px] w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: LIME }} />
