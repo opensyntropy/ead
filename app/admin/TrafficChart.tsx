@@ -5,7 +5,7 @@ import {
   CartesianGrid, Tooltip, Legend,
 } from 'recharts'
 
-export interface RawEvent { date: string; utm: string | null }
+export interface RawEvent { date: string; utm: string | null; referer?: string | null }
 
 interface Props {
   visits: RawEvent[]
@@ -27,17 +27,16 @@ function srcColor(src: string) { return SOURCE_COLORS[src] ?? DEFAULT_COLOR }
 function toDay(iso: string) { return iso.slice(0, 10) }
 
 function buildDays(visits: RawEvent[], checkouts: RawEvent[], conversions: RawEvent[], filter: string | null) {
-  const keep = (utm: string | null) => {
+  const keep = (e: RawEvent) => {
     if (!filter) return true
-    const src = utm?.toLowerCase() ?? 'direto'
-    return src === filter
+    return normSrc(e.utm, e.referer) === filter
   }
   const vByDay: Record<string, number> = {}
-  for (const e of visits)     if (keep(e.utm)) { vByDay[toDay(e.date)] = (vByDay[toDay(e.date)] ?? 0) + 1 }
+  for (const e of visits)     if (keep(e)) { vByDay[toDay(e.date)] = (vByDay[toDay(e.date)] ?? 0) + 1 }
   const cByDay: Record<string, number> = {}
-  for (const e of checkouts)  if (keep(e.utm)) { cByDay[toDay(e.date)] = (cByDay[toDay(e.date)] ?? 0) + 1 }
+  for (const e of checkouts)  if (keep(e)) { cByDay[toDay(e.date)] = (cByDay[toDay(e.date)] ?? 0) + 1 }
   const xByDay: Record<string, number> = {}
-  for (const e of conversions) if (keep(e.utm)) { xByDay[toDay(e.date)] = (xByDay[toDay(e.date)] ?? 0) + 1 }
+  for (const e of conversions) if (keep(e)) { xByDay[toDay(e.date)] = (xByDay[toDay(e.date)] ?? 0) + 1 }
 
   return Array.from({ length: 30 }, (_, i) => {
     const d = new Date(Date.now() - (29 - i) * 86400000)
@@ -47,16 +46,35 @@ function buildDays(visits: RawEvent[], checkouts: RawEvent[], conversions: RawEv
   })
 }
 
-function normSrc(utm: string | null) { return utm?.toLowerCase() ?? 'direto' }
+function srcFromReferer(referer: string | null | undefined): string {
+  if (!referer) return 'direto'
+  try {
+    const host = new URL(referer).hostname.replace(/^www\./, '')
+    if (host.includes('facebook') || host.includes('fb.')) return 'facebook'
+    if (host.includes('instagram')) return 'instagram'
+    if (host.includes('google')) return 'google'
+    if (host.includes('youtube')) return 'youtube'
+    if (host.includes('t.co') || host.includes('twitter') || host.includes('x.com')) return 'twitter'
+    if (host.includes('whatsapp')) return 'whatsapp'
+    return host
+  } catch {
+    return 'direto'
+  }
+}
+
+function normSrc(utm: string | null, referer?: string | null) {
+  if (utm) return utm.toLowerCase()
+  return srcFromReferer(referer)
+}
 
 export default function TrafficChart({ visits, checkouts, conversions }: Props) {
   const [filter, setFilter] = useState<string | null>(null)
 
   const sources = useMemo(() => {
     const s = new Set<string>()
-    for (const e of visits)      s.add(normSrc(e.utm))
-    for (const e of checkouts)   s.add(normSrc(e.utm))
-    for (const e of conversions) s.add(normSrc(e.utm))
+    for (const e of visits)      s.add(normSrc(e.utm, e.referer))
+    for (const e of checkouts)   s.add(normSrc(e.utm, e.referer))
+    for (const e of conversions) s.add(normSrc(e.utm, e.referer))
     return [...s].sort()
   }, [visits, checkouts, conversions])
 

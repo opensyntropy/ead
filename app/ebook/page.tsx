@@ -709,6 +709,7 @@ export default function EbookLandingPage() {
         utm_source: p.get('utm_source'),
         utm_medium: p.get('utm_medium'),
         utm_campaign: p.get('utm_campaign'),
+        referer: document.referrer || null,
       }),
     }).catch(() => {})
   }, [])

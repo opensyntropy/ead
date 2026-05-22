@@ -8,6 +8,27 @@ import TrafficChart, { type RawEvent } from './TrafficChart'
 
 export const dynamic = 'force-dynamic'
 
+function srcFromReferer(referer: string | null | undefined): string {
+  if (!referer) return 'direto'
+  try {
+    const host = new URL(referer).hostname.replace(/^www\./, '')
+    if (host.includes('facebook') || host.includes('fb.')) return 'facebook'
+    if (host.includes('instagram')) return 'instagram'
+    if (host.includes('google')) return 'google'
+    if (host.includes('youtube')) return 'youtube'
+    if (host.includes('t.co') || host.includes('twitter') || host.includes('x.com')) return 'twitter'
+    if (host.includes('whatsapp')) return 'whatsapp'
+    return host
+  } catch {
+    return 'direto'
+  }
+}
+
+function normVisitSrc(utm: string | null | undefined, referer: string | null | undefined): string {
+  if (utm) return utm.toLowerCase()
+  return srcFromReferer(referer)
+}
+
 function OriginBadge({ row }: { row?: { utm_source?: string | null; utm_medium?: string | null; utm_campaign?: string | null } }) {
   if (!row?.utm_source) return <span className="text-gray-300 text-xs">direto</span>
   const label = [row.utm_source, row.utm_campaign].filter(Boolean).join(' / ')
@@ -95,23 +116,23 @@ export default async function AdminPage() {
     service.from('page_visits').select('id', { count: 'exact', head: true }).eq('page', '/ebook').gte('created_at', todayISO),
     service.from('page_visits').select('id', { count: 'exact', head: true }).eq('page', '/ebook').gte('created_at', weekISO),
     service.from('page_visits').select('id', { count: 'exact', head: true }).eq('page', '/ebook').gte('created_at', monthISO),
-    service.from('page_visits').select('created_at,utm_source').eq('page', '/ebook').gte('created_at', monthISO),
+    service.from('page_visits').select('created_at,utm_source,referer').eq('page', '/ebook').gte('created_at', monthISO),
   ])
 
   const visitsToday = visitsTodayRes.count ?? 0
   const visitsWeek = visitsWeekRes.count ?? 0
   const visitsMonth = visitsMonthRes.count ?? 0
-  const visitsRaw: RawEvent[] = (visitsRawRes.data ?? []).map(r => ({ date: r.created_at, utm: r.utm_source }))
+  const visitsRaw: RawEvent[] = (visitsRawRes.data ?? []).map(r => ({ date: r.created_at, utm: r.utm_source, referer: r.referer }))
 
   const toDay = (iso: string) => iso.slice(0, 10)
   const checkoutsRaw: RawEvent[] = (pixRes.data ?? [])
     .filter(r => toDay(r.created_at) >= toDay(monthISO))
     .map(r => ({ date: r.created_at, utm: r.utm_source }))
 
-  // UTM breakdown para a tabela (30 dias)
+  // UTM breakdown para a tabela (30 dias) — usa referer como fallback quando não tem UTM
   const utmCounts: Record<string, number> = {}
   for (const e of visitsRaw) {
-    const src = e.utm?.toLowerCase() ?? 'direto'
+    const src = normVisitSrc(e.utm, e.referer)
     utmCounts[src] = (utmCounts[src] ?? 0) + 1
   }
   const utmBreakdown = Object.entries(utmCounts).sort((a, b) => b[1] - a[1])
