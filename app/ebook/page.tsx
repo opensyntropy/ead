@@ -732,6 +732,7 @@ export default function EbookLandingPage() {
     const utmSource   = p.get('utm_source')   ?? (hasFbclid ? 'facebook' : null)
     const utmMedium   = p.get('utm_medium')   ?? (hasFbclid ? 'paid' : null)
     const utmCampaign = p.get('utm_campaign') ?? null
+    const utmContent  = p.get('utm_content')  ?? null
     fetch('/api/track', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -740,6 +741,7 @@ export default function EbookLandingPage() {
         utm_source: utmSource,
         utm_medium: utmMedium,
         utm_campaign: utmCampaign,
+        utm_content: utmContent,
         referer: document.referrer || null,
       }),
     }).catch(() => {})

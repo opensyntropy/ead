@@ -40,9 +40,8 @@ function PaymentBadge({ method, installments }: { method: string | null; install
   return <span className="text-gray-300 text-xs">—</span>
 }
 
-function OriginBadge({ row }: { row?: { utm_source?: string | null; utm_medium?: string | null; utm_campaign?: string | null } }) {
+function OriginBadge({ row }: { row?: { utm_source?: string | null; utm_medium?: string | null; utm_campaign?: string | null; utm_content?: string | null } }) {
   if (!row?.utm_source) return <span className="text-gray-300 text-xs">direto</span>
-  const label = [row.utm_source, row.utm_campaign].filter(Boolean).join(' / ')
   const colors: Record<string, string> = {
     facebook: 'bg-blue-100 text-blue-700',
     instagram: 'bg-pink-100 text-pink-700',
@@ -50,10 +49,23 @@ function OriginBadge({ row }: { row?: { utm_source?: string | null; utm_medium?:
     email: 'bg-purple-100 text-purple-700',
   }
   const colorClass = colors[row.utm_source.toLowerCase()] ?? 'bg-gray-100 text-gray-600'
+  const title = [
+    `source: ${row.utm_source}`,
+    `medium: ${row.utm_medium ?? '—'}`,
+    `campaign: ${row.utm_campaign ?? '—'}`,
+    `ad: ${row.utm_content ?? '—'}`,
+  ].join(' · ')
   return (
-    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${colorClass}`} title={`medium: ${row.utm_medium ?? '—'}`}>
-      {label}
-    </span>
+    <div className="flex flex-col gap-0.5">
+      <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${colorClass}`} title={title}>
+        {[row.utm_source, row.utm_campaign].filter(Boolean).join(' / ')}
+      </span>
+      {row.utm_content && (
+        <span className="text-xs text-gray-400 pl-1 truncate max-w-[160px]" title={row.utm_content}>
+          {row.utm_content}
+        </span>
+      )}
+    </div>
   )
 }
 
@@ -129,7 +141,7 @@ export default async function AdminPage() {
     service.from('page_visits').select('id', { count: 'exact', head: true }).eq('page', '/ebook').gte('created_at', todayISO),
     service.from('page_visits').select('id', { count: 'exact', head: true }).eq('page', '/ebook').gte('created_at', weekISO),
     service.from('page_visits').select('id', { count: 'exact', head: true }).eq('page', '/ebook').gte('created_at', monthISO),
-    service.from('page_visits').select('created_at,utm_source,referer').eq('page', '/ebook').gte('created_at', monthISO),
+    service.from('page_visits').select('created_at,utm_source,utm_content,referer').eq('page', '/ebook').gte('created_at', monthISO),
   ])
 
   const visitsToday = visitsTodayRes.count ?? 0
@@ -150,6 +162,11 @@ export default async function AdminPage() {
   }
   const utmBreakdown = Object.entries(utmCounts).sort((a, b) => b[1] - a[1])
 
+  // Breakdown por anúncio (utm_content) — visitas e conversões
+  const adVisits: Record<string, number> = {}
+  for (const r of visitsRawRes.data ?? []) {
+    if (r.utm_content) adVisits[r.utm_content] = (adVisits[r.utm_content] ?? 0) + 1
+  }
   const pixRows: PixCharge[] = pixRes.data ?? []
   const pendingPix = pixRows.filter(p => p.status === 'pending')
   const pixUtmMap = Object.fromEntries(pixRows.map(p => [p.asaas_payment_id, p]))
@@ -160,6 +177,22 @@ export default async function AdminPage() {
       date: r.created_at,
       utm: r.asaas_payment_id ? (pixUtmMap[r.asaas_payment_id]?.utm_source ?? null) : null,
     }))
+
+  // Conversões por anúncio (utm_content de pix_charges confirmados)
+  const adConversions: Record<string, number> = {}
+  for (const p of pixRows) {
+    if (p.utm_content && p.status === 'confirmed' && toDay(p.created_at) >= toDay(monthISO)) {
+      adConversions[p.utm_content] = (adConversions[p.utm_content] ?? 0) + 1
+    }
+  }
+  const adBreakdown = Object.entries(
+    Object.fromEntries(
+      [...new Set([...Object.keys(adVisits), ...Object.keys(adConversions)])].map(ad => [
+        ad,
+        { visits: adVisits[ad] ?? 0, conversions: adConversions[ad] ?? 0 },
+      ])
+    )
+  ).sort((a, b) => b[1].conversions - a[1].conversions || b[1].visits - a[1].visits)
   const pixNameMap = Object.fromEntries(pixRows.filter(p => p.name).map(p => [p.asaas_payment_id, p.name!]))
   const pixEmailMap = Object.fromEntries(pixRows.map(p => [p.asaas_payment_id, p.email]))
 
@@ -241,6 +274,33 @@ export default async function AdminPage() {
                       <td className="px-4 py-3 text-right font-semibold text-gray-800">{count}</td>
                       <td className="px-4 py-3 text-right text-gray-400 text-sm">
                         {visitsMonth > 0 ? Math.round((count / visitsMonth) * 100) : 0}%
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {adBreakdown.length > 0 && (
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <table className="w-full text-base">
+                <thead className="bg-gray-50 text-gray-500 text-sm uppercase tracking-wide font-semibold">
+                  <tr>
+                    <th className="text-left px-4 py-3">Anúncio — utm_content (30 dias)</th>
+                    <th className="text-right px-4 py-3">Visitas</th>
+                    <th className="text-right px-4 py-3">Vendas</th>
+                    <th className="text-right px-4 py-3 text-gray-400">Conv.</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {adBreakdown.map(([ad, { visits, conversions }]) => (
+                    <tr key={ad} className="hover:bg-gray-50/60">
+                      <td className="px-4 py-3 text-sm text-gray-700 font-medium max-w-xs truncate" title={ad}>{ad}</td>
+                      <td className="px-4 py-3 text-right text-gray-600">{visits}</td>
+                      <td className="px-4 py-3 text-right font-bold text-[#1b4332]">{conversions}</td>
+                      <td className="px-4 py-3 text-right text-gray-400 text-sm">
+                        {visits > 0 ? Math.round((conversions / visits) * 100) : 0}%
                       </td>
                     </tr>
                   ))}
