@@ -253,6 +253,7 @@ function CheckoutForm() {
   const [cardCvv, setCardCvv] = useState('')
   const [cardPostalCode, setCardPostalCode] = useState('')
   const [cardAddressNumber, setCardAddressNumber] = useState('')
+  const [installmentCount, setInstallmentCount] = useState(1)
 
   // Upsell (sessão pós-compra)
   const [upsellPaymentMethod, setUpsellPaymentMethod] = useState<'pix' | 'card'>('pix')
@@ -296,7 +297,7 @@ function CheckoutForm() {
       body: JSON.stringify({
         productId: 'ebook', email, name, cpf, paymentMethod,
         ...utmParams,
-        ...(paymentMethod === 'card' ? { cardNumber, cardExpiry, cardCvv, cardPostalCode, cardAddressNumber } : {}),
+        ...(paymentMethod === 'card' ? { cardNumber, cardExpiry, cardCvv, cardPostalCode, cardAddressNumber, installmentCount } : {}),
       }),
     })
     const data = await res.json()
@@ -442,20 +443,34 @@ function CheckoutForm() {
 
           {paymentMethod === 'card' && (
             <div className="flex flex-col gap-3">
+              <div className="flex gap-2">
+                {[1, 2, 3].map(n => {
+                  const val = Math.ceil(6700 / n) / 100
+                  const label = n === 1
+                    ? `1x R$67,00`
+                    : `${n}x R$${val.toFixed(2).replace('.', ',')} s/juros`
+                  return (
+                    <button key={n} type="button" onClick={() => setInstallmentCount(n)}
+                      className={`flex-1 py-3 rounded-xl text-sm font-bold border-2 transition-colors ${
+                        installmentCount === n
+                          ? 'border-[#7DC142] bg-[#7DC142]/10 text-[#141F0C]'
+                          : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                      }`}>
+                      {label}
+                    </button>
+                  )
+                })}
+              </div>
               <input type="text" required inputMode="numeric" placeholder="Número do cartão" value={cardNumber}
                 onChange={e => setCardNumber(formatCardNumber(e.target.value))} className={inputCls} />
-              <div className="flex gap-3">
-                <input type="text" required inputMode="numeric" placeholder="Validade (MM/AA)" value={cardExpiry}
-                  onChange={e => setCardExpiry(formatExpiry(e.target.value))} className={inputCls + ' flex-1'} />
-                <input type="text" required inputMode="numeric" placeholder="CVV" value={cardCvv}
-                  onChange={e => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))} className={inputCls + ' w-28'} />
-              </div>
-              <div className="flex gap-3">
-                <input type="text" required inputMode="numeric" placeholder="CEP" value={cardPostalCode}
-                  onChange={e => setCardPostalCode(formatCep(e.target.value))} className={inputCls + ' flex-1'} />
-                <input type="text" required placeholder="Número" value={cardAddressNumber}
-                  onChange={e => setCardAddressNumber(e.target.value)} className={inputCls + ' w-28'} />
-              </div>
+              <input type="text" required inputMode="numeric" placeholder="Validade (MM/AA)" value={cardExpiry}
+                onChange={e => setCardExpiry(formatExpiry(e.target.value))} className={inputCls} />
+              <input type="text" required inputMode="numeric" placeholder="CVV" value={cardCvv}
+                onChange={e => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))} className={inputCls} />
+              <input type="text" required inputMode="numeric" placeholder="CEP" value={cardPostalCode}
+                onChange={e => setCardPostalCode(formatCep(e.target.value))} className={inputCls} />
+              <input type="text" required placeholder="Número do endereço" value={cardAddressNumber}
+                onChange={e => setCardAddressNumber(e.target.value)} className={inputCls} />
             </div>
           )}
 
@@ -574,18 +589,14 @@ function UpsellBump({
           <div className="flex flex-col gap-2">
             <input type="text" required inputMode="numeric" placeholder="Número do cartão" value={upsellCardNumber}
               onChange={e => setUpsellCardNumber(formatCardNumber(e.target.value))} className={inputCls} />
-            <div className="flex gap-2">
-              <input type="text" required inputMode="numeric" placeholder="Validade (MM/AA)" value={upsellCardExpiry}
-                onChange={e => setUpsellCardExpiry(formatExpiry(e.target.value))} className={inputCls + ' flex-1'} />
-              <input type="text" required inputMode="numeric" placeholder="CVV" value={upsellCardCvv}
-                onChange={e => setUpsellCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))} className={inputCls + ' w-24'} />
-            </div>
-            <div className="flex gap-2">
-              <input type="text" required inputMode="numeric" placeholder="CEP" value={upsellCardPostalCode}
-                onChange={e => setUpsellCardPostalCode(formatCep(e.target.value))} className={inputCls + ' flex-1'} />
-              <input type="text" required placeholder="Número" value={upsellCardAddressNumber}
-                onChange={e => setUpsellCardAddressNumber(e.target.value)} className={inputCls + ' w-24'} />
-            </div>
+            <input type="text" required inputMode="numeric" placeholder="Validade (MM/AA)" value={upsellCardExpiry}
+              onChange={e => setUpsellCardExpiry(formatExpiry(e.target.value))} className={inputCls} />
+            <input type="text" required inputMode="numeric" placeholder="CVV" value={upsellCardCvv}
+              onChange={e => setUpsellCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))} className={inputCls} />
+            <input type="text" required inputMode="numeric" placeholder="CEP" value={upsellCardPostalCode}
+              onChange={e => setUpsellCardPostalCode(formatCep(e.target.value))} className={inputCls} />
+            <input type="text" required placeholder="Número do endereço" value={upsellCardAddressNumber}
+              onChange={e => setUpsellCardAddressNumber(e.target.value)} className={inputCls} />
           </div>
         )}
         {upsellError && <p className="text-red-500 text-xs font-medium">{upsellError}</p>}

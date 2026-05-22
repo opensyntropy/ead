@@ -107,6 +107,7 @@ export async function createCreditCardCharge(params: {
   value: number
   description: string
   externalReference: string
+  installmentCount?: number
   creditCard: {
     holderName: string
     number: string
@@ -126,16 +127,23 @@ export async function createCreditCardCharge(params: {
   dueDate.setDate(dueDate.getDate() + 1)
   const dueDateStr = dueDate.toISOString().split('T')[0]
 
+  const totalReais = params.value / 100
+  const installmentCount = params.installmentCount && params.installmentCount > 1 ? params.installmentCount : undefined
+  const installmentValue = installmentCount
+    ? Math.ceil(params.value / installmentCount) / 100
+    : undefined
+
   const res = await fetch(`${ASAAS_BASE}/payments`, {
     method: 'POST',
     headers: headers(),
     body: JSON.stringify({
       customer: params.customerId,
       billingType: 'CREDIT_CARD',
-      value: params.value / 100,
+      value: totalReais,
       dueDate: dueDateStr,
       description: params.description,
       externalReference: params.externalReference,
+      ...(installmentCount ? { installmentCount, installmentValue } : {}),
       creditCard: params.creditCard,
       creditCardHolderInfo: params.creditCardHolderInfo,
     }),

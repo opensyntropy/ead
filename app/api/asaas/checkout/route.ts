@@ -10,6 +10,7 @@ export async function POST(request: Request) {
   const {
     productId, email, name, cpf, paymentMethod = 'pix',
     cardNumber, cardExpiry, cardCvv, cardPostalCode, cardAddressNumber,
+    installmentCount,
     utm_source, utm_medium, utm_campaign, utm_content,
   } = body as {
     productId: string
@@ -22,6 +23,7 @@ export async function POST(request: Request) {
     cardCvv?: string
     cardPostalCode?: string
     cardAddressNumber?: string
+    installmentCount?: number
     utm_source?: string
     utm_medium?: string
     utm_campaign?: string
@@ -84,6 +86,7 @@ export async function POST(request: Request) {
       value: product.price,
       description: product.asaasDescription,
       externalReference: `${productId}:${email}`,
+      installmentCount: installmentCount && installmentCount > 1 ? installmentCount : undefined,
       creditCard: {
         holderName: name || email.split('@')[0],
         number: cardNumber.replace(/\s/g, ''),
