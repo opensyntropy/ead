@@ -24,6 +24,8 @@ interface PixCharge {
   utm_medium: string | null
   utm_campaign: string | null
   utm_content: string | null
+  payment_method: string | null
+  installment_count: number | null
 }
 
 interface Props {
@@ -57,6 +59,17 @@ function ProductBadge({ product }: { product: string }) {
   )
 }
 
+function PaymentBadge({ method, installments }: { method: string | null | undefined; installments: number | null | undefined }) {
+  if (method === 'card') {
+    const label = installments && installments > 1 ? `Cartão ${installments}x` : 'Cartão 1x'
+    return <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">{label}</span>
+  }
+  if (method === 'pix') {
+    return <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">PIX</span>
+  }
+  return <span className="text-gray-300 text-xs">—</span>
+}
+
 function OriginBadge({ row }: { row?: { utm_source?: string | null; utm_medium?: string | null; utm_campaign?: string | null } }) {
   if (!row?.utm_source) return <span className="text-gray-300 text-xs">direto</span>
   const label = [row.utm_source, row.utm_campaign].filter(Boolean).join(' / ')
@@ -83,6 +96,7 @@ function AccessTable({ rows, pixUtmMap, downloadedSet, emptyMsg }: { rows: UserP
             <th className="text-left px-4 py-3">Email</th>
             <th className="text-left px-4 py-3">Nome</th>
             <th className="text-left px-4 py-3">Produto</th>
+            <th className="text-left px-4 py-3">Pagamento</th>
             <th className="text-left px-4 py-3">Origem</th>
             <th className="text-left px-4 py-3">Data</th>
             <th className="text-left px-4 py-3">Download</th>
@@ -95,6 +109,11 @@ function AccessTable({ rows, pixUtmMap, downloadedSet, emptyMsg }: { rows: UserP
               <td className="px-4 py-3 font-medium text-gray-800">{row.email}</td>
               <td className="px-4 py-3 text-gray-600">{row.name ?? <span className="text-gray-300">—</span>}</td>
               <td className="px-4 py-3"><ProductBadge product={row.product} /></td>
+              <td className="px-4 py-3">
+                {row.asaas_payment_id
+                  ? <PaymentBadge method={pixUtmMap[row.asaas_payment_id]?.payment_method} installments={pixUtmMap[row.asaas_payment_id]?.installment_count} />
+                  : <span className="text-gray-300 text-xs">manual</span>}
+              </td>
               <td className="px-4 py-3">
                 {row.asaas_payment_id
                   ? <OriginBadge row={pixUtmMap[row.asaas_payment_id]} />
@@ -113,7 +132,7 @@ function AccessTable({ rows, pixUtmMap, downloadedSet, emptyMsg }: { rows: UserP
           ))}
           {rows.length === 0 && (
             <tr>
-              <td colSpan={7} className="px-4 py-10 text-center text-gray-300 text-base">{emptyMsg}</td>
+              <td colSpan={8} className="px-4 py-10 text-center text-gray-300 text-base">{emptyMsg}</td>
             </tr>
           )}
         </tbody>

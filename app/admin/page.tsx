@@ -29,6 +29,17 @@ function normVisitSrc(utm: string | null | undefined, referer: string | null | u
   return srcFromReferer(referer)
 }
 
+function PaymentBadge({ method, installments }: { method: string | null; installments: number | null }) {
+  if (method === 'card') {
+    const label = installments && installments > 1 ? `Cartão ${installments}x` : 'Cartão 1x'
+    return <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">{label}</span>
+  }
+  if (method === 'pix') {
+    return <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">PIX</span>
+  }
+  return <span className="text-gray-300 text-xs">—</span>
+}
+
 function OriginBadge({ row }: { row?: { utm_source?: string | null; utm_medium?: string | null; utm_campaign?: string | null } }) {
   if (!row?.utm_source) return <span className="text-gray-300 text-xs">direto</span>
   const label = [row.utm_source, row.utm_campaign].filter(Boolean).join(' / ')
@@ -95,6 +106,8 @@ interface PixCharge {
   utm_medium: string | null
   utm_campaign: string | null
   utm_content: string | null
+  payment_method: string | null
+  installment_count: number | null
 }
 
 export default async function AdminPage() {
@@ -111,7 +124,7 @@ export default async function AdminPage() {
   const [productsRes, refundsRes, pixRes, downloadsRes, visitsTodayRes, visitsWeekRes, visitsMonthRes, visitsRawRes] = await Promise.all([
     service.from('user_products').select('*').order('created_at', { ascending: false }),
     service.from('refund_requests').select('*').order('created_at', { ascending: false }),
-    service.from('pix_charges').select('*').order('created_at', { ascending: false }),
+    service.from('pix_charges').select('*,payment_method,installment_count').order('created_at', { ascending: false }),
     service.from('download_tokens').select('email').eq('used', true),
     service.from('page_visits').select('id', { count: 'exact', head: true }).eq('page', '/ebook').gte('created_at', todayISO),
     service.from('page_visits').select('id', { count: 'exact', head: true }).eq('page', '/ebook').gte('created_at', weekISO),
@@ -255,6 +268,7 @@ export default async function AdminPage() {
                     <th className="text-left px-4 py-3">Email</th>
                     <th className="text-left px-4 py-3">Nome</th>
                     <th className="text-left px-4 py-3">Produto</th>
+                    <th className="text-left px-4 py-3">Pagamento</th>
                     <th className="text-left px-4 py-3">Origem</th>
                     <th className="text-left px-4 py-3">Data</th>
                     <th className="px-4 py-3 text-right">Ações</th>
@@ -268,6 +282,7 @@ export default async function AdminPage() {
                       <td className="px-4 py-3">
                         <ProductBadge product={row.product} />
                       </td>
+                      <td className="px-4 py-3"><PaymentBadge method={row.payment_method} installments={row.installment_count} /></td>
                       <td className="px-4 py-3"><OriginBadge row={row} /></td>
                       <td className="px-4 py-3 text-gray-400 text-sm whitespace-nowrap">{fmt(row.created_at)}</td>
                       <td className="px-4 py-3 text-right">

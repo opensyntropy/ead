@@ -58,7 +58,7 @@ export async function POST(request: Request) {
       const { data: pixInsertData, error: pixInsertError } = await supabase.from('pix_charges').upsert(
         {
           asaas_payment_id: charge.id, email, name: name || email.split('@')[0],
-          product: productId, status: 'pending',
+          product: productId, status: 'pending', payment_method: 'pix',
           utm_source, utm_medium, utm_campaign, utm_content,
         },
         { onConflict: 'asaas_payment_id' }
@@ -102,6 +102,19 @@ export async function POST(request: Request) {
         addressNumber: cardAddressNumber.trim(),
       },
     })
+
+    // Registra cobrança de cartão na pix_charges para aparecer no admin
+    const supabase = await createServiceClient()
+    await supabase.from('pix_charges').upsert(
+      {
+        asaas_payment_id: charge.id, email, name: name || email.split('@')[0],
+        product: productId, status: charge.status === 'CONFIRMED' ? 'confirmed' : 'pending',
+        payment_method: 'card',
+        installment_count: installmentCount && installmentCount > 1 ? installmentCount : null,
+        utm_source, utm_medium, utm_campaign, utm_content,
+      },
+      { onConflict: 'asaas_payment_id' }
+    )
 
     let postError: string | null = null
     if (charge.status === 'CONFIRMED') {
