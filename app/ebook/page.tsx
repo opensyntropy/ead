@@ -765,29 +765,11 @@ export default function EbookLandingPage() {
             </div>
           </div>
 
-          {/* 3 — corpo: voz na cabeça + bullets como pensamentos internos */}
+          {/* 3 — corpo: subtítulo */}
           <div className="md:row-start-2 md:col-start-1 min-w-0 text-center md:text-left">
-            <p className="font-sans text-xl md:text-2xl text-gray-200 leading-snug mb-5 font-semibold">
+            <p className="font-sans text-xl md:text-2xl text-gray-200 leading-snug font-semibold">
               A lógica da agrofloresta sintrópica, explicada do começo ao fim. Para você saber exatamente o que plantar, quando e por quê.
             </p>
-
-            <p className="font-sans text-sm md:text-base uppercase tracking-widest mb-3 font-bold" style={{ color: LIME }}>
-              Este guia é para você se reconhece algum destes pensamentos:
-            </p>
-
-            <div className="mb-0 flex flex-col gap-2.5 text-left">
-              {[
-                'Quero começar, mas tenho medo de tomar as decisões erradas logo no início.',
-                'Preciso entender a lógica antes de plantar qualquer coisa.',
-                'Tenho terra. Cada ano sem um sistema funcionando é um ano perdido.',
-                'Ainda não tenho terra, mas quando vier, quero estar pronto.',
-              ].map((line, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <span className="mt-[7px] w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: LIME }} />
-                  <p className="font-sans text-gray-100 text-lg md:text-xl leading-snug font-semibold">{line}</p>
-                </div>
-              ))}
-            </div>
           </div>
 
         </div>
@@ -833,6 +815,28 @@ export default function EbookLandingPage() {
                 <div className="w-8 h-px" style={{ backgroundColor: FOREST, opacity: 0.5 }} />
                 <h3 className="font-serif font-black text-xl leading-snug" style={{ color: DARK }}>{card.title}</h3>
                 <p className="text-base leading-relaxed" style={{ color: '#4a5240' }}>{card.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── QUALIFICAÇÃO — "Este guia é para você se..." ────── */}
+      <section style={{ backgroundColor: CREAM }} className="pb-24 px-6">
+        <div className="max-w-2xl mx-auto">
+          <p className="font-sans text-sm md:text-base uppercase tracking-widest mb-8 font-bold text-center" style={{ color: FOREST }}>
+            Este guia é para você se reconhece algum destes pensamentos:
+          </p>
+          <div className="flex flex-col gap-4">
+            {[
+              'Quero começar, mas tenho medo de tomar as decisões erradas logo no início.',
+              'Preciso entender a lógica antes de plantar qualquer coisa.',
+              'Tenho terra. Cada ano sem um sistema funcionando é um ano perdido.',
+              'Ainda não tenho terra, mas quando vier, quero estar pronto.',
+            ].map((line, i) => (
+              <div key={i} className="flex items-start gap-4 rounded-2xl px-6 py-5 bg-white shadow-sm">
+                <span className="mt-[6px] w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: LIME }} />
+                <p className="font-sans text-gray-800 text-lg leading-snug font-semibold">{line}</p>
               </div>
             ))}
           </div>
