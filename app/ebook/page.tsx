@@ -699,6 +699,20 @@ export default function EbookLandingPage() {
     ;(window as any).fbq?.('track', 'ViewContent', { content_name: 'Guia Agrofloresta Sintrópica', content_type: 'product', value: 67, currency: 'BRL' })
   }, [])
 
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search)
+    fetch('/api/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        page: '/ebook',
+        utm_source: p.get('utm_source'),
+        utm_medium: p.get('utm_medium'),
+        utm_campaign: p.get('utm_campaign'),
+      }),
+    }).catch(() => {})
+  }, [])
+
   return (
     <div className="min-h-screen bg-white text-[#141F0C]">
       {lightbox !== null && (

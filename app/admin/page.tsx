@@ -81,12 +81,31 @@ export default async function AdminPage() {
 
   const service = await createServiceClient()
 
-  const [productsRes, refundsRes, pixRes, downloadsRes] = await Promise.all([
+  const now = new Date()
+  const todayISO = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+  const weekISO = new Date(Date.now() - 7 * 86400000).toISOString()
+  const monthISO = new Date(Date.now() - 30 * 86400000).toISOString()
+
+  const [productsRes, refundsRes, pixRes, downloadsRes, visitsTodayRes, visitsWeekRes, visitsMonthRes, utmRes] = await Promise.all([
     service.from('user_products').select('*').order('created_at', { ascending: false }),
     service.from('refund_requests').select('*').order('created_at', { ascending: false }),
     service.from('pix_charges').select('*').order('created_at', { ascending: false }),
     service.from('download_tokens').select('email').eq('used', true),
+    service.from('page_visits').select('id', { count: 'exact', head: true }).eq('page', '/ebook').gte('created_at', todayISO),
+    service.from('page_visits').select('id', { count: 'exact', head: true }).eq('page', '/ebook').gte('created_at', weekISO),
+    service.from('page_visits').select('id', { count: 'exact', head: true }).eq('page', '/ebook').gte('created_at', monthISO),
+    service.from('page_visits').select('utm_source').eq('page', '/ebook').gte('created_at', monthISO),
   ])
+
+  const visitsToday = visitsTodayRes.count ?? 0
+  const visitsWeek = visitsWeekRes.count ?? 0
+  const visitsMonth = visitsMonthRes.count ?? 0
+  const utmCounts: Record<string, number> = {}
+  for (const row of (utmRes.data ?? [])) {
+    const src = row.utm_source?.toLowerCase() ?? 'direto'
+    utmCounts[src] = (utmCounts[src] ?? 0) + 1
+  }
+  const utmBreakdown = Object.entries(utmCounts).sort((a, b) => b[1] - a[1])
 
   const pixRows: PixCharge[] = pixRes.data ?? []
   const pendingPix = pixRows.filter(p => p.status === 'pending')
@@ -134,6 +153,49 @@ export default async function AdminPage() {
             <p className="text-sm text-gray-400 uppercase tracking-wide mb-1 font-medium">Devoluções pendentes</p>
             <p className={`text-4xl font-bold ${pendingRefunds > 0 ? 'text-red-500' : 'text-gray-300'}`}>{pendingRefunds}</p>
           </div>
+        </div>
+
+        {/* Tráfego */}
+        <div>
+          <SectionHeader title="Tráfego — /ebook" />
+          <div className="grid grid-cols-3 gap-4 mb-4">
+            <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
+              <p className="text-sm text-gray-400 uppercase tracking-wide mb-1 font-medium">Hoje</p>
+              <p className="text-4xl font-bold text-[#1b4332]">{visitsToday}</p>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
+              <p className="text-sm text-gray-400 uppercase tracking-wide mb-1 font-medium">7 dias</p>
+              <p className="text-4xl font-bold text-[#1b4332]">{visitsWeek}</p>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
+              <p className="text-sm text-gray-400 uppercase tracking-wide mb-1 font-medium">30 dias</p>
+              <p className="text-4xl font-bold text-[#1b4332]">{visitsMonth}</p>
+            </div>
+          </div>
+          {utmBreakdown.length > 0 && (
+            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+              <table className="w-full text-base">
+                <thead className="bg-gray-50 text-gray-500 text-sm uppercase tracking-wide font-semibold">
+                  <tr>
+                    <th className="text-left px-4 py-3">Origem (30 dias)</th>
+                    <th className="text-right px-4 py-3">Visitas</th>
+                    <th className="text-right px-4 py-3 text-gray-400">%</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {utmBreakdown.map(([src, count]) => (
+                    <tr key={src} className="hover:bg-gray-50/60">
+                      <td className="px-4 py-3"><OriginBadge row={{ utm_source: src === 'direto' ? undefined : src }} /></td>
+                      <td className="px-4 py-3 text-right font-semibold text-gray-800">{count}</td>
+                      <td className="px-4 py-3 text-right text-gray-400 text-sm">
+                        {visitsMonth > 0 ? Math.round((count / visitsMonth) * 100) : 0}%
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         {/* PIX pendentes */}
