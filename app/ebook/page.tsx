@@ -803,6 +803,41 @@ export default function EbookLandingPage() {
         </div>
       </div>
 
+      {/* ── AGITAÇÃO ─────────────────────────────────────────── */}
+      <section style={{ backgroundColor: CREAM }} className="py-24 px-6">
+        <div className="max-w-5xl mx-auto">
+          <p className="text-center font-semibold uppercase tracking-[0.2em] text-sm mb-5" style={{ color: FOREST }}>
+            O que está em jogo
+          </p>
+          <h2 className="font-serif font-black text-center mb-16 leading-tight" style={{ fontSize: 'clamp(1.8rem, 4vw, 3rem)', color: DARK }}>
+            A maioria começa errado. E só descobre depois.
+          </h2>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                title: 'Plantar diferente de como a natureza planta é ir contra ela.',
+                body: 'A natureza tem uma lógica própria e ela sempre prevalece. Quando você ignora essa lógica, seus cultivos trabalham contra um sistema que é maior do que qualquer técnica.',
+              },
+              {
+                title: 'Começar sem entender a lógica por trás é um gasto de energia.',
+                body: 'Você se esforça, planta, poda, irriga e os resultados não aparecem como esperado. Não porque você fez pouco, mas porque fez sem o fundamento que transforma esforço em sistema.',
+              },
+              {
+                title: 'Cada ano parado é um ano perdido.',
+                body: 'Agrofloresta é construção de solo e de tempo. Um sistema mal planejado no início exige anos de correção. O tempo que você espera para começar certo não volta.',
+              },
+            ].map(card => (
+              <div key={card.title} className="flex flex-col gap-3">
+                <div className="w-8 h-px" style={{ backgroundColor: FOREST, opacity: 0.5 }} />
+                <h3 className="font-serif font-black text-xl leading-snug" style={{ color: DARK }}>{card.title}</h3>
+                <p className="text-base leading-relaxed" style={{ color: '#4a5240' }}>{card.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── PRIMEIRO GUIA PONTA A PONTA ──────────────────────── */}
       <section style={{ backgroundColor: DARK }} className="py-28 px-6">
         <div className="max-w-5xl mx-auto">
