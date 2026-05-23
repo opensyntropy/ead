@@ -308,6 +308,10 @@ function CheckoutForm() {
     })
     const data = await res.json()
     setLoading(false)
+    if (data.invoiceUrl) {
+      window.location.href = data.invoiceUrl
+      return
+    }
     if (data.pixQrCode) {
       setPixData({ qrCode: data.pixQrCode, payload: data.pixPayload })
       ;(window as any).fbq?.('track', 'Purchase', { value: 67, currency: 'BRL' })
@@ -341,6 +345,10 @@ function CheckoutForm() {
     })
     const data = await res.json()
     setUpsellLoading(false)
+    if (data.invoiceUrl) {
+      window.location.href = data.invoiceUrl
+      return
+    }
     if (data.pixQrCode) {
       setUpsellPixData({ qrCode: data.pixQrCode, payload: data.pixPayload })
     } else if (data.cardSuccess) {

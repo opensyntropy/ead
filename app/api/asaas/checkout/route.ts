@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { PRODUCTS, type ProductId } from '@/config/products'
-import { findOrCreateCustomer, createCreditCardCharge, createPixCharge, getPixQrCode } from '@/lib/asaas'
+import { findOrCreateCustomer, createCreditCardCharge, createPixCharge, createCharge, getPixQrCode } from '@/lib/asaas'
 import { createServiceClient } from '@/lib/supabase/server'
 import { createDownloadToken } from '@/lib/download'
 import { sendDownloadEmail, sendSessionPurchaseEmail, sendPurchaseNotification } from '@/lib/email'
@@ -45,33 +45,57 @@ export async function POST(request: Request) {
     const customer = await findOrCreateCustomer(email, name || email.split('@')[0], cpfCnpj)
 
     if (paymentMethod === 'pix') {
-      const charge = await createPixCharge({
-        customerId: customer.id,
-        value: product.price,
-        description: product.asaasDescription,
-        externalReference: `${productId}:${email}`,
-      })
-      const qr = await getPixQrCode(charge.id)
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://agroflorestasintropica.com.br'
+      try {
+        const charge = await createPixCharge({
+          customerId: customer.id,
+          value: product.price,
+          description: product.asaasDescription,
+          externalReference: `${productId}:${email}`,
+        })
+        const qr = await getPixQrCode(charge.id)
 
-      // Registra tentativa de PIX para rastreamento (confirmação vem pelo webhook)
-      const supabase = await createServiceClient()
-      console.log('[pix_charges] tentando inserir charge.id:', charge.id)
-      const { data: pixInsertData, error: pixInsertError } = await supabase.from('pix_charges').upsert(
-        {
-          asaas_payment_id: charge.id, email, name: name || email.split('@')[0],
-          product: productId, status: 'pending', payment_method: 'pix',
-          utm_source, utm_medium, utm_campaign, utm_term, utm_content,
-        },
-        { onConflict: 'asaas_payment_id' }
-      ).select()
-      if (pixInsertError) console.error('[pix_charges] ERRO no insert:', JSON.stringify(pixInsertError))
-      else console.log('[pix_charges] inserido com sucesso:', pixInsertData)
+        const supabase = await createServiceClient()
+        await supabase.from('pix_charges').upsert(
+          {
+            asaas_payment_id: charge.id, email, name: name || email.split('@')[0],
+            product: productId, status: 'pending', payment_method: 'pix',
+            utm_source, utm_medium, utm_campaign, utm_term, utm_content,
+          },
+          { onConflict: 'asaas_payment_id' }
+        )
 
-      return NextResponse.json({
-        pixQrCode: qr.encodedImage,
-        pixPayload: qr.payload,
-        pixExpirationDate: qr.expirationDate,
-      })
+        return NextResponse.json({
+          pixQrCode: qr.encodedImage,
+          pixPayload: qr.payload,
+          pixExpirationDate: qr.expirationDate,
+        })
+      } catch (pixErr) {
+        const pixMsg = pixErr instanceof Error ? pixErr.message : String(pixErr)
+        if (!pixMsg.includes('invalid_billingType')) throw pixErr
+
+        // Fallback: PIX direto indisponível, redireciona para link Asaas
+        console.warn('[checkout] PIX direto indisponível, usando fallback invoiceUrl')
+        const charge = await createCharge({
+          customerId: customer.id,
+          value: product.price,
+          description: product.asaasDescription,
+          externalReference: `${productId}:${email}`,
+          redirectUrl: `${baseUrl}/ebook`,
+        })
+
+        const supabase = await createServiceClient()
+        await supabase.from('pix_charges').upsert(
+          {
+            asaas_payment_id: charge.id, email, name: name || email.split('@')[0],
+            product: productId, status: 'pending', payment_method: 'pix',
+            utm_source, utm_medium, utm_campaign, utm_term, utm_content,
+          },
+          { onConflict: 'asaas_payment_id' }
+        )
+
+        return NextResponse.json({ invoiceUrl: charge.invoiceUrl })
+      }
     }
 
     // Cartão de crédito direto
