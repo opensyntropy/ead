@@ -150,7 +150,22 @@ function AccessTable({ rows, pixUtmMap, downloadedSet, emptyMsg }: { rows: UserP
                   : <span className="text-sm text-gray-300">manual</span>}
               </td>
               <td className="px-4 py-3 text-right">
-                <AdminActions id={row.id} email={row.email ?? ''} product={row.product} userId={row.user_id} />
+                <div className="flex items-center justify-end gap-2">
+                  {(row.product === 'ebook' || row.product === 'bundle') && row.email && (
+                    <a
+                      href={`/api/admin/download?email=${encodeURIComponent(row.email)}`}
+                      download
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-[#1b4332] bg-[#d8f3dc] hover:bg-[#b7e4c7] border border-[#b7e4c7] transition-colors"
+                      title={`Baixar PDF de ${row.email}`}
+                    >
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                      </svg>
+                      PDF
+                    </a>
+                  )}
+                  <AdminActions id={row.id} email={row.email ?? ''} product={row.product} userId={row.user_id} />
+                </div>
               </td>
             </tr>
           ))}
