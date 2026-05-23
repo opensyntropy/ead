@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import AdminActions from './AdminActions'
 
-interface UserProduct {
+export interface UserProduct {
   id: string
   user_id: string
   product: string
@@ -12,7 +12,7 @@ interface UserProduct {
   name?: string
 }
 
-interface PixCharge {
+export interface PixCharge {
   id: string
   asaas_payment_id: string
   email: string

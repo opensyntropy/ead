@@ -2,7 +2,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import AdminActions from './AdminActions'
-import AdminAccessTabs from './AdminAccessTabs'
+import AdminAccessTabs, { type PixCharge, type UserProduct } from './AdminAccessTabs'
 import AdminHeader from './AdminHeader'
 import TrafficChart, { type RawEvent } from './TrafficChart'
 
@@ -102,39 +102,12 @@ function SectionHeader({ title, count, badge }: { title: string; count?: number;
   )
 }
 
-interface UserProduct {
-  id: string
-  user_id: string
-  product: string
-  asaas_payment_id: string | null
-  created_at: string
-  email?: string
-  name?: string
-}
-
 interface RefundRequest {
   id: string
   email: string
   reason: string | null
   status: string
   created_at: string
-}
-
-interface PixCharge {
-  id: string
-  asaas_payment_id: string
-  email: string
-  name: string | null
-  product: string
-  status: string
-  created_at: string
-  utm_source: string | null
-  utm_medium: string | null
-  utm_campaign: string | null
-  utm_term: string | null
-  utm_content: string | null
-  payment_method: string | null
-  installment_count: number | null
 }
 
 export default async function AdminPage() {
