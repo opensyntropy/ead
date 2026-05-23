@@ -159,8 +159,8 @@ export async function createCharge(params: {
   customerId: string
   value: number
   description: string
-  externalReference: string  // product:userId ou product:email
-  redirectUrl: string
+  externalReference: string
+  redirectUrl?: string
 }): Promise<AsaasCharge> {
   const dueDate = new Date()
   dueDate.setDate(dueDate.getDate() + 1)
@@ -171,12 +171,12 @@ export async function createCharge(params: {
     headers: headers(),
     body: JSON.stringify({
       customer: params.customerId,
-      billingType: 'UNDEFINED',  // permite PIX, boleto ou cartão
-      value: params.value / 100, // Asaas usa reais, não centavos
+      billingType: 'UNDEFINED',
+      value: params.value / 100,
       dueDate: dueDateStr,
       description: params.description,
       externalReference: params.externalReference,
-      callback: { successUrl: params.redirectUrl },
+      ...(params.redirectUrl ? { callback: { successUrl: params.redirectUrl } } : {}),
     }),
   })
   if (!res.ok) {

@@ -45,7 +45,6 @@ export async function POST(request: Request) {
     const customer = await findOrCreateCustomer(email, name || email.split('@')[0], cpfCnpj)
 
     if (paymentMethod === 'pix') {
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://agroflorestasintropica.com.br'
       try {
         const charge = await createPixCharge({
           customerId: customer.id,
@@ -81,7 +80,6 @@ export async function POST(request: Request) {
           value: product.price,
           description: product.asaasDescription,
           externalReference: `${productId}:${email}`,
-          redirectUrl: `${baseUrl}/ebook`,
         })
 
         const supabase = await createServiceClient()
