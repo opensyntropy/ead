@@ -54,8 +54,8 @@ export async function GET(request: Request) {
     }
   }
 
-  // Arquiva todos os PIX pendentes há mais de 48h (independente de recovery)
-  const expiryCutoff = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString()
+  // Arquiva todos os PIX pendentes há mais de 25h (dueDate do Asaas é 24h)
+  const expiryCutoff = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString()
   const { data: expired } = await supabase
     .from('pix_charges')
     .update({ status: 'expired' })

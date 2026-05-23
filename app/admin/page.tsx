@@ -158,7 +158,8 @@ export default async function AdminPage() {
   }
   const expiredCount = expiredRes.count ?? 0
   const pixRows: PixCharge[] = pixRes.data ?? []
-  const pendingPix = pixRows.filter(p => p.status === 'pending')
+  const cutoff25h = new Date(Date.now() - 25 * 60 * 60 * 1000)
+  const pendingPix = pixRows.filter(p => p.status === 'pending' && new Date(p.created_at) > cutoff25h)
   const pixUtmMap = Object.fromEntries(pixRows.map(p => [p.asaas_payment_id, p]))
 
   const conversionsRaw: RawEvent[] = (productsRes.data ?? [])
