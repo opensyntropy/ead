@@ -5,6 +5,8 @@ import AdminActions from './AdminActions'
 import AdminAccessTabs, { type PixCharge, type UserProduct } from './AdminAccessTabs'
 import AdminHeader from './AdminHeader'
 import TrafficChart, { type RawEvent } from './TrafficChart'
+import { PRODUCTS } from '@/config/products'
+import type { ProductId } from '@/config/products'
 
 export const dynamic = 'force-dynamic'
 
@@ -158,6 +160,18 @@ export default async function AdminPage() {
   }
   const expiredCount = expiredRes.count ?? 0
   const pixRows: PixCharge[] = pixRes.data ?? []
+
+  const confirmedRows = pixRows.filter(p => p.status === 'confirmed')
+  function salesStats(sinceISO: string) {
+    const filtered = confirmedRows.filter(p => (p.confirmed_at ?? p.created_at) >= sinceISO)
+    const count = filtered.length
+    const cents = filtered.reduce((sum, p) => sum + (PRODUCTS[p.product as ProductId]?.price ?? 0), 0)
+    return { count, value: cents / 100 }
+  }
+  const salesDay   = salesStats(todayISO)
+  const salesWeek  = salesStats(weekISO)
+  const salesMonth = salesStats(monthISO)
+
   const cutoff25h = new Date(Date.now() - 25 * 60 * 60 * 1000)
   const pendingPix = pixRows.filter(p => p.status === 'pending' && new Date(p.created_at) > cutoff25h)
   const pixUtmMap = Object.fromEntries(pixRows.map(p => [p.asaas_payment_id, p]))
@@ -201,7 +215,7 @@ export default async function AdminPage() {
     email: emailMap[p.user_id]
       || (p.asaas_payment_id ? pixEmailMap[p.asaas_payment_id] : undefined)
       || p.user_id,
-    name: p.asaas_payment_id ? pixNameMap[p.asaas_payment_id] : undefined,
+    name: p.asaas_payment_id ? pixNameMap[p.asaas_payment_id] : (p.name ?? undefined),
   }))
   const downloadedEmails: string[] = [...new Set((downloadsRes.data ?? []).map(d => d.email))]
   const refundRows: RefundRequest[] = refundsRes.data ?? []
@@ -230,6 +244,16 @@ export default async function AdminPage() {
           <div className={`bg-white rounded-xl border px-5 py-4 ${pendingRefunds > 0 ? 'border-red-300' : 'border-gray-200'}`}>
             <p className="text-sm text-gray-400 uppercase tracking-wide mb-1 font-medium">Devoluções pendentes</p>
             <p className={`text-4xl font-bold ${pendingRefunds > 0 ? 'text-red-500' : 'text-gray-300'}`}>{pendingRefunds}</p>
+          </div>
+        </div>
+
+        {/* Vendas */}
+        <div>
+          <SectionHeader title="Vendas confirmadas" />
+          <div className="grid grid-cols-3 gap-4">
+            <SalesCard label="Hoje"    count={salesDay.count}   value={salesDay.value}   />
+            <SalesCard label="7 dias"  count={salesWeek.count}  value={salesWeek.value}  />
+            <SalesCard label="30 dias" count={salesMonth.count} value={salesMonth.value} />
           </div>
         </div>
 
@@ -409,6 +433,18 @@ export default async function AdminPage() {
         <AdminAccessTabs rows={rows} pixUtmMap={pixUtmMap} downloadedEmails={downloadedEmails} />
 
       </div>
+    </div>
+  )
+}
+
+function SalesCard({ label, count, value }: { label: string; count: number; value: number }) {
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
+      <p className="text-sm text-gray-400 uppercase tracking-wide mb-1 font-medium">{label}</p>
+      <p className="text-4xl font-bold text-[#1b4332]">{count}</p>
+      <p className="text-sm font-semibold text-gray-500 mt-1">
+        {value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+      </p>
     </div>
   )
 }
