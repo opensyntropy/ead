@@ -2,7 +2,7 @@
 import { useState, useMemo } from 'react'
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis,
-  CartesianGrid, Tooltip,
+  CartesianGrid, Tooltip, Legend,
 } from 'recharts'
 
 export interface RawEvent { date: string; utm: string | null; referer?: string | null }
@@ -76,15 +76,22 @@ function buildDays(
   })
 }
 
+type DataKey = 'visits' | 'checkouts' | 'conversions'
+type ChartSeries = { dataKey: DataKey; color: string; label: string }
+
+const LABELS: Record<DataKey, string> = {
+  visits:      'Visitas',
+  checkouts:   'Checkouts iniciados',
+  conversions: 'Conversões',
+}
+
 function MiniChart({
   data,
-  dataKey,
-  color,
+  series,
   title,
 }: {
   data: { label: string; visits: number; checkouts: number; conversions: number }[]
-  dataKey: 'checkouts' | 'conversions'
-  color: string
+  series: ChartSeries[]
   title: string
 }) {
   return (
@@ -108,16 +115,25 @@ function MiniChart({
           <Tooltip
             contentStyle={{ fontSize: 13, borderRadius: 8, border: '1px solid #e5e7eb' }}
             labelStyle={{ fontWeight: 600, color: '#374151' }}
-            formatter={(value) => [value, title]}
+            formatter={(value, name) => [value, LABELS[name as DataKey] ?? name]}
           />
-          <Line
-            type="monotone"
-            dataKey={dataKey}
-            stroke={color}
-            strokeWidth={2}
-            dot={false}
-            activeDot={{ r: 4 }}
-          />
+          {series.length > 1 && (
+            <Legend
+              wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
+              formatter={(value) => LABELS[value as DataKey] ?? value}
+            />
+          )}
+          {series.map(s => (
+            <Line
+              key={s.dataKey}
+              type="monotone"
+              dataKey={s.dataKey}
+              stroke={s.color}
+              strokeWidth={2}
+              dot={false}
+              activeDot={{ r: 4 }}
+            />
+          ))}
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -185,9 +201,20 @@ export default function TrafficChart({ visits, checkouts, conversions }: Props) 
       </div>
 
       <div className="flex gap-6">
-        <MiniChart data={data} dataKey="checkouts"   color="#C69B2D" title="Checkouts iniciados" />
+        <MiniChart
+          data={data}
+          title="Tráfego"
+          series={[{ dataKey: 'visits', color: '#7DC142', label: 'Visitas' }]}
+        />
         <div className="w-px bg-gray-100 self-stretch" />
-        <MiniChart data={data} dataKey="conversions" color="#1b4332" title="Conversões" />
+        <MiniChart
+          data={data}
+          title="Checkouts & Conversões"
+          series={[
+            { dataKey: 'checkouts',   color: '#C69B2D', label: 'Checkouts iniciados' },
+            { dataKey: 'conversions', color: '#1b4332', label: 'Conversões' },
+          ]}
+        />
       </div>
     </div>
   )
