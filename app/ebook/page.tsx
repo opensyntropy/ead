@@ -380,7 +380,7 @@ function CheckoutForm() {
         </div>
         <div className="w-full rounded-2xl px-6 py-5 text-left" style={{ backgroundColor: '#f0fdf4', border: '2px solid #d8f3dc' }}>
           <p className="font-bold text-[#141F0C] text-base">Aguardando pagamento</p>
-          <p className="text-[#476B18] text-sm mt-1 leading-relaxed">Você receberá um e-mail assim que o PIX for confirmado.</p>
+          <p className="text-[#476B18] text-sm mt-1 leading-relaxed">Você receberá o link de download do ebook por e-mail assim que o PIX for confirmado.</p>
         </div>
         <UpsellBump
           upsellPaymentMethod={upsellPaymentMethod} setUpsellPaymentMethod={setUpsellPaymentMethod}
@@ -403,7 +403,7 @@ function CheckoutForm() {
         <div className="text-center flex flex-col gap-3">
           <p className="text-3xl">✓</p>
           <p className="font-bold text-[#141F0C] text-lg">Pagamento confirmado!</p>
-          <p className="text-[#476B18] text-sm leading-relaxed">Você receberá um e-mail em instantes.</p>
+          <p className="text-[#476B18] text-sm leading-relaxed">Você receberá o link de download do ebook por e-mail em instantes.</p>
         </div>
         <UpsellBump
           upsellPaymentMethod={upsellPaymentMethod} setUpsellPaymentMethod={setUpsellPaymentMethod}
@@ -424,6 +424,7 @@ function CheckoutForm() {
     <>
       {/* cabeçalho escuro com preço */}
       <div className="px-8 py-7 text-center" style={{ backgroundColor: '#0D1608' }}>
+        <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">Ebook Digital — PDF · 130 páginas</p>
         <div className="flex items-center justify-center gap-4 mb-1">
           <span className="text-gray-500 text-lg line-through">R$ 107</span>
           <span className="text-xs font-black px-2.5 py-1 rounded-full" style={{ backgroundColor: LIME + '22', color: LIME }}>41% OFF</span>
@@ -494,6 +495,10 @@ function CheckoutForm() {
             style={{ backgroundColor: LIME, color: DARK }}>
             {loading ? 'Aguarde...' : paymentMethod === 'pix' ? 'Pagar com PIX →' : 'Pagar com cartão →'}
           </button>
+
+          <p className="text-xs text-gray-400 text-center leading-relaxed -mt-1">
+            Após a confirmação, você receberá o link de download do ebook por e-mail.
+          </p>
 
           {paymentMethod === 'card' && (
             <div className="flex items-center justify-center gap-2 text-xs text-gray-400 bg-gray-50 rounded-xl py-3 px-4">
