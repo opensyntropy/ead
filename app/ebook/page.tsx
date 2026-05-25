@@ -1015,7 +1015,7 @@ export default function EbookLandingPage() {
       <section id="dentro" style={{ backgroundColor: CREAM }} className="pt-0 pb-28 px-6">
         <div className="max-w-4xl mx-auto">
           <p className="uppercase tracking-[0.2em] text-sm font-semibold mb-4" style={{ color: FOREST }}>
-            Conteúdo completo
+            Conteúdo completo do ebook
           </p>
           <h2 className="font-serif font-black leading-tight mb-4" style={{ fontSize: 'clamp(2rem, 4.5vw, 3.2rem)', color: DARK }}>
             5 partes · 27 capítulos.
