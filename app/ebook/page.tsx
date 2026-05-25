@@ -238,7 +238,6 @@ function formatCep(value: string) {
 function CheckoutForm() {
   const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
-  const [emailConfirm, setEmailConfirm] = useState('')
   const [name, setName] = useState('')
   const [cpf, setCpf] = useState('')
   const [loading, setLoading] = useState(false)
@@ -295,10 +294,6 @@ function CheckoutForm() {
 
   async function handleBuy(e: React.FormEvent) {
     e.preventDefault()
-    if (email !== emailConfirm) {
-      setError('Os e-mails não coincidem. Verifique e tente novamente.')
-      return
-    }
     ;(window as any).fbq?.('track', 'InitiateCheckout', { value: 67, currency: 'BRL', num_items: 1 })
     setLoading(true)
     setError('')
@@ -447,7 +442,6 @@ function CheckoutForm() {
         <form onSubmit={handleBuy} className="flex flex-col gap-4 w-full">
           <input type="text" required placeholder="Seu nome completo" value={name} onChange={e => setName(e.target.value)} className={inputCls} />
           <input type="email" required placeholder="Seu melhor e-mail" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
-          <input type="email" required placeholder="Confirme seu e-mail" value={emailConfirm} onChange={e => setEmailConfirm(e.target.value)} className={inputCls} />
           <input type="text" required inputMode="numeric" placeholder="CPF (somente números)" value={cpf}
             onChange={e => setCpf(formatCpf(e.target.value))} className={inputCls} />
 
