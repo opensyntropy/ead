@@ -108,7 +108,7 @@ function MiniChart({
           <Tooltip
             contentStyle={{ fontSize: 13, borderRadius: 8, border: '1px solid #e5e7eb' }}
             labelStyle={{ fontWeight: 600, color: '#374151' }}
-            formatter={(value: number) => [value, title]}
+            formatter={(value) => [value, title]}
           />
           <Line
             type="monotone"
