@@ -172,6 +172,10 @@ export default async function AdminPage() {
   const salesWeek  = salesStats(weekISO)
   const salesMonth = salesStats(monthISO)
 
+  const checkoutsToday = pixRows.filter(p => p.created_at >= todayISO).length
+  const checkoutsWeek  = pixRows.filter(p => p.created_at >= weekISO).length
+  const checkoutsMonth = pixRows.filter(p => p.created_at >= monthISO).length
+
   const cutoff25h = new Date(Date.now() - 25 * 60 * 60 * 1000)
   const pendingPix = pixRows.filter(p => p.status === 'pending' && new Date(p.created_at) > cutoff25h)
   const pixUtmMap = Object.fromEntries(pixRows.map(p => [p.asaas_payment_id, p]))
@@ -227,209 +231,248 @@ export default async function AdminPage() {
 
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
 
-        {/* Stat cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
-            <p className="text-sm text-gray-400 uppercase tracking-wide mb-1 font-medium">Acessos ativos</p>
-            <p className="text-4xl font-bold text-[#1b4332]">{rows.length}</p>
+        {/* Zone 1: Barra de status */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-4 py-2">
+            <span className="text-sm text-gray-500">Acessos ativos</span>
+            <span className="text-sm font-bold text-[#1b4332]">{rows.length}</span>
           </div>
-          <div className={`bg-white rounded-xl border px-5 py-4 ${pendingPix.length > 0 ? 'border-yellow-300' : 'border-gray-200'}`}>
-            <p className="text-sm text-gray-400 uppercase tracking-wide mb-1 font-medium">PIX pendentes</p>
-            <p className={`text-4xl font-bold ${pendingPix.length > 0 ? 'text-yellow-600' : 'text-gray-300'}`}>{pendingPix.length}</p>
-          </div>
-          <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
-            <p className="text-sm text-gray-400 uppercase tracking-wide mb-1 font-medium">Não efetivados (30d)</p>
-            <p className={`text-4xl font-bold ${expiredCount > 0 ? 'text-orange-500' : 'text-gray-300'}`}>{expiredCount}</p>
-          </div>
-          <div className={`bg-white rounded-xl border px-5 py-4 ${pendingRefunds > 0 ? 'border-red-300' : 'border-gray-200'}`}>
-            <p className="text-sm text-gray-400 uppercase tracking-wide mb-1 font-medium">Devoluções pendentes</p>
-            <p className={`text-4xl font-bold ${pendingRefunds > 0 ? 'text-red-500' : 'text-gray-300'}`}>{pendingRefunds}</p>
-          </div>
-        </div>
-
-        {/* Vendas */}
-        <div>
-          <SectionHeader title="Vendas confirmadas" />
-          <div className="grid grid-cols-3 gap-4">
-            <SalesCard label="Hoje"    count={salesDay.count}   value={salesDay.value}   />
-            <SalesCard label="7 dias"  count={salesWeek.count}  value={salesWeek.value}  />
-            <SalesCard label="30 dias" count={salesMonth.count} value={salesMonth.value} />
-          </div>
-        </div>
-
-        {/* Tráfego */}
-        <div>
-          <SectionHeader title="Tráfego — /ebook" />
-          <div className="grid grid-cols-3 gap-4 mb-4">
-            <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
-              <p className="text-sm text-gray-400 uppercase tracking-wide mb-1 font-medium">Hoje</p>
-              <p className="text-4xl font-bold text-[#1b4332]">{visitsToday}</p>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
-              <p className="text-sm text-gray-400 uppercase tracking-wide mb-1 font-medium">7 dias</p>
-              <p className="text-4xl font-bold text-[#1b4332]">{visitsWeek}</p>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
-              <p className="text-sm text-gray-400 uppercase tracking-wide mb-1 font-medium">30 dias</p>
-              <p className="text-4xl font-bold text-[#1b4332]">{visitsMonth}</p>
-            </div>
-          </div>
-          <TrafficChart visits={visitsRaw} checkouts={checkoutsRaw} conversions={conversionsRaw} />
-
-          {utmBreakdown.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <table className="w-full text-base">
-                <thead className="bg-gray-50 text-gray-500 text-sm uppercase tracking-wide font-semibold">
-                  <tr>
-                    <th className="text-left px-4 py-3">Origem (30 dias)</th>
-                    <th className="text-right px-4 py-3">Visitas</th>
-                    <th className="text-right px-4 py-3 text-gray-400">%</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {utmBreakdown.map(([src, count]) => (
-                    <tr key={src} className="hover:bg-gray-50/60">
-                      <td className="px-4 py-3"><OriginBadge row={{ utm_source: src === 'direto' ? undefined : src }} /></td>
-                      <td className="px-4 py-3 text-right font-semibold text-gray-800">{count}</td>
-                      <td className="px-4 py-3 text-right text-gray-400 text-sm">
-                        {visitsMonth > 0 ? Math.round((count / visitsMonth) * 100) : 0}%
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {adBreakdown.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <table className="w-full text-base">
-                <thead className="bg-gray-50 text-gray-500 text-sm uppercase tracking-wide font-semibold">
-                  <tr>
-                    <th className="text-left px-4 py-3">Anúncio — utm_content (30 dias)</th>
-                    <th className="text-right px-4 py-3">Visitas</th>
-                    <th className="text-right px-4 py-3">Vendas</th>
-                    <th className="text-right px-4 py-3 text-gray-400">Conv.</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {adBreakdown.map(([ad, { visits, conversions }]) => (
-                    <tr key={ad} className="hover:bg-gray-50/60">
-                      <td className="px-4 py-3 text-sm text-gray-700 font-medium max-w-xs truncate" title={ad}>{ad}</td>
-                      <td className="px-4 py-3 text-right text-gray-600">{visits}</td>
-                      <td className="px-4 py-3 text-right font-bold text-[#1b4332]">{conversions}</td>
-                      <td className="px-4 py-3 text-right text-gray-400 text-sm">
-                        {visits > 0 ? Math.round((conversions / visits) * 100) : 0}%
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-
-        {/* PIX pendentes */}
-        {pendingPix.length > 0 && (
-          <div>
-            <SectionHeader
-              title="PIX aguardando confirmação"
-              badge={
-                <span className="bg-yellow-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                  {pendingPix.length} pendente{pendingPix.length > 1 ? 's' : ''}
-                </span>
-              }
-            />
-            <div className="bg-white rounded-xl border border-yellow-200 overflow-x-auto">
-              <table className="w-full text-base">
-                <thead className="bg-yellow-50 text-yellow-800 text-sm uppercase tracking-wide font-semibold">
-                  <tr>
-                    <th className="text-left px-4 py-3">Email</th>
-                    <th className="text-left px-4 py-3">Nome</th>
-                    <th className="text-left px-4 py-3">Produto</th>
-                    <th className="text-left px-4 py-3">Pagamento</th>
-                    <th className="text-left px-4 py-3">Origem</th>
-                    <th className="text-left px-4 py-3">Data</th>
-                    <th className="px-4 py-3 text-right">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-yellow-50">
-                  {pendingPix.map(row => (
-                    <tr key={row.id} className="hover:bg-amber-50/40 transition-colors">
-                      <td className="px-4 py-3 font-medium text-gray-800">{row.email}</td>
-                      <td className="px-4 py-3 text-gray-500">{row.name ?? '—'}</td>
-                      <td className="px-4 py-3">
-                        <ProductBadge product={row.product} />
-                      </td>
-                      <td className="px-4 py-3"><PaymentBadge method={row.payment_method} installments={row.installment_count} /></td>
-                      <td className="px-4 py-3"><OriginBadge row={row} /></td>
-                      <td className="px-4 py-3 text-gray-400 text-sm whitespace-nowrap">{fmt(row.created_at)}</td>
-                      <td className="px-4 py-3 text-right">
-                        <AdminActions mode="confirm-pix" id={row.id} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Pedidos de devolução */}
-        <div>
-          <SectionHeader
-            title="Pedidos de devolução"
-            count={refundRows.length}
-            badge={pendingRefunds > 0 ? (
-              <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                {pendingRefunds} pendente{pendingRefunds > 1 ? 's' : ''}
+          {pendingPix.length > 0 && (
+            <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
+              <span className="text-sm font-semibold text-yellow-800">
+                {pendingPix.length} PIX aguardando confirmação
               </span>
-            ) : undefined}
-          />
-          <div className="bg-white rounded-xl border border-red-100 overflow-x-auto">
-            <table className="w-full text-base">
-              <thead className="bg-red-50 text-red-800 text-sm uppercase tracking-wide font-semibold">
-                <tr>
-                  <th className="text-left px-4 py-3">Email</th>
-                  <th className="text-left px-4 py-3">Motivo</th>
-                  <th className="text-left px-4 py-3">Status</th>
-                  <th className="text-left px-4 py-3">Data</th>
-                  <th className="px-4 py-3 text-right">Ações</th>
+            </div>
+          )}
+          {pendingRefunds > 0 && (
+            <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-4 py-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+              <span className="text-sm font-semibold text-red-800">
+                {pendingRefunds} devolução{pendingRefunds > 1 ? 'ões' : ''} pendente{pendingRefunds > 1 ? 's' : ''}
+              </span>
+            </div>
+          )}
+          {expiredCount > 0 && (
+            <div className="flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-lg px-4 py-2">
+              <span className="text-sm text-orange-700">
+                <span className="font-semibold">{expiredCount}</span> PIX expirado{expiredCount > 1 ? 's' : ''} (30d)
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Zone 2: Funil de performance */}
+        <div>
+          <SectionHeader title="Funil de performance" />
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-100">
+                  <th className="text-left px-6 py-3 text-xs text-gray-400 uppercase tracking-wide font-semibold" />
+                  <th className="text-right px-6 py-3 text-xs text-gray-400 uppercase tracking-wide font-semibold">Hoje</th>
+                  <th className="text-right px-6 py-3 text-xs text-gray-400 uppercase tracking-wide font-semibold">7 dias</th>
+                  <th className="text-right px-6 py-3 text-xs text-gray-400 uppercase tracking-wide font-semibold">30 dias</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-red-50">
-                {refundRows.map(row => (
-                  <tr key={row.id} className="hover:bg-red-50/30 transition-colors">
-                    <td className="px-4 py-3 font-medium text-gray-800">{row.email}</td>
-                    <td className="px-4 py-3 text-gray-500 max-w-xs truncate">{row.reason ?? '—'}</td>
-                    <td className="px-4 py-3">
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-sm font-medium ${
-                        row.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                        row.status === 'resolved' ? 'bg-green-100 text-green-800' :
-                        'bg-gray-100 text-gray-600'
-                      }`}>
-                        {row.status === 'pending' ? 'Pendente' : row.status === 'resolved' ? 'Resolvido' : row.status}
+              <tbody className="divide-y divide-gray-50">
+                <tr>
+                  <td className="px-6 py-4 text-sm font-medium text-gray-500">Visitas</td>
+                  <FunnelCell value={visitsToday} />
+                  <FunnelCell value={visitsWeek} />
+                  <FunnelCell value={visitsMonth} />
+                </tr>
+                <tr>
+                  <td className="px-6 py-4 text-sm font-medium text-gray-500">Checkouts iniciados</td>
+                  <FunnelCell value={checkoutsToday} rate={visitsToday > 0 ? checkoutsToday / visitsToday : null} />
+                  <FunnelCell value={checkoutsWeek}  rate={visitsWeek  > 0 ? checkoutsWeek  / visitsWeek  : null} />
+                  <FunnelCell value={checkoutsMonth} rate={visitsMonth > 0 ? checkoutsMonth / visitsMonth : null} />
+                </tr>
+                <tr>
+                  <td className="px-6 py-4 text-sm font-medium text-gray-500">Vendas confirmadas</td>
+                  <FunnelCell value={salesDay.count}   rate={checkoutsToday > 0 ? salesDay.count   / checkoutsToday : null} highlight />
+                  <FunnelCell value={salesWeek.count}  rate={checkoutsWeek  > 0 ? salesWeek.count  / checkoutsWeek  : null} highlight />
+                  <FunnelCell value={salesMonth.count} rate={checkoutsMonth > 0 ? salesMonth.count / checkoutsMonth : null} highlight />
+                </tr>
+                <tr className="bg-[#f0fdf4]/60">
+                  <td className="px-6 py-4 text-sm font-semibold text-gray-700">Receita</td>
+                  {([salesDay, salesWeek, salesMonth] as const).map((s, i) => (
+                    <td key={i} className="px-6 py-4 text-right">
+                      <span className="text-xl font-bold text-[#1b4332]">
+                        {s.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-400 text-sm whitespace-nowrap">{fmt(row.created_at)}</td>
-                    <td className="px-4 py-3 text-right">
-                      <AdminActions mode="resolve-refund" id={row.id} status={row.status} />
-                    </td>
-                  </tr>
-                ))}
-                {refundRows.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-10 text-center text-gray-300 text-base">
-                      Nenhum pedido de devolução.
-                    </td>
-                  </tr>
-                )}
+                  ))}
+                </tr>
               </tbody>
             </table>
           </div>
         </div>
 
-        {/* Acessos ativos */}
+        {/* Zone 3: Gráficos de tendência */}
+        <div>
+          <SectionHeader title="Tendência — /ebook" />
+          <TrafficChart visits={visitsRaw} checkouts={checkoutsRaw} conversions={conversionsRaw} />
+        </div>
+
+        {/* Zone 4: Origens & Anúncios */}
+        {(utmBreakdown.length > 0 || adBreakdown.length > 0) && (
+          <div>
+            <SectionHeader title="Origens & anúncios — 30 dias" />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {utmBreakdown.length > 0 && (
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  <table className="w-full text-base">
+                    <thead className="bg-gray-50 text-gray-500 text-sm uppercase tracking-wide font-semibold">
+                      <tr>
+                        <th className="text-left px-4 py-3">Origem</th>
+                        <th className="text-right px-4 py-3">Visitas</th>
+                        <th className="text-right px-4 py-3 text-gray-400">%</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {utmBreakdown.map(([src, count]) => (
+                        <tr key={src} className="hover:bg-gray-50/60">
+                          <td className="px-4 py-3"><OriginBadge row={{ utm_source: src === 'direto' ? undefined : src }} /></td>
+                          <td className="px-4 py-3 text-right font-semibold text-gray-800">{count}</td>
+                          <td className="px-4 py-3 text-right text-gray-400 text-sm">
+                            {visitsMonth > 0 ? Math.round((count / visitsMonth) * 100) : 0}%
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              {adBreakdown.length > 0 && (
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  <table className="w-full text-base">
+                    <thead className="bg-gray-50 text-gray-500 text-sm uppercase tracking-wide font-semibold">
+                      <tr>
+                        <th className="text-left px-4 py-3">Anúncio (utm_content)</th>
+                        <th className="text-right px-4 py-3">Visitas</th>
+                        <th className="text-right px-4 py-3">Vendas</th>
+                        <th className="text-right px-4 py-3 text-gray-400">Conv.</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {adBreakdown.map(([ad, { visits, conversions }]) => (
+                        <tr key={ad} className="hover:bg-gray-50/60">
+                          <td className="px-4 py-3 text-sm text-gray-700 font-medium max-w-xs truncate" title={ad}>{ad}</td>
+                          <td className="px-4 py-3 text-right text-gray-600">{visits}</td>
+                          <td className="px-4 py-3 text-right font-bold text-[#1b4332]">{conversions}</td>
+                          <td className="px-4 py-3 text-right text-gray-400 text-sm">
+                            {visits > 0 ? Math.round((conversions / visits) * 100) : 0}%
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Zone 5: Ações pendentes */}
+        <div className={`grid gap-8 ${pendingPix.length > 0 ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
+          {pendingPix.length > 0 && (
+            <div>
+              <SectionHeader
+                title="PIX aguardando confirmação"
+                badge={
+                  <span className="bg-yellow-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                    {pendingPix.length} pendente{pendingPix.length > 1 ? 's' : ''}
+                  </span>
+                }
+              />
+              <div className="bg-white rounded-xl border border-yellow-200 overflow-x-auto">
+                <table className="w-full text-base">
+                  <thead className="bg-yellow-50 text-yellow-800 text-sm uppercase tracking-wide font-semibold">
+                    <tr>
+                      <th className="text-left px-4 py-3">Email</th>
+                      <th className="text-left px-4 py-3">Produto</th>
+                      <th className="text-left px-4 py-3">Pagamento</th>
+                      <th className="text-left px-4 py-3">Data</th>
+                      <th className="px-4 py-3 text-right">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-yellow-50">
+                    {pendingPix.map(row => (
+                      <tr key={row.id} className="hover:bg-amber-50/40 transition-colors">
+                        <td className="px-4 py-3">
+                          <p className="font-medium text-gray-800 text-sm">{row.email}</p>
+                          {row.name && <p className="text-xs text-gray-400">{row.name}</p>}
+                        </td>
+                        <td className="px-4 py-3"><ProductBadge product={row.product} /></td>
+                        <td className="px-4 py-3"><PaymentBadge method={row.payment_method} installments={row.installment_count} /></td>
+                        <td className="px-4 py-3 text-gray-400 text-sm whitespace-nowrap">{fmt(row.created_at)}</td>
+                        <td className="px-4 py-3 text-right">
+                          <AdminActions mode="confirm-pix" id={row.id} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          <div>
+            <SectionHeader
+              title="Pedidos de devolução"
+              count={refundRows.length}
+              badge={pendingRefunds > 0 ? (
+                <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  {pendingRefunds} pendente{pendingRefunds > 1 ? 's' : ''}
+                </span>
+              ) : undefined}
+            />
+            <div className="bg-white rounded-xl border border-red-100 overflow-x-auto">
+              <table className="w-full text-base">
+                <thead className="bg-red-50 text-red-800 text-sm uppercase tracking-wide font-semibold">
+                  <tr>
+                    <th className="text-left px-4 py-3">Email</th>
+                    <th className="text-left px-4 py-3">Motivo</th>
+                    <th className="text-left px-4 py-3">Status</th>
+                    <th className="text-left px-4 py-3">Data</th>
+                    <th className="px-4 py-3 text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-red-50">
+                  {refundRows.map(row => (
+                    <tr key={row.id} className="hover:bg-red-50/30 transition-colors">
+                      <td className="px-4 py-3 font-medium text-gray-800">{row.email}</td>
+                      <td className="px-4 py-3 text-gray-500 max-w-xs truncate">{row.reason ?? '—'}</td>
+                      <td className="px-4 py-3">
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-sm font-medium ${
+                          row.status === 'pending'  ? 'bg-yellow-100 text-yellow-800' :
+                          row.status === 'resolved' ? 'bg-green-100 text-green-800' :
+                          'bg-gray-100 text-gray-600'
+                        }`}>
+                          {row.status === 'pending' ? 'Pendente' : row.status === 'resolved' ? 'Resolvido' : row.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-gray-400 text-sm whitespace-nowrap">{fmt(row.created_at)}</td>
+                      <td className="px-4 py-3 text-right">
+                        <AdminActions mode="resolve-refund" id={row.id} status={row.status} />
+                      </td>
+                    </tr>
+                  ))}
+                  {refundRows.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-10 text-center text-gray-300 text-base">
+                        Nenhum pedido de devolução.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* Zone 6: Clientes */}
         <AdminAccessTabs rows={rows} pixUtmMap={pixUtmMap} downloadedEmails={downloadedEmails} />
 
       </div>
@@ -437,15 +480,18 @@ export default async function AdminPage() {
   )
 }
 
-function SalesCard({ label, count, value }: { label: string; count: number; value: number }) {
+function FunnelCell({ value, rate, highlight }: { value: number; rate?: number | null; highlight?: boolean }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 px-5 py-4">
-      <p className="text-sm text-gray-400 uppercase tracking-wide mb-1 font-medium">{label}</p>
-      <p className="text-4xl font-bold text-[#1b4332]">{count}</p>
-      <p className="text-sm font-semibold text-gray-500 mt-1">
-        {value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-      </p>
-    </div>
+    <td className="px-6 py-4 text-right">
+      <span className={`text-xl font-bold ${highlight ? 'text-[#1b4332]' : 'text-gray-800'}`}>
+        {value.toLocaleString('pt-BR')}
+      </span>
+      {rate != null && (
+        <span className="ml-2 text-xs font-medium text-gray-400">
+          {Math.round(rate * 100)}%
+        </span>
+      )}
+    </td>
   )
 }
 
