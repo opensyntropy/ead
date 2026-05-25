@@ -424,7 +424,7 @@ function CheckoutForm() {
     <>
       {/* cabeçalho escuro com preço */}
       <div className="px-8 py-7 text-center" style={{ backgroundColor: '#0D1608' }}>
-        <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">Ebook Digital — PDF · 130 páginas</p>
+        <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">Ebook Digital — PDF · +200 páginas</p>
         <div className="flex items-center justify-center gap-4 mb-1">
           <span className="text-gray-500 text-lg line-through">R$ 107</span>
           <span className="text-xs font-black px-2.5 py-1 rounded-full" style={{ backgroundColor: LIME + '22', color: LIME }}>41% OFF</span>
