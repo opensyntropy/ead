@@ -17,6 +17,7 @@ export default function AdminActions({ mode, id, email, product, userId, status 
   // Form state for manual add
   const [newEmail, setNewEmail] = useState('')
   const [newProduct, setNewProduct] = useState<'ebook' | 'course' | 'bundle'>('ebook')
+  const [manualPaid, setManualPaid] = useState(false)
 
   async function handleRevoke() {
     if (!confirm(`Revogar acesso "${product}" de ${email}?`)) return
@@ -36,13 +37,14 @@ export default function AdminActions({ mode, id, email, product, userId, status 
     const res = await fetch('/api/admin/access', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: newEmail, product: newProduct }),
+      body: JSON.stringify({ email: newEmail, product: newProduct, manual_paid: manualPaid }),
     })
     const data = await res.json()
     setLoading(false)
     if (res.ok) {
       if (data.emailError) alert(`Acesso concedido, mas erro no email: ${data.emailError}`)
       setNewEmail('')
+      setManualPaid(false)
       window.location.reload()
     }
   }
@@ -123,6 +125,33 @@ export default function AdminActions({ mode, id, email, product, userId, status 
             <option value="course">Curso</option>
             <option value="bundle">Bundle</option>
           </select>
+        </div>
+        <div>
+          <label className="block text-sm font-semibold text-gray-600 mb-2">Tipo de acesso</label>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setManualPaid(false)}
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold border transition-colors ${
+                !manualPaid
+                  ? 'bg-gray-100 border-gray-400 text-gray-700'
+                  : 'border-gray-200 text-gray-400 hover:bg-gray-50'
+              }`}
+            >
+              Cortesia
+            </button>
+            <button
+              type="button"
+              onClick={() => setManualPaid(true)}
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold border transition-colors ${
+                manualPaid
+                  ? 'bg-[#d8f3dc] border-[#52b788] text-[#1b4332]'
+                  : 'border-gray-200 text-gray-400 hover:bg-gray-50'
+              }`}
+            >
+              Pago
+            </button>
+          </div>
         </div>
         <button
           type="submit"
