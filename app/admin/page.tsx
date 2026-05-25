@@ -176,11 +176,11 @@ export default async function AdminPage() {
   const pendingPix = pixRows.filter(p => p.status === 'pending' && new Date(p.created_at) > cutoff25h)
   const pixUtmMap = Object.fromEntries(pixRows.map(p => [p.asaas_payment_id, p]))
 
-  const conversionsRaw: RawEvent[] = (productsRes.data ?? [])
-    .filter(r => toDay(r.created_at) >= toDay(monthISO))
+  const conversionsRaw: RawEvent[] = confirmedRows
+    .filter(r => (r.confirmed_at ?? r.created_at) >= monthISO)
     .map(r => ({
-      date: r.created_at,
-      utm: r.asaas_payment_id ? (pixUtmMap[r.asaas_payment_id]?.utm_source ?? null) : null,
+      date: r.confirmed_at ?? r.created_at,
+      utm: r.utm_source,
     }))
 
   // Conversões por anúncio (utm_content de pix_charges confirmados)
