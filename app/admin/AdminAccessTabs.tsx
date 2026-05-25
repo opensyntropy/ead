@@ -7,6 +7,7 @@ export interface UserProduct {
   user_id: string
   product: string
   asaas_payment_id: string | null
+  manual_paid?: boolean | null
   created_at: string
   email?: string
   name?: string
@@ -136,7 +137,9 @@ function AccessTable({ rows, pixUtmMap, downloadedSet, emptyMsg }: { rows: UserP
               <td className="px-4 py-3">
                 {row.asaas_payment_id
                   ? <PaymentBadge method={pixUtmMap[row.asaas_payment_id]?.payment_method} installments={pixUtmMap[row.asaas_payment_id]?.installment_count} />
-                  : <span className="text-gray-300 text-xs">manual</span>}
+                  : row.manual_paid
+                    ? <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">Pago</span>
+                    : <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">Cortesia</span>}
               </td>
               <td className="px-4 py-3">
                 {downloadedSet.has(row.email ?? '')

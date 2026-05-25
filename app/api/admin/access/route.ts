@@ -14,7 +14,7 @@ async function checkAdmin(): Promise<boolean> {
 export async function POST(request: Request) {
   if (!await checkAdmin()) return new NextResponse('Forbidden', { status: 403 })
 
-  const { email, product } = await request.json() as { email: string; product: ProductId }
+  const { email, product, name, manual_paid } = await request.json() as { email: string; product: ProductId; name?: string; manual_paid?: boolean }
   const service = await createServiceClient()
 
   // Cria ou encontra usuário
@@ -31,7 +31,10 @@ export async function POST(request: Request) {
 
   const { error } = await service
     .from('user_products')
-    .upsert({ user_id: userId, product }, { onConflict: 'user_id,product' })
+    .upsert(
+      { user_id: userId, product, ...(name ? { name } : {}), manual_paid: manual_paid ?? false },
+      { onConflict: 'user_id,product' },
+    )
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
