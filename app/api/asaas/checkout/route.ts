@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   const {
     productId, email, name, cpf, paymentMethod = 'pix',
     cardNumber, cardExpiry, cardCvv, cardPostalCode, cardAddressNumber,
-    installmentCount,
+    installmentCount, whatsapp,
     utm_source, utm_medium, utm_campaign, utm_term, utm_content,
   } = body as {
     productId: string
@@ -24,6 +24,7 @@ export async function POST(request: Request) {
     cardPostalCode?: string
     cardAddressNumber?: string
     installmentCount?: number
+    whatsapp?: string
     utm_source?: string
     utm_medium?: string
     utm_campaign?: string
@@ -59,6 +60,7 @@ export async function POST(request: Request) {
           {
             asaas_payment_id: charge.id, email, name: name || email.split('@')[0],
             product: productId, status: 'pending', payment_method: 'pix',
+            whatsapp: whatsapp || null,
             utm_source, utm_medium, utm_campaign, utm_term, utm_content,
           },
           { onConflict: 'asaas_payment_id' }
@@ -89,6 +91,7 @@ export async function POST(request: Request) {
           {
             asaas_payment_id: charge.id, email, name: name || email.split('@')[0],
             product: productId, status: 'pending', payment_method: 'pix',
+            whatsapp: whatsapp || null,
             utm_source, utm_medium, utm_campaign, utm_term, utm_content,
           },
           { onConflict: 'asaas_payment_id' }
@@ -136,6 +139,7 @@ export async function POST(request: Request) {
         product: productId, status: charge.status === 'CONFIRMED' ? 'confirmed' : 'pending',
         payment_method: 'card',
         installment_count: installmentCount && installmentCount > 1 ? installmentCount : null,
+        whatsapp: whatsapp || null,
         utm_source, utm_medium, utm_campaign, utm_term, utm_content,
       },
       { onConflict: 'asaas_payment_id' }

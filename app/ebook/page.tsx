@@ -211,6 +211,13 @@ function FaqItem({ q, a, link }: { q: string; a: string; link?: { href: string; 
   )
 }
 
+function formatWhatsapp(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 11)
+  if (digits.length <= 2) return digits
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
+}
+
 function formatCpf(value: string) {
   const digits = value.replace(/\D/g, '').slice(0, 11)
   return digits
@@ -240,6 +247,7 @@ function CheckoutForm() {
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
   const [cpf, setCpf] = useState('')
+  const [whatsapp, setWhatsapp] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'card'>('pix')
@@ -324,7 +332,7 @@ function CheckoutForm() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        productId: 'ebook', email, name, cpf, paymentMethod,
+        productId: 'ebook', email, name, cpf, whatsapp, paymentMethod,
         ...utmParams,
         ...(paymentMethod === 'card' ? { cardNumber, cardExpiry, cardCvv, cardPostalCode, cardAddressNumber, installmentCount } : {}),
       }),
@@ -487,6 +495,8 @@ function CheckoutForm() {
           <input type="email" required placeholder="Seu melhor e-mail" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
           <input type="text" required inputMode="numeric" placeholder="CPF (somente números)" value={cpf}
             onChange={e => setCpf(formatCpf(e.target.value))} className={inputCls} />
+          <input type="text" inputMode="numeric" placeholder="WhatsApp" value={whatsapp}
+            onChange={e => setWhatsapp(formatWhatsapp(e.target.value))} className={inputCls} />
 
           <div className="flex rounded-xl overflow-hidden border-2 border-gray-200">
             <button type="button" onClick={() => setPaymentMethod('pix')}
