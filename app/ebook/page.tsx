@@ -349,6 +349,7 @@ function CheckoutForm() {
       ;(window as any).fbq?.('track', 'Purchase', { value: 67, currency: 'BRL' })
     } else if (data.cardSuccess) {
       setCardSuccess(true)
+      if (data.downloadUrl) setDownloadUrl(data.downloadUrl)
       ;(window as any).fbq?.('track', 'Purchase', { value: 67, currency: 'BRL' })
     } else {
       setError(data.error ?? 'Erro ao processar pagamento. Tente novamente.')
@@ -452,12 +453,27 @@ function CheckoutForm() {
   if (cardSuccess) {
     return (
       <div className="bg-white px-8 py-8 w-full flex flex-col gap-6">
-        <div className="text-center flex flex-col gap-3">
-          <p className="text-3xl">✓</p>
-          <p className="font-bold text-[#141F0C] text-lg">Pagamento confirmado!</p>
-          <p className="text-[#476B18] text-sm leading-relaxed">Você receberá o link de download do ebook por e-mail em instantes.</p>
-          <p className="text-gray-400 text-xs">Não encontrou? Verifique a caixa de spam ou promoções.</p>
-        </div>
+        {downloadUrl ? (
+          <div className="w-full rounded-2xl px-6 py-8 text-center" style={{ backgroundColor: '#f0fdf4', border: '2px solid #7DC142' }}>
+            <p className="text-3xl mb-3">✓</p>
+            <p className="font-bold text-[#141F0C] text-xl mb-1">Pagamento confirmado!</p>
+            <p className="text-[#476B18] text-sm mb-6">Seu guia está pronto. O link também foi enviado por e-mail.</p>
+            <a
+              href={downloadUrl}
+              className="inline-block w-full font-bold text-xl py-6 rounded-xl transition-all hover:brightness-105 shadow-lg"
+              style={{ backgroundColor: LIME, color: DARK }}
+            >
+              Baixar meu Guia →
+            </a>
+          </div>
+        ) : (
+          <div className="text-center flex flex-col gap-3">
+            <p className="text-3xl">✓</p>
+            <p className="font-bold text-[#141F0C] text-lg">Pagamento confirmado!</p>
+            <p className="text-[#476B18] text-sm leading-relaxed">Você receberá o link de download do ebook por e-mail em instantes.</p>
+            <p className="text-gray-400 text-xs">Não encontrou? Verifique a caixa de spam ou promoções.</p>
+          </div>
+        )}
         <UpsellBump
           upsellPaymentMethod={upsellPaymentMethod} setUpsellPaymentMethod={setUpsellPaymentMethod}
           upsellLoading={upsellLoading} upsellPixData={upsellPixData} upsellSuccess={upsellSuccess}

@@ -146,6 +146,7 @@ export async function POST(request: Request) {
     )
 
     let postError: string | null = null
+    let downloadUrl: string | null = null
     if (charge.status === 'CONFIRMED') {
       try {
         await grantAccessAndSendEmail(email, productId as ProductId, charge.id)
@@ -153,9 +154,15 @@ export async function POST(request: Request) {
         postError = postErr instanceof Error ? postErr.message : String(postErr)
         console.error('Erro pós-pagamento (acesso/email):', postError)
       }
+      if (productId === 'ebook' || productId === 'bundle') {
+        try {
+          const token = await createDownloadToken(email, 'ebook')
+          downloadUrl = `/api/download?token=${token}`
+        } catch { /* não bloqueia a resposta */ }
+      }
     }
 
-    return NextResponse.json({ cardSuccess: true, chargeStatus: charge.status, postError })
+    return NextResponse.json({ cardSuccess: true, chargeStatus: charge.status, postError, downloadUrl })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error('Asaas checkout error:', msg)
