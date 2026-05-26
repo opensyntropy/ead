@@ -507,8 +507,8 @@ function CheckoutForm() {
       {/* formulário */}
       <div className="bg-white px-8 pt-7 pb-8">
         <form onSubmit={handleBuy} className="flex flex-col gap-4 w-full">
-          <input type="text" required placeholder="Seu nome completo" value={name} onChange={e => setName(e.target.value)} className={inputCls} />
-          <input type="email" required placeholder="Seu melhor e-mail" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
+          <input type="text" required name="name" autoComplete="name" placeholder="Seu nome completo" value={name} onChange={e => setName(e.target.value)} className={inputCls} />
+          <input type="email" required name="email" autoComplete="email" placeholder="Seu melhor e-mail" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
           <input type="text" required inputMode="numeric" placeholder="CPF (somente números)" value={cpf}
             onChange={e => setCpf(formatCpf(e.target.value))} className={inputCls} />
           <input type="text" inputMode="numeric" placeholder="WhatsApp" value={whatsapp}
@@ -547,15 +547,15 @@ function CheckoutForm() {
                   )
                 })}
               </div>
-              <input type="text" required inputMode="numeric" placeholder="Número do cartão" value={cardNumber}
+              <input type="text" required inputMode="numeric" name="cc-number" autoComplete="cc-number" placeholder="Número do cartão" value={cardNumber}
                 onChange={e => setCardNumber(formatCardNumber(e.target.value))} className={inputCls} />
-              <input type="text" required inputMode="numeric" placeholder="Validade (MM/AA)" value={cardExpiry}
+              <input type="text" required inputMode="numeric" name="cc-exp" autoComplete="cc-exp" placeholder="Validade (MM/AA)" value={cardExpiry}
                 onChange={e => setCardExpiry(formatExpiry(e.target.value))} className={inputCls} />
-              <input type="text" required inputMode="numeric" placeholder="CVV" value={cardCvv}
+              <input type="text" required inputMode="numeric" name="cc-csc" autoComplete="cc-csc" placeholder="CVV" value={cardCvv}
                 onChange={e => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))} className={inputCls} />
-              <input type="text" required inputMode="numeric" placeholder="CEP" value={cardPostalCode}
+              <input type="text" required inputMode="numeric" name="postal-code" autoComplete="billing postal-code" placeholder="CEP" value={cardPostalCode}
                 onChange={e => setCardPostalCode(formatCep(e.target.value))} className={inputCls} />
-              <input type="text" required placeholder="Número do endereço" value={cardAddressNumber}
+              <input type="text" required name="address-line2" autoComplete="billing address-line2" placeholder="Número do endereço" value={cardAddressNumber}
                 onChange={e => setCardAddressNumber(e.target.value)} className={inputCls} />
             </div>
           )}
@@ -686,15 +686,15 @@ function UpsellBump({
         </div>
         {upsellPaymentMethod === 'card' && (
           <div className="flex flex-col gap-2">
-            <input type="text" required inputMode="numeric" placeholder="Número do cartão" value={upsellCardNumber}
+            <input type="text" required inputMode="numeric" name="cc-number" autoComplete="cc-number" placeholder="Número do cartão" value={upsellCardNumber}
               onChange={e => setUpsellCardNumber(formatCardNumber(e.target.value))} className={inputCls} />
-            <input type="text" required inputMode="numeric" placeholder="Validade (MM/AA)" value={upsellCardExpiry}
+            <input type="text" required inputMode="numeric" name="cc-exp" autoComplete="cc-exp" placeholder="Validade (MM/AA)" value={upsellCardExpiry}
               onChange={e => setUpsellCardExpiry(formatExpiry(e.target.value))} className={inputCls} />
-            <input type="text" required inputMode="numeric" placeholder="CVV" value={upsellCardCvv}
+            <input type="text" required inputMode="numeric" name="cc-csc" autoComplete="cc-csc" placeholder="CVV" value={upsellCardCvv}
               onChange={e => setUpsellCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))} className={inputCls} />
-            <input type="text" required inputMode="numeric" placeholder="CEP" value={upsellCardPostalCode}
+            <input type="text" required inputMode="numeric" name="postal-code" autoComplete="billing postal-code" placeholder="CEP" value={upsellCardPostalCode}
               onChange={e => setUpsellCardPostalCode(formatCep(e.target.value))} className={inputCls} />
-            <input type="text" required placeholder="Número do endereço" value={upsellCardAddressNumber}
+            <input type="text" required name="address-line2" autoComplete="billing address-line2" placeholder="Número do endereço" value={upsellCardAddressNumber}
               onChange={e => setUpsellCardAddressNumber(e.target.value)} className={inputCls} />
           </div>
         )}
