@@ -127,7 +127,7 @@ export default async function AdminPage() {
     service.from('user_products').select('*').order('created_at', { ascending: false }),
     service.from('refund_requests').select('*').order('created_at', { ascending: false }),
     service.from('pix_charges').select('*,payment_method,installment_count').order('created_at', { ascending: false }),
-    service.from('download_tokens').select('email').eq('used', true),
+    service.from('download_tokens').select('email').or('used.eq.true,download_count.gt.0'),
     service.from('page_visits').select('id', { count: 'exact', head: true }).eq('page', '/ebook').gte('created_at', todayISO),
     service.from('page_visits').select('id', { count: 'exact', head: true }).eq('page', '/ebook').gte('created_at', weekISO),
     service.from('page_visits').select('id', { count: 'exact', head: true }).eq('page', '/ebook').gte('created_at', monthISO),
