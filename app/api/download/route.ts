@@ -20,7 +20,7 @@ export async function GET(request: Request) {
 
   const { data: row, error } = await supabase
     .from('download_tokens')
-    .select('email, product, used, download_count')
+    .select('email, product, used, download_count, no_limit')
     .eq('token', token)
     .single()
 
@@ -29,20 +29,28 @@ export async function GET(request: Request) {
   }
 
   // Compatibilidade com tokens antigos (used=true) + novo limite por contagem
-  if (row.used || row.download_count >= DOWNLOAD_LIMIT) {
+  if (row.used || (!row.no_limit && row.download_count >= DOWNLOAD_LIMIT)) {
     return NextResponse.redirect(`${origin}/reenviar?erro=token-esgotado`)
   }
 
-  // Incrementa atomicamente (optimistic lock — evita race conditions)
-  const { data: updated, error: updateError } = await supabase
-    .from('download_tokens')
-    .update({ download_count: row.download_count + 1 })
-    .eq('token', token)
-    .eq('download_count', row.download_count)
-    .select('token')
-
-  if (updateError || !updated?.length) {
-    return NextResponse.redirect(`${origin}/reenviar?erro=token-esgotado`)
+  // Tokens sem limite: incrementa sem lock. Tokens com limite: optimistic lock anti-race
+  let updateError, updated
+  if (row.no_limit) {
+    ({ error: updateError } = await supabase
+      .from('download_tokens')
+      .update({ download_count: row.download_count + 1 })
+      .eq('token', token))
+    if (updateError) return NextResponse.redirect(`${origin}/reenviar?erro=token-invalido`)
+  } else {
+    ({ data: updated, error: updateError } = await supabase
+      .from('download_tokens')
+      .update({ download_count: row.download_count + 1 })
+      .eq('token', token)
+      .eq('download_count', row.download_count)
+      .select('token'))
+    if (updateError || !updated?.length) {
+      return NextResponse.redirect(`${origin}/reenviar?erro=token-esgotado`)
+    }
   }
 
   const masterPath = path.join(process.cwd(), 'ebook.pdf')
