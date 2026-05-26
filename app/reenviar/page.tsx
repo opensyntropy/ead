@@ -7,9 +7,10 @@ const DARK  = '#141F0C'
 const CREAM = '#F2F0E9'
 
 const ERROS: Record<string, string> = {
-  'token-usado':   'Este link já foi utilizado. Solicite um novo link abaixo.',
+  'token-usado':    'Este link já foi utilizado. Solicite um novo link abaixo.',
+  'token-esgotado': 'Este link atingiu o limite de downloads. Solicite um novo link abaixo.',
   'token-invalido': 'Link inválido ou expirado. Solicite um novo link abaixo.',
-  'sem-token':     'Nenhum link informado. Solicite um novo link abaixo.',
+  'sem-token':      'Nenhum link informado. Solicite um novo link abaixo.',
 }
 
 function ReenviarForm() {

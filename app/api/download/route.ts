@@ -6,6 +6,8 @@ import path from 'path'
 
 export const maxDuration = 30
 
+const DOWNLOAD_LIMIT = 3
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const token = searchParams.get('token')
@@ -18,7 +20,7 @@ export async function GET(request: Request) {
 
   const { data: row, error } = await supabase
     .from('download_tokens')
-    .select('email, product, used')
+    .select('email, product, used, download_count')
     .eq('token', token)
     .single()
 
@@ -26,20 +28,21 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/reenviar?erro=token-invalido`)
   }
 
-  if (row.used) {
-    return NextResponse.redirect(`${origin}/reenviar?erro=token-usado`)
+  // Compatibilidade com tokens antigos (used=true) + novo limite por contagem
+  if (row.used || row.download_count >= DOWNLOAD_LIMIT) {
+    return NextResponse.redirect(`${origin}/reenviar?erro=token-esgotado`)
   }
 
-  // Marca como usado atomicamente (evita race conditions)
+  // Incrementa atomicamente (optimistic lock — evita race conditions)
   const { data: updated, error: updateError } = await supabase
     .from('download_tokens')
-    .update({ used: true })
+    .update({ download_count: row.download_count + 1 })
     .eq('token', token)
-    .eq('used', false)
+    .eq('download_count', row.download_count)
     .select('token')
 
   if (updateError || !updated?.length) {
-    return NextResponse.redirect(`${origin}/reenviar?erro=token-usado`)
+    return NextResponse.redirect(`${origin}/reenviar?erro=token-esgotado`)
   }
 
   const masterPath = path.join(process.cwd(), 'ebook.pdf')

@@ -55,7 +55,7 @@ export async function POST(request: Request) {
         const qr = await getPixQrCode(charge.id)
 
         const supabase = await createServiceClient()
-        await supabase.from('pix_charges').upsert(
+        const { error: upsertErr } = await supabase.from('pix_charges').upsert(
           {
             asaas_payment_id: charge.id, email, name: name || email.split('@')[0],
             product: productId, status: 'pending', payment_method: 'pix',
@@ -63,11 +63,13 @@ export async function POST(request: Request) {
           },
           { onConflict: 'asaas_payment_id' }
         )
+        if (upsertErr) console.error('[checkout] pix_charges upsert error:', JSON.stringify(upsertErr))
 
         return NextResponse.json({
           pixQrCode: qr.encodedImage,
           pixPayload: qr.payload,
           pixExpirationDate: qr.expirationDate,
+          pixChargeId: charge.id,
         })
       } catch (pixErr) {
         const pixMsg = pixErr instanceof Error ? pixErr.message : String(pixErr)

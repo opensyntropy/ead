@@ -244,6 +244,8 @@ function CheckoutForm() {
   const [error, setError] = useState('')
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'card'>('pix')
   const [pixData, setPixData] = useState<{ qrCode: string; payload: string } | null>(null)
+  const [pixChargeId, setPixChargeId] = useState<string | null>(null)
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [cardSuccess, setCardSuccess] = useState(false)
   const [utmParams, setUtmParams] = useState<Record<string, string>>({})
@@ -290,6 +292,27 @@ function CheckoutForm() {
     }
   }, [searchParams])
 
+  useEffect(() => {
+    if (!pixChargeId || downloadUrl) return
+    let stopped = false
+
+    async function poll() {
+      if (stopped) return
+      try {
+        const res = await fetch(`/api/payment-status?paymentId=${pixChargeId}`)
+        const json = await res.json()
+        if (json.confirmed && json.downloadUrl) {
+          setDownloadUrl(json.downloadUrl)
+          return
+        }
+      } catch { /* ignora erros de rede */ }
+      if (!stopped) setTimeout(poll, 5000)
+    }
+
+    poll()
+    return () => { stopped = true }
+  }, [pixChargeId, downloadUrl])
+
   const inputCls = "border-2 border-gray-200 rounded-xl px-5 py-4 text-base text-gray-800 bg-white focus:outline-none focus:border-[#7DC142] transition-colors"
 
   async function handleBuy(e: React.FormEvent) {
@@ -314,6 +337,7 @@ function CheckoutForm() {
     }
     if (data.pixQrCode) {
       setPixData({ qrCode: data.pixQrCode, payload: data.pixPayload })
+      setPixChargeId(data.pixChargeId ?? null)
       ;(window as any).fbq?.('track', 'Purchase', { value: 67, currency: 'BRL' })
     } else if (data.cardSuccess) {
       setCardSuccess(true)
@@ -368,7 +392,10 @@ function CheckoutForm() {
   if (pixData) {
     return (
       <div className="bg-white px-8 py-6 flex flex-col gap-6 items-center text-center">
-        <img src={`data:image/png;base64,${pixData.qrCode}`} alt="QR Code PIX" className="w-52 h-52 rounded-2xl border-2 border-[#7DC142]" />
+        {!downloadUrl && (
+          <img src={`data:image/png;base64,${pixData.qrCode}`} alt="QR Code PIX" className="w-52 h-52 rounded-2xl border-2 border-[#7DC142]" />
+        )}
+        {!downloadUrl && (
         <div className="w-full">
           <p className="text-sm text-gray-400 mb-2 uppercase tracking-widest font-semibold">PIX Copia e Cola</p>
           <div className="flex gap-2 items-stretch">
@@ -378,11 +405,27 @@ function CheckoutForm() {
             </button>
           </div>
         </div>
-        <div className="w-full rounded-2xl px-6 py-5 text-left" style={{ backgroundColor: '#f0fdf4', border: '2px solid #d8f3dc' }}>
-          <p className="font-bold text-[#141F0C] text-base">Aguardando pagamento</p>
-          <p className="text-[#476B18] text-sm mt-1 leading-relaxed">Você receberá o link de download do ebook por e-mail assim que o PIX for confirmado.</p>
-          <p className="text-gray-400 text-xs mt-2">Não encontrou? Verifique a caixa de spam ou promoções.</p>
-        </div>
+        )}
+        {downloadUrl ? (
+          <div className="w-full rounded-2xl px-6 py-8 text-center" style={{ backgroundColor: '#f0fdf4', border: '2px solid #7DC142' }}>
+            <p className="text-3xl mb-3">✓</p>
+            <p className="font-bold text-[#141F0C] text-xl mb-1">PIX confirmado!</p>
+            <p className="text-[#476B18] text-sm mb-6">Seu guia está pronto. O link também foi enviado por e-mail.</p>
+            <a
+              href={downloadUrl}
+              className="inline-block w-full font-bold text-xl py-6 rounded-xl transition-all hover:brightness-105 shadow-lg"
+              style={{ backgroundColor: LIME, color: DARK }}
+            >
+              Baixar meu Guia →
+            </a>
+          </div>
+        ) : (
+          <div className="w-full rounded-2xl px-6 py-5 text-left" style={{ backgroundColor: '#f0fdf4', border: '2px solid #d8f3dc' }}>
+            <p className="font-bold text-[#141F0C] text-base">Aguardando pagamento</p>
+            <p className="text-[#476B18] text-sm mt-1 leading-relaxed">Você receberá o link de download do ebook por e-mail assim que o PIX for confirmado.</p>
+            <p className="text-gray-400 text-xs mt-2">Não encontrou? Verifique a caixa de spam ou promoções.</p>
+          </div>
+        )}
         <UpsellBump
           upsellPaymentMethod={upsellPaymentMethod} setUpsellPaymentMethod={setUpsellPaymentMethod}
           upsellLoading={upsellLoading} upsellPixData={upsellPixData} upsellSuccess={upsellSuccess}
