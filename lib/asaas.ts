@@ -47,7 +47,7 @@ export async function findOrCreateCustomer(email: string, name: string, cpfCnpj?
   const createRes = await fetch(`${ASAAS_BASE}/customers`, {
     method: 'POST',
     headers: headers(),
-    body: JSON.stringify({ name, email, ...(cpfCnpj ? { cpfCnpj } : {}) }),
+    body: JSON.stringify({ name, email, notificationDisabled: true, ...(cpfCnpj ? { cpfCnpj } : {}) }),
   })
   if (!createRes.ok) {
     const err = await createRes.json()
