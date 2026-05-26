@@ -168,6 +168,9 @@ function AccessTable({ rows, pixUtmMap, downloadedSet, emptyMsg }: { rows: UserP
                       PDF
                     </a>
                   )}
+                  {(row.product === 'ebook' || row.product === 'bundle' || row.product === 'session') && row.email && (
+                    <AdminActions mode="resend-download" email={row.email} product={row.product} />
+                  )}
                   <AdminActions id={row.id} email={row.email ?? ''} product={row.product} userId={row.user_id} />
                 </div>
               </td>
