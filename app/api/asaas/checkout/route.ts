@@ -128,6 +128,7 @@ export async function POST(request: Request) {
         cpfCnpj,
         postalCode: cardPostalCode.replace(/\D/g, ''),
         addressNumber: cardAddressNumber.trim(),
+        mobilePhone: (whatsapp || '').replace(/\D/g, '') || undefined,
       },
     })
 

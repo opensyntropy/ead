@@ -511,7 +511,10 @@ function CheckoutForm() {
           <input type="email" required name="email" autoComplete="email" placeholder="Seu melhor e-mail" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
           <input type="text" required inputMode="numeric" placeholder="CPF (somente números)" value={cpf}
             onChange={e => setCpf(formatCpf(e.target.value))} className={inputCls} />
-          <input type="text" inputMode="numeric" placeholder="WhatsApp" value={whatsapp}
+          <input type="text" inputMode="numeric"
+            placeholder={paymentMethod === 'card' ? 'Celular com DDD (obrigatório para cartão)' : 'WhatsApp'}
+            required={paymentMethod === 'card'}
+            value={whatsapp}
             onChange={e => setWhatsapp(formatWhatsapp(e.target.value))} className={inputCls} />
 
           <div className="flex rounded-xl overflow-hidden border-2 border-gray-200">

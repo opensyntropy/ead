@@ -121,6 +121,7 @@ export async function createCreditCardCharge(params: {
     cpfCnpj: string
     postalCode: string
     addressNumber: string
+    mobilePhone?: string
   }
 }): Promise<AsaasCharge> {
   const dueDate = new Date()
