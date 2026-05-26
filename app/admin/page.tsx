@@ -403,6 +403,7 @@ export default async function AdminPage() {
                         <td className="px-4 py-3">
                           <p className="font-medium text-gray-800 text-sm">{row.email}</p>
                           {row.name && <p className="text-xs text-gray-400">{row.name}</p>}
+                          {row.whatsapp && <p className="text-xs text-green-600">{row.whatsapp}</p>}
                         </td>
                         <td className="px-4 py-3"><ProductBadge product={row.product} /></td>
                         <td className="px-4 py-3"><PaymentBadge method={row.payment_method} installments={row.installment_count} /></td>

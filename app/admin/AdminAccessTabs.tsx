@@ -2,6 +2,8 @@
 import { useState } from 'react'
 import AdminActions from './AdminActions'
 
+const PAGE_SIZE = 25
+
 export interface UserProduct {
   id: string
   user_id: string
@@ -29,6 +31,7 @@ export interface PixCharge {
   utm_content: string | null
   payment_method: string | null
   installment_count: number | null
+  whatsapp: string | null
 }
 
 interface Props {
@@ -114,13 +117,19 @@ function OriginBadge({ row }: { row?: { utm_source?: string | null; utm_medium?:
 }
 
 function AccessTable({ rows, pixUtmMap, downloadedSet, emptyMsg }: { rows: UserProduct[]; pixUtmMap: Record<string, PixCharge>; downloadedSet: Set<string>; emptyMsg: string }) {
+  const [page, setPage] = useState(0)
+  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
+  const pageRows = rows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+
   return (
+    <div>
     <div className="bg-white rounded-xl border border-[#b7e4c7] overflow-x-auto">
       <table className="min-w-[900px] w-full text-base">
         <thead className="bg-[#f0fdf4] text-[#1b4332] text-sm uppercase tracking-wide font-semibold">
           <tr>
             <th className="text-left px-4 py-3">Nome</th>
             <th className="text-left px-4 py-3">Email</th>
+            <th className="text-left px-4 py-3">WhatsApp</th>
             <th className="text-left px-4 py-3">Produto</th>
             <th className="text-left px-4 py-3">Pagamento</th>
             <th className="text-left px-4 py-3">Download</th>
@@ -130,10 +139,15 @@ function AccessTable({ rows, pixUtmMap, downloadedSet, emptyMsg }: { rows: UserP
           </tr>
         </thead>
         <tbody className="divide-y divide-[#d8f3dc]">
-          {rows.map(row => (
+          {pageRows.map(row => (
             <tr key={row.id} className="hover:bg-[#f0fdf4]/60 transition-colors">
               <td className="px-4 py-3 text-gray-600 max-w-[140px] truncate" title={row.name ?? undefined}>{row.name ?? <span className="text-gray-300">—</span>}</td>
               <td className="px-4 py-3 font-medium text-gray-800 max-w-[180px] truncate" title={row.email}>{row.email}</td>
+              <td className="px-4 py-3 text-gray-500 text-sm whitespace-nowrap">
+                {row.asaas_payment_id && pixUtmMap[row.asaas_payment_id]?.whatsapp
+                  ? pixUtmMap[row.asaas_payment_id].whatsapp
+                  : <span className="text-gray-200">—</span>}
+              </td>
               <td className="px-4 py-3"><ProductBadge product={row.product} /></td>
               <td className="px-4 py-3">
                 {row.asaas_payment_id
@@ -178,11 +192,44 @@ function AccessTable({ rows, pixUtmMap, downloadedSet, emptyMsg }: { rows: UserP
           ))}
           {rows.length === 0 && (
             <tr>
-              <td colSpan={8} className="px-4 py-10 text-center text-gray-300 text-base">{emptyMsg}</td>
+              <td colSpan={9} className="px-4 py-10 text-center text-gray-300 text-base">{emptyMsg}</td>
             </tr>
           )}
         </tbody>
       </table>
+    </div>
+    {totalPages > 1 && (
+      <div className="flex items-center justify-between px-1 pt-3">
+        <span className="text-sm text-gray-400">
+          {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, rows.length)} de {rows.length}
+        </span>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setPage(0)}
+            disabled={page === 0}
+            className="px-2 py-1.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-default transition-colors"
+          >«</button>
+          <button
+            onClick={() => setPage(p => p - 1)}
+            disabled={page === 0}
+            className="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-default transition-colors"
+          >‹ Anterior</button>
+          <span className="px-3 py-1.5 text-sm font-semibold text-gray-700">
+            {page + 1} / {totalPages}
+          </span>
+          <button
+            onClick={() => setPage(p => p + 1)}
+            disabled={page >= totalPages - 1}
+            className="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-default transition-colors"
+          >Próxima ›</button>
+          <button
+            onClick={() => setPage(totalPages - 1)}
+            disabled={page >= totalPages - 1}
+            className="px-2 py-1.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-default transition-colors"
+          >»</button>
+        </div>
+      </div>
+    )}
     </div>
   )
 }

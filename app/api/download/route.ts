@@ -52,7 +52,7 @@ export async function GET(request: Request) {
   return new Response(watermarked.buffer as ArrayBuffer, {
     headers: {
       'Content-Type': 'application/pdf',
-      'Content-Disposition': 'attachment; filename="Agricultura-Sintropica.pdf"',
+      'Content-Disposition': 'attachment; filename="Agrofloresta-Sintropica-Michel-Bottan.pdf"',
       'Content-Length': String(watermarked.length),
     },
   })
