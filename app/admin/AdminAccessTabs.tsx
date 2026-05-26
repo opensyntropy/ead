@@ -143,9 +143,18 @@ function AccessTable({ rows, pixUtmMap, downloadedSet, emptyMsg }: { rows: UserP
             <tr key={row.id} className="hover:bg-[#f0fdf4]/60 transition-colors">
               <td className="px-4 py-3 text-gray-600 max-w-[140px] truncate" title={row.name ?? undefined}>{row.name ?? <span className="text-gray-300">—</span>}</td>
               <td className="px-4 py-3 font-medium text-gray-800 max-w-[180px] truncate" title={row.email}>{row.email}</td>
-              <td className="px-4 py-3 text-gray-500 text-sm whitespace-nowrap">
+              <td className="px-4 py-3 text-sm whitespace-nowrap">
                 {row.asaas_payment_id && pixUtmMap[row.asaas_payment_id]?.whatsapp
-                  ? pixUtmMap[row.asaas_payment_id].whatsapp
+                  ? (() => {
+                      const digits = pixUtmMap[row.asaas_payment_id].whatsapp!.replace(/\D/g, '')
+                      const waNumber = digits.startsWith('55') ? digits : `55${digits}`
+                      return (
+                        <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer"
+                          className="text-green-600 hover:text-green-800 hover:underline font-medium">
+                          {pixUtmMap[row.asaas_payment_id].whatsapp}
+                        </a>
+                      )
+                    })()
                   : <span className="text-gray-200">—</span>}
               </td>
               <td className="px-4 py-3"><ProductBadge product={row.product} /></td>
