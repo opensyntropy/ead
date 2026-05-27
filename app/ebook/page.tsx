@@ -64,18 +64,22 @@ const LIME   = '#7DC142'  // verde lima dos títulos
 const DARK   = '#141F0C'  // fundo floresta escuro
 const FOREST = '#476B18'  // verde floresta médio
 async function copyToClipboard(text: string): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(text)
-  } catch {
-    const el = document.createElement('textarea')
-    el.value = text
-    el.style.cssText = 'position:fixed;opacity:0;top:0;left:0'
-    document.body.appendChild(el)
-    el.focus()
-    el.select()
-    document.execCommand('copy')
-    document.body.removeChild(el)
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text)
+      return
+    } catch { /* fall through */ }
   }
+  // Fallback: funciona em iOS (select() não seleciona tudo; precisa de setSelectionRange)
+  const el = document.createElement('textarea')
+  el.value = text
+  el.setAttribute('readonly', '')
+  el.style.cssText = 'position:fixed;opacity:0;top:0;left:0;pointer-events:none'
+  document.body.appendChild(el)
+  el.focus()
+  el.setSelectionRange(0, text.length)
+  document.execCommand('copy')
+  document.body.removeChild(el)
 }
 
 function getABAssignments(): Record<string, string> {
@@ -444,12 +448,16 @@ function CheckoutForm() {
         {!downloadUrl && (
         <div className="w-full">
           <p className="text-sm text-gray-400 mb-2 uppercase tracking-widest font-semibold">PIX Copia e Cola</p>
-          <div className="flex gap-2 items-stretch">
-            <input readOnly value={pixData.payload} className="flex-1 border-2 border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-600 bg-gray-50 font-mono truncate" />
-            <button type="button" onClick={handleCopy} className="px-4 py-3 text-white rounded-xl text-sm font-bold transition-colors flex-shrink-0" style={{ backgroundColor: LIME }}>
-              {copied ? '✓ Copiado' : 'Copiar'}
-            </button>
-          </div>
+          <input
+            readOnly
+            value={pixData.payload}
+            className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-600 bg-gray-50 font-mono mb-2"
+            onClick={e => (e.target as HTMLInputElement).select()}
+            onFocus={e => e.target.select()}
+          />
+          <button type="button" onClick={handleCopy} className="w-full py-3 text-white rounded-xl text-sm font-bold transition-colors" style={{ backgroundColor: LIME }}>
+            {copied ? '✓ Código copiado!' : 'Copiar código PIX'}
+          </button>
         </div>
         )}
         {downloadUrl ? (
@@ -686,10 +694,16 @@ function UpsellBump({
         <div className="flex justify-center">
           <img src={`data:image/png;base64,${upsellPixData.qrCode}`} alt="QR Code PIX Sessão" className="w-44 h-44 rounded-xl border-2 border-[#7DC142]" />
         </div>
-        <div className="flex gap-2 items-stretch">
-          <input readOnly value={upsellPixData.payload} className="flex-1 border-2 border-gray-200 rounded-xl px-3 py-2.5 text-xs text-gray-600 bg-white font-mono truncate" />
-          <button type="button" onClick={handleCopyUpsell} className="px-3 py-2.5 text-white rounded-xl text-xs font-bold flex-shrink-0" style={{ backgroundColor: LIME }}>
-            {upsellCopied ? '✓' : 'Copiar'}
+        <div className="flex flex-col gap-2">
+          <input
+            readOnly
+            value={upsellPixData.payload}
+            className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-xs text-gray-600 bg-white font-mono"
+            onClick={e => (e.target as HTMLInputElement).select()}
+            onFocus={e => e.target.select()}
+          />
+          <button type="button" onClick={handleCopyUpsell} className="w-full py-2.5 text-white rounded-xl text-xs font-bold" style={{ backgroundColor: LIME }}>
+            {upsellCopied ? '✓ Código copiado!' : 'Copiar código PIX'}
           </button>
         </div>
         <p className="text-xs text-[#476B18] text-center">Você receberá o link de agendamento assim que o PIX for confirmado.</p>
