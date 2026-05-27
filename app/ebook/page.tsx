@@ -391,7 +391,7 @@ function CheckoutForm() {
     } else if (data.cardSuccess) {
       setCardSuccess(true)
       if (data.downloadUrl) setDownloadUrl(data.downloadUrl)
-      ;(window as any).fbq?.('track', 'Purchase', { value: 67, currency: 'BRL' })
+      ;(window as any).fbq?.('track', 'Purchase', { value: 67, currency: 'BRL', eventID: data.chargeId })
     } else {
       setError(data.error ?? 'Erro ao processar pagamento. Tente novamente.')
     }

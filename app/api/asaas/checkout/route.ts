@@ -169,7 +169,7 @@ export async function POST(request: Request) {
       }
     }
 
-    return NextResponse.json({ cardSuccess: true, chargeStatus: charge.status, postError, downloadUrl })
+    return NextResponse.json({ cardSuccess: true, chargeId: charge.id, chargeStatus: charge.status, postError, downloadUrl })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error('Asaas checkout error:', msg)
