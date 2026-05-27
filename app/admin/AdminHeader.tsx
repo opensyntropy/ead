@@ -15,6 +15,12 @@ export default function AdminHeader() {
           <span className="text-white/70 font-medium">Painel Admin</span>
         </div>
         <div className="flex items-center gap-3">
+          <a
+            href="#ab-test"
+            className="text-sm font-semibold text-white/80 hover:text-white border border-white/30 hover:border-white/60 rounded-lg px-4 py-1.5 transition-colors"
+          >
+            Teste A/B
+          </a>
           <button
             onClick={() => setShowAdd(true)}
             className="text-sm font-semibold text-white/80 hover:text-white border border-white/30 hover:border-white/60 rounded-lg px-4 py-1.5 transition-colors flex items-center gap-1.5"

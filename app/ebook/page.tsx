@@ -341,6 +341,7 @@ function CheckoutForm() {
       body: JSON.stringify({
         productId: 'ebook', email, name, cpf, whatsapp, paymentMethod,
         ...utmParams,
+        ab_variant: localStorage.getItem('cta_variant'),
         ...(paymentMethod === 'card' ? { cardNumber, cardExpiry, cardCvv, cardPostalCode, cardAddressNumber, installmentCount } : {}),
       }),
     })
@@ -818,10 +819,35 @@ function InfographicsCarousel() {
 }
 
 export default function EbookLandingPage() {
+  const [abVariant, setAbVariant] = useState<'A' | 'B'>('A')
   const [lightbox, setLightbox] = useState<number | null>(null)
   const closeLightbox = useCallback(() => setLightbox(null), [])
   const prevPage = useCallback(() => setLightbox(i => i !== null ? (i - 1 + PAGES.length) % PAGES.length : null), [])
   const nextPage = useCallback(() => setLightbox(i => i !== null ? (i + 1) % PAGES.length : null), [])
+
+  useEffect(() => {
+    const stored = localStorage.getItem('cta_variant') as 'A' | 'B' | null
+    const variant = stored ?? (Math.random() < 0.5 ? 'A' : 'B')
+    if (!stored) localStorage.setItem('cta_variant', variant)
+    setAbVariant(variant)
+  }, [])
+
+  useEffect(() => {
+    const el = document.getElementById('comprar')
+    if (!el) return
+    const obs = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return
+      obs.disconnect()
+      const variant = localStorage.getItem('cta_variant')
+      fetch('/api/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ page: '/ebook/checkout', ab_variant: variant }),
+      }).catch(() => {})
+    }, { threshold: 0.2 })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
 
   useEffect(() => {
     ;(window as any).fbq?.('track', 'ViewContent', { content_name: 'Guia Agrofloresta Sintrópica', content_type: 'product', value: 67, currency: 'BRL' })
@@ -860,10 +886,7 @@ export default function EbookLandingPage() {
 
       {/* ── BANNER URGÊNCIA ──────────────────────────────── */}
       <div className="w-full py-2.5 px-4 text-center text-sm font-bold" style={{ backgroundColor: LIME, color: DARK }}>
-        Preço de lançamento:{' '}
-        <span className="line-through opacity-60 font-normal">R$97</span>{' '}
-        <span className="text-base">R$67</span>
-        {' · '}até {nextSundayLabel()}
+        Preço de lançamento · até {nextSundayLabel()}
       </div>
 
       {lightbox !== null && (
@@ -1215,13 +1238,13 @@ export default function EbookLandingPage() {
 
           {/* cabeçalho da seção */}
           <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest px-4 py-2 rounded-full mb-6"
+            <div className="inline-flex items-center gap-2 text-sm font-black uppercase tracking-widest px-5 py-2.5 rounded-full mb-6"
               style={{ backgroundColor: LIME, color: DARK }}>
               ⚡ Preço de lançamento, encerra em breve
             </div>
             <h2 className="font-serif font-black text-white leading-tight mb-3"
               style={{ fontSize: 'clamp(1.8rem, 5vw, 2.8rem)' }}>
-              Comece com o mapa certo.
+              {abVariant === 'A' ? 'Dê o primeiro passo com segurança.' : 'O primeiro passo mais importante do seu projeto.'}
             </h2>
           </div>
 
