@@ -350,6 +350,7 @@ function CheckoutForm() {
         const res = await fetch(`/api/payment-status?paymentId=${pixChargeId}`)
         const json = await res.json()
         if (json.confirmed && json.downloadUrl) {
+          ;(window as any).fbq?.('track', 'Purchase', { value: 67, currency: 'BRL', eventID: pixChargeId })
           setDownloadUrl(json.downloadUrl)
           return
         }
@@ -387,7 +388,6 @@ function CheckoutForm() {
     if (data.pixQrCode) {
       setPixData({ qrCode: data.pixQrCode, payload: data.pixPayload })
       setPixChargeId(data.pixChargeId ?? null)
-      ;(window as any).fbq?.('track', 'Purchase', { value: 67, currency: 'BRL' })
     } else if (data.cardSuccess) {
       setCardSuccess(true)
       if (data.downloadUrl) setDownloadUrl(data.downloadUrl)

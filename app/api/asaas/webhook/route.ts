@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { createDownloadToken } from '@/lib/download'
 import { sendDownloadEmail, sendSessionPurchaseEmail, sendPurchaseNotification } from '@/lib/email'
+import { PRODUCTS } from '@/config/products'
 import type { ProductId } from '@/config/products'
+import { sendPurchaseEvent } from '@/lib/meta-pixel'
 
 export const maxDuration = 60
 
@@ -103,6 +105,14 @@ export async function POST(request: Request) {
   await supabase.from('pix_charges')
     .update({ status: 'confirmed', confirmed_at: new Date().toISOString() })
     .eq('asaas_payment_id', payment.id)
+
+  // Meta Conversions API — dispara Purchase server-side com pagamento confirmado
+  try {
+    const value = (PRODUCTS[productId as ProductId]?.price ?? 6700) / 100
+    await sendPurchaseEvent({ email, value, eventId: payment.id })
+  } catch (err) {
+    console.error('Webhook: erro CAPI', err)
+  }
 
   console.log(`Acesso liberado: ${email} → ${productId}`)
   return NextResponse.json({ ok: true })
