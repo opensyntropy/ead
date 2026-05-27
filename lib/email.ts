@@ -340,6 +340,55 @@ export async function sendDownloadEmailEn(email: string, token: string) {
   if (error) throw new Error(`Resend error: ${JSON.stringify(error)}`)
 }
 
+export async function sendRefundEmail(email: string) {
+  const to = process.env.NODE_ENV === 'production' ? email : 'devops@opensyntropy.earth'
+  const { error } = await resend.emails.send({
+    from: FROM, to,
+    subject: 'Sua devolução foi aprovada — OpenSyntropy',
+    html: `<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#F2F0E9;font-family:Georgia,serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F2F0E9;padding:40px 0">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;max-width:560px;width:100%">
+        <tr>
+          <td style="background:#141F0C;padding:36px 40px;text-align:center">
+            <p style="margin:0;color:#7DC142;font-size:13px;letter-spacing:3px;text-transform:uppercase;font-family:Arial,sans-serif">OpenSyntropy</p>
+            <h1 style="margin:12px 0 0;color:#fff;font-size:22px;font-weight:700;line-height:1.3">Devolução Aprovada</h1>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:40px 40px 32px">
+            <p style="margin:0 0 20px;color:#1a1a1a;font-size:16px;line-height:1.7">Olá,</p>
+            <p style="margin:0 0 20px;color:#1a1a1a;font-size:16px;line-height:1.7">
+              Seu pedido de devolução foi recebido e aprovado.
+            </p>
+            <p style="margin:0 0 32px;color:#555;font-size:14px;line-height:1.6;padding:16px;background:#f8f8f4;border-left:3px solid #7DC142;border-radius:4px">
+              O estorno será realizado em até <strong>24 horas úteis</strong> no mesmo método de pagamento utilizado na compra.
+            </p>
+            <p style="margin:0;color:#888;font-size:14px;line-height:1.6">
+              Se tiver qualquer dúvida, basta responder este e-mail.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#f4f3ee;padding:20px 40px;text-align:center">
+            <p style="margin:0;color:#aaa;font-size:12px;font-family:Arial,sans-serif">
+              Michel Bottan · OpenSyntropy<br>
+              Você recebeu este e-mail porque solicitou uma devolução em opensyntropy.earth
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`,
+  })
+  if (error) throw new Error(`Resend error: ${JSON.stringify(error)}`)
+}
+
 export async function sendDownloadEmailEs(email: string, token: string) {
   const downloadUrl = `${BASE_URL}/api/download?token=${token}`
   const resendUrl = `${BASE_URL}/reenviar`
