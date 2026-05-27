@@ -35,8 +35,8 @@ export const PRODUCTS = {
     id: 'session_upsell',
     name: 'Sessão Individual (oferta pós-compra)',
     description: '1 hora de consultoria individual — oferta exclusiva pós-compra do ebook.',
-    price: 14000,
-    priceFormatted: 'R$ 140',
+    price: 12000,
+    priceFormatted: 'R$ 120',
     asaasDescription: 'Sessão Individual 1hr — Oferta Especial Pós-Ebook',
   },
 } as const

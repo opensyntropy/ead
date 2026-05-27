@@ -636,6 +636,7 @@ function UpsellBump({
         <p className="text-2xl mb-2">✓</p>
         <p className="font-bold text-[#141F0C] text-base">Sessão adicionada!</p>
         <p className="text-[#476B18] text-sm mt-1">Você receberá o link de agendamento por e-mail em instantes.</p>
+        <p className="text-gray-400 text-xs mt-2">Não encontrou? Verifique a caixa de spam ou promoções.</p>
       </div>
     )
   }
@@ -659,20 +660,25 @@ function UpsellBump({
   }
 
   return (
-    <div className="w-full rounded-2xl px-6 py-5 flex flex-col gap-4" style={{ border: '2px dashed #7DC142', backgroundColor: '#f9fff5' }}>
-      <div className="flex items-start gap-3">
-        <span className="text-lg mt-0.5">💡</span>
-        <div>
-          <p className="font-black text-[#141F0C] text-base leading-tight">Oferta especial · só agora</p>
-          <p className="text-[#476B18] text-sm mt-1 leading-relaxed">
-            Adicione <strong>1hr de consultoria individual</strong> sobre agrofloresta sintrópica — tire dúvidas do seu projeto: escolha de espécies, desenho de consórcio, leitura de área.
+    <div className="w-full rounded-2xl overflow-hidden flex flex-col" style={{ border: '3px solid #7DC142', backgroundColor: '#f9fff5', boxShadow: '0 4px 24px 0 rgba(125,193,66,0.18)' }}>
+      <div className="w-full px-5 py-2.5 flex items-center gap-2" style={{ backgroundColor: LIME }}>
+        <span className="text-white text-xs">⚡</span>
+        <p className="font-black text-white text-xs tracking-wide uppercase">Consulte o especialista</p>
+      </div>
+      <div className="w-full overflow-hidden" style={{ height: '180px' }}>
+        <img src="/michel_upsell.jpg" alt="Michel" className="w-full h-full object-cover object-center" />
+      </div>
+      <div className="px-6 py-5 flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+          <p className="font-black text-[#141F0C] text-lg leading-tight">Consultoria individual de agrofloresta sintrópica</p>
+          <p className="text-[#476B18] text-sm leading-relaxed">
+            <strong>1 hora 1:1</strong> para desbloquear o que está impedindo você de avançar com o seu projeto — tire suas dúvidas numa consulta.
           </p>
-        </div>
       </div>
       <div className="flex items-center gap-3">
-        <span className="text-gray-400 text-sm line-through">R$197</span>
-        <span className="font-black text-[#141F0C] text-xl">R$140</span>
-        <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: LIME + '22', color: LIME }}>oferta exclusiva</span>
+        <span className="text-gray-400 text-sm line-through">R$180</span>
+        <span className="font-black text-[#141F0C] text-2xl">R$120</span>
+        <span className="text-xs font-black px-2.5 py-1 rounded-full text-white" style={{ backgroundColor: LIME }}>economia de R$60</span>
       </div>
       <form onSubmit={handleUpsell} className="flex flex-col gap-3">
         <div className="flex rounded-xl overflow-hidden border-2 border-gray-200">
@@ -705,9 +711,10 @@ function UpsellBump({
         <button type="submit" disabled={upsellLoading}
           className="py-4 rounded-xl font-bold text-base transition-all disabled:opacity-60 shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-100"
           style={{ backgroundColor: LIME, color: DARK }}>
-          {upsellLoading ? 'Aguarde...' : 'Adicionar sessão por R$140 →'}
+          {upsellLoading ? 'Aguarde...' : 'Adicionar sessão por R$120 →'}
         </button>
       </form>
+      </div>
     </div>
   )
 }
