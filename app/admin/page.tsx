@@ -389,9 +389,11 @@ export default async function AdminPage() {
         )}
 
         {/* Zone 5: Teste A/B */}
-        {abTotal > 0 && (
-          <div id="ab-test">
-            <SectionHeader title="Teste A/B — headline checkout (30 dias)" />
+        <div id="ab-test">
+          <SectionHeader title="Teste A/B — headline checkout (30 dias)" />
+          {abTotal === 0 ? (
+            <p className="text-gray-400 text-sm">Sem dados ainda — aguardando visitantes chegarem à seção de checkout.</p>
+          ) : (
             <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
               <table className="w-full text-base">
                 <thead className="bg-gray-50 text-gray-500 text-sm uppercase tracking-wide font-semibold">
@@ -421,8 +423,8 @@ export default async function AdminPage() {
                 </tbody>
               </table>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Zone 6: Ações pendentes */}
         <div className={`grid gap-8 ${pendingPix.length > 0 ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>

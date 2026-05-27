@@ -52,7 +52,7 @@ function PageLightbox({ index, onClose, onPrev, onNext }: {
 
       {/* fechar */}
       <button onClick={onClose}
-        className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/10 hover:bg-white/25 text-white text-lg flex items-center justify-center transition-colors"
+        className="absolute top-4 right-4 w-11 h-11 rounded-full bg-white text-gray-900 text-lg font-bold flex items-center justify-center shadow-lg hover:bg-gray-100 transition-colors"
         aria-label="Fechar">✕</button>
     </div>
   )
