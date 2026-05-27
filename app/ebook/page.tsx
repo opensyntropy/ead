@@ -62,6 +62,13 @@ function PageLightbox({ index, onClose, onPrev, onNext }: {
 const LIME   = '#7DC142'  // verde lima dos títulos
 const DARK   = '#141F0C'  // fundo floresta escuro
 const FOREST = '#476B18'  // verde floresta médio
+function nextSundayLabel() {
+  const now = new Date()
+  const daysUntil = now.getDay() === 0 ? 7 : 7 - now.getDay()
+  const next = new Date(now)
+  next.setDate(now.getDate() + daysUntil)
+  return next.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' })
+}
 const CREAM  = '#F2F0E9'  // creme parchment da barra inferior
 const GOLD   = '#C69B2D'  // dourado âmbar dos acentos
 
@@ -850,6 +857,15 @@ export default function EbookLandingPage() {
 
   return (
     <div className="min-h-screen bg-white text-[#141F0C]">
+
+      {/* ── BANNER URGÊNCIA ──────────────────────────────── */}
+      <div className="w-full py-2.5 px-4 text-center text-sm font-bold" style={{ backgroundColor: LIME, color: DARK }}>
+        Preço de lançamento:{' '}
+        <span className="line-through opacity-60 font-normal">R$97</span>{' '}
+        <span className="text-base">R$67</span>
+        {' · '}até {nextSundayLabel()}
+      </div>
+
       {lightbox !== null && (
         <PageLightbox index={lightbox} onClose={closeLightbox} onPrev={prevPage} onNext={nextPage} />
       )}
@@ -897,6 +913,13 @@ export default function EbookLandingPage() {
                 priority
               />
             </div>
+          </div>
+
+          {/* seta scroll — mobile only */}
+          <div className="flex justify-center md:hidden">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="animate-bounce opacity-80">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
           </div>
 
           {/* 3 — corpo: subtítulo */}
