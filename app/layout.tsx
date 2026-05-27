@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { Lora, Lato, Literata, Bebas_Neue } from 'next/font/google'
-import Script from 'next/script'
 import './globals.css'
+import AnalyticsScripts from './AnalyticsScripts'
 
 const lora = Lora({
   variable: '--font-serif',
@@ -70,16 +70,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="pt-BR" className={`${lora.variable} ${lato.variable} ${literata.variable} ${bebasNeue.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col font-sans">
         {children}
-        <Script src="/clarity-init.js" strategy="afterInteractive" />
-        <Script id="meta-pixel" strategy="afterInteractive">{`
-          !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-          n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
-          n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
-          t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
-          document,'script','https://connect.facebook.net/en_US/fbevents.js');
-          fbq('init','1292728729653308');
-          fbq('track','PageView');
-        `}</Script>
+        <AnalyticsScripts />
       </body>
     </html>
   )
