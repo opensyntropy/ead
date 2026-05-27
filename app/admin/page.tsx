@@ -4,33 +4,10 @@ import { redirect } from 'next/navigation'
 import AdminActions from './AdminActions'
 import AdminAccessTabs, { type PixCharge, type UserProduct } from './AdminAccessTabs'
 import AdminHeader from './AdminHeader'
-import TrafficChart, { type RawEvent } from './TrafficChart'
 import { PRODUCTS } from '@/config/products'
 import type { ProductId } from '@/config/products'
-import { AB_TESTS } from '@/config/ab-tests'
 
 export const dynamic = 'force-dynamic'
-
-function srcFromReferer(referer: string | null | undefined): string {
-  if (!referer) return 'direto'
-  try {
-    const host = new URL(referer).hostname.replace(/^www\./, '')
-    if (host.includes('facebook') || host.includes('fb.')) return 'facebook'
-    if (host.includes('instagram')) return 'instagram'
-    if (host.includes('google')) return 'google'
-    if (host.includes('youtube')) return 'youtube'
-    if (host.includes('t.co') || host.includes('twitter') || host.includes('x.com')) return 'twitter'
-    if (host.includes('whatsapp')) return 'whatsapp'
-    return host
-  } catch {
-    return 'direto'
-  }
-}
-
-function normVisitSrc(utm: string | null | undefined, referer: string | null | undefined): string {
-  if (utm) return utm.toLowerCase()
-  return srcFromReferer(referer)
-}
 
 function PaymentBadge({ method, installments }: { method: string | null; installments: number | null }) {
   if (method === 'card') {
@@ -41,49 +18,6 @@ function PaymentBadge({ method, installments }: { method: string | null; install
     return <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">PIX</span>
   }
   return <span className="text-gray-300 text-xs">—</span>
-}
-
-function OriginBadge({ row }: { row?: { utm_source?: string | null; utm_medium?: string | null; utm_campaign?: string | null; utm_term?: string | null; utm_content?: string | null } }) {
-  if (!row?.utm_source) return <span className="text-gray-300 text-xs">direto</span>
-
-  const srcColors: Record<string, string> = {
-    facebook: 'bg-blue-100 text-blue-700',
-    instagram: 'bg-pink-100 text-pink-700',
-    google: 'bg-yellow-100 text-yellow-700',
-    email: 'bg-purple-100 text-purple-700',
-  }
-  const srcColor = srcColors[row.utm_source.toLowerCase()] ?? 'bg-gray-100 text-gray-600'
-
-  const fields: { label: string; value: string | null | undefined; bold?: boolean }[] = [
-    { label: 'source',   value: row.utm_source,   bold: true },
-    { label: 'medium',   value: row.utm_medium },
-    { label: 'campaign', value: row.utm_campaign },
-    { label: 'adset',    value: row.utm_term },
-    { label: 'ad',       value: row.utm_content },
-  ]
-
-  return (
-    <div className="flex flex-col gap-0.5 min-w-[180px]">
-      <span className={`inline-block self-start px-2 py-0.5 rounded-full text-xs font-semibold mb-0.5 ${srcColor}`}>
-        {row.utm_source}
-      </span>
-      {fields.slice(1).map(({ label, value, bold }) =>
-        value ? (
-          <div key={label} className="flex items-baseline gap-1 text-xs">
-            <span className="text-gray-400 w-[52px] shrink-0">{label}</span>
-            <span className={`truncate max-w-[200px] ${bold ? 'font-semibold text-gray-700' : 'text-gray-600'}`} title={value}>
-              {value}
-            </span>
-          </div>
-        ) : (
-          <div key={label} className="flex items-baseline gap-1 text-xs">
-            <span className="text-gray-300 w-[52px] shrink-0">{label}</span>
-            <span className="text-gray-200">—</span>
-          </div>
-        )
-      )}
-    </div>
-  )
 }
 
 function fmt(dateStr: string) {
@@ -126,7 +60,7 @@ export default async function AdminPage() {
   const weekISO = new Date(Date.now() - 7 * 86400000).toISOString()
   const monthISO = new Date(Date.now() - 30 * 86400000).toISOString()
 
-  const [productsRes, refundsRes, pixRes, downloadsRes, visitsTodayRes, visitsWeekRes, visitsMonthRes, visitsRawRes, expiredRes, abRes] = await Promise.all([
+  const [productsRes, refundsRes, pixRes, downloadsRes, visitsTodayRes, visitsWeekRes, visitsMonthRes, expiredRes] = await Promise.all([
     service.from('user_products').select('*').order('created_at', { ascending: false }),
     service.from('refund_requests').select('*').order('created_at', { ascending: false }),
     service.from('pix_charges').select('*,payment_method,installment_count').order('created_at', { ascending: false }),
@@ -134,58 +68,14 @@ export default async function AdminPage() {
     service.from('page_visits').select('id', { count: 'exact', head: true }).eq('page', '/ebook').gte('created_at', todayISO),
     service.from('page_visits').select('id', { count: 'exact', head: true }).eq('page', '/ebook').gte('created_at', weekISO),
     service.from('page_visits').select('id', { count: 'exact', head: true }).eq('page', '/ebook').gte('created_at', monthISO),
-    service.from('page_visits').select('created_at,utm_source,utm_content,referer').eq('page', '/ebook').gte('created_at', monthISO),
     service.from('pix_charges').select('id', { count: 'exact', head: true }).eq('status', 'expired').gte('created_at', monthISO),
-    service.from('page_visits').select('ab_variant').eq('page', '/ebook/checkout').gte('created_at', monthISO).not('ab_variant', 'is', null),
   ])
 
   const visitsToday = visitsTodayRes.count ?? 0
   const visitsWeek = visitsWeekRes.count ?? 0
   const visitsMonth = visitsMonthRes.count ?? 0
-  const visitsRaw: RawEvent[] = (visitsRawRes.data ?? []).map(r => ({ date: r.created_at, utm: r.utm_source, referer: r.referer }))
-
-  const toDay = (iso: string) => new Date(iso).toLocaleDateString('sv', { timeZone: 'America/Sao_Paulo' })
-  const checkoutsRaw: RawEvent[] = (pixRes.data ?? [])
-    .filter(r => toDay(r.created_at) >= toDay(monthISO))
-    .map(r => ({ date: r.created_at, utm: r.utm_source }))
-
-  // UTM breakdown para a tabela (30 dias) — usa referer como fallback quando não tem UTM
-  const utmCounts: Record<string, number> = {}
-  for (const e of visitsRaw) {
-    const src = normVisitSrc(e.utm, e.referer)
-    utmCounts[src] = (utmCounts[src] ?? 0) + 1
-  }
-  const utmBreakdown = Object.entries(utmCounts).sort((a, b) => b[1] - a[1])
-
-  // Breakdown por anúncio (utm_content) — visitas e conversões
-  const adVisits: Record<string, number> = {}
-  for (const r of visitsRawRes.data ?? []) {
-    if (r.utm_content) adVisits[r.utm_content] = (adVisits[r.utm_content] ?? 0) + 1
-  }
   const expiredCount = expiredRes.count ?? 0
   const pixRows: PixCharge[] = pixRes.data ?? []
-
-  // Build per-test reach and conversion maps from 'testId:variant' format
-  const abReach: Record<string, Record<string, number>> = {}
-  for (const r of abRes.data ?? []) {
-    if (!r.ab_variant) continue
-    const colonIdx = r.ab_variant.indexOf(':')
-    if (colonIdx < 0) continue
-    const testId = r.ab_variant.slice(0, colonIdx)
-    const variant = r.ab_variant.slice(colonIdx + 1)
-    if (!abReach[testId]) abReach[testId] = {}
-    abReach[testId][variant] = (abReach[testId][variant] ?? 0) + 1
-  }
-  const abConv: Record<string, Record<string, number>> = {}
-  for (const p of pixRows) {
-    if (p.status !== 'confirmed' || !p.ab_variant) continue
-    const colonIdx = p.ab_variant.indexOf(':')
-    if (colonIdx < 0) continue
-    const testId = p.ab_variant.slice(0, colonIdx)
-    const variant = p.ab_variant.slice(colonIdx + 1)
-    if (!abConv[testId]) abConv[testId] = {}
-    abConv[testId][variant] = (abConv[testId][variant] ?? 0) + 1
-  }
 
   const confirmedRows = pixRows.filter(p => p.status === 'confirmed')
   function salesStats(sinceISO: string) {
@@ -206,28 +96,6 @@ export default async function AdminPage() {
   const pendingPix = pixRows.filter(p => p.status === 'pending' && new Date(p.created_at) > cutoff25h)
   const pixUtmMap = Object.fromEntries(pixRows.map(p => [p.asaas_payment_id, p]))
 
-  const conversionsRaw: RawEvent[] = confirmedRows
-    .filter(r => (r.confirmed_at ?? r.created_at) >= monthISO)
-    .map(r => ({
-      date: r.confirmed_at ?? r.created_at,
-      utm: r.utm_source,
-    }))
-
-  // Conversões por anúncio (utm_content de pix_charges confirmados)
-  const adConversions: Record<string, number> = {}
-  for (const p of pixRows) {
-    if (p.utm_content && p.status === 'confirmed' && toDay(p.created_at) >= toDay(monthISO)) {
-      adConversions[p.utm_content] = (adConversions[p.utm_content] ?? 0) + 1
-    }
-  }
-  const adBreakdown = Object.entries(
-    Object.fromEntries(
-      [...new Set([...Object.keys(adVisits), ...Object.keys(adConversions)])].map(ad => [
-        ad,
-        { visits: adVisits[ad] ?? 0, conversions: adConversions[ad] ?? 0 },
-      ])
-    )
-  ).sort((a, b) => b[1].conversions - a[1].conversions || b[1].visits - a[1].visits)
   const pixNameMap = Object.fromEntries(pixRows.filter(p => p.name).map(p => [p.asaas_payment_id, p.name!]))
   const pixEmailMap = Object.fromEntries(pixRows.map(p => [p.asaas_payment_id, p.email]))
 
@@ -333,120 +201,6 @@ export default async function AdminPage() {
               </tbody>
             </table>
           </div>
-        </div>
-
-        {/* Zone 3: Gráficos de tendência */}
-        <div>
-          <SectionHeader title="Tendência — /ebook" />
-          <TrafficChart visits={visitsRaw} checkouts={checkoutsRaw} conversions={conversionsRaw} />
-        </div>
-
-        {/* Zone 4: Origens & Anúncios */}
-        {(utmBreakdown.length > 0 || adBreakdown.length > 0) && (
-          <div>
-            <SectionHeader title="Origens & anúncios — 30 dias" />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {utmBreakdown.length > 0 && (
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                  <table className="w-full text-base">
-                    <thead className="bg-gray-50 text-gray-500 text-sm uppercase tracking-wide font-semibold">
-                      <tr>
-                        <th className="text-left px-4 py-3">Origem</th>
-                        <th className="text-right px-4 py-3">Visitas</th>
-                        <th className="text-right px-4 py-3 text-gray-400">%</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {utmBreakdown.map(([src, count]) => (
-                        <tr key={src} className="hover:bg-gray-50/60">
-                          <td className="px-4 py-3"><OriginBadge row={{ utm_source: src === 'direto' ? undefined : src }} /></td>
-                          <td className="px-4 py-3 text-right font-semibold text-gray-800">{count}</td>
-                          <td className="px-4 py-3 text-right text-gray-400 text-sm">
-                            {visitsMonth > 0 ? Math.round((count / visitsMonth) * 100) : 0}%
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-              {adBreakdown.length > 0 && (
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                  <table className="w-full text-base">
-                    <thead className="bg-gray-50 text-gray-500 text-sm uppercase tracking-wide font-semibold">
-                      <tr>
-                        <th className="text-left px-4 py-3">Anúncio (utm_content)</th>
-                        <th className="text-right px-4 py-3">Visitas</th>
-                        <th className="text-right px-4 py-3">Vendas</th>
-                        <th className="text-right px-4 py-3 text-gray-400">Conv.</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {adBreakdown.map(([ad, { visits, conversions }]) => (
-                        <tr key={ad} className="hover:bg-gray-50/60">
-                          <td className="px-4 py-3 text-sm text-gray-700 font-medium max-w-xs truncate" title={ad}>{ad}</td>
-                          <td className="px-4 py-3 text-right text-gray-600">{visits}</td>
-                          <td className="px-4 py-3 text-right font-bold text-[#1b4332]">{conversions}</td>
-                          <td className="px-4 py-3 text-right text-gray-400 text-sm">
-                            {visits > 0 ? Math.round((conversions / visits) * 100) : 0}%
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Zone 5: Testes A/B */}
-        <div id="ab-test" className="space-y-6">
-          {AB_TESTS.map(test => {
-            const reach = abReach[test.id] ?? {}
-            const conv = abConv[test.id] ?? {}
-            const total = Object.values(reach).reduce((s, n) => s + n, 0)
-            return (
-              <div key={test.id}>
-                <SectionHeader title={`Teste A/B — ${test.name} (30 dias)`} />
-                {total === 0 ? (
-                  <p className="text-gray-400 text-sm">Sem dados ainda — aguardando visitantes chegarem à seção de checkout.</p>
-                ) : (
-                  <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                    <table className="w-full text-base">
-                      <thead className="bg-gray-50 text-gray-500 text-sm uppercase tracking-wide font-semibold">
-                        <tr>
-                          <th className="text-left px-4 py-3">Variante</th>
-                          <th className="text-right px-4 py-3">Checkout</th>
-                          <th className="text-right px-4 py-3">Vendas</th>
-                          <th className="text-right px-4 py-3 text-gray-400">Conv.</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {Object.entries(test.variants).map(([variantId, label]) => {
-                          const r = reach[variantId] ?? 0
-                          const c = conv[variantId] ?? 0
-                          return (
-                            <tr key={variantId} className="hover:bg-gray-50/60">
-                              <td className="px-4 py-3">
-                                <span className="font-bold text-gray-800 mr-2">Variante {variantId}</span>
-                                <span className="text-sm text-gray-500 italic">&quot;{label}&quot;</span>
-                              </td>
-                              <td className="px-4 py-3 text-right text-gray-600">{r}</td>
-                              <td className="px-4 py-3 text-right font-bold text-[#1b4332]">{c}</td>
-                              <td className="px-4 py-3 text-right text-gray-400 text-sm">
-                                {r > 0 ? Math.round((c / r) * 100) : 0}%
-                              </td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            )
-          })}
         </div>
 
         {/* Zone 6: Ações pendentes */}

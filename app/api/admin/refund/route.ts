@@ -1,17 +1,11 @@
-import { createClient, createServiceClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { sendRefundEmail } from '@/lib/email'
 
-async function checkAdmin(): Promise<boolean> {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return false
-  const { data } = await supabase.from('admins').select('user_id').eq('user_id', user.id).single()
-  return !!data
-}
-
 export async function PATCH(request: Request) {
-  if (!await checkAdmin()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const jar = await cookies()
+  if (jar.get('admin_session')?.value !== '1') return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { id, status } = await request.json()
   if (!id || !status) return NextResponse.json({ error: 'Parâmetros inválidos' }, { status: 400 })
