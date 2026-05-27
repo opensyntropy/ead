@@ -29,7 +29,7 @@ const INTERVALS = [
 ]
 
 function srcColor(src: string) { return SOURCE_COLORS[src] ?? DEFAULT_COLOR }
-function toDay(iso: string) { return iso.slice(0, 10) }
+function toDay(iso: string) { return new Date(iso).toLocaleDateString('sv', { timeZone: 'America/Sao_Paulo' }) }
 
 function srcFromReferer(referer: string | null | undefined): string {
   if (!referer) return 'direto'
@@ -70,8 +70,8 @@ function buildDays(
 
   return Array.from({ length: days }, (_, i) => {
     const d = new Date(Date.now() - (days - 1 - i) * 86400000)
-    const key = d.toISOString().slice(0, 10)
-    const label = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+    const key = d.toLocaleDateString('sv', { timeZone: 'America/Sao_Paulo' })
+    const label = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' })
     return { label, visits: vByDay[key] ?? 0, checkouts: cByDay[key] ?? 0, conversions: xByDay[key] ?? 0 }
   })
 }

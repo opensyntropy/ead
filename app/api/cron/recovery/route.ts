@@ -43,6 +43,24 @@ export async function GET(request: Request) {
   let sent = 0
   for (const charge of charges) {
     try {
+      // Não enviar se o e-mail já tem uma compra confirmada do mesmo produto
+      const { data: existing } = await supabase
+        .from('pix_charges')
+        .select('id')
+        .eq('email', charge.email)
+        .eq('product', charge.product)
+        .eq('status', 'confirmed')
+        .limit(1)
+
+      if (existing && existing.length > 0) {
+        await supabase
+          .from('pix_charges')
+          .update({ recovery_sent_at: new Date().toISOString() })
+          .eq('id', charge.id)
+        console.log(`cron/recovery: pulando ${charge.email} — já possui compra confirmada`)
+        continue
+      }
+
       await sendRecoveryEmail(charge.email, charge.name, productName(charge.product), `${BASE_URL}/ebook`)
       await supabase
         .from('pix_charges')

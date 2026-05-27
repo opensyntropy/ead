@@ -419,7 +419,8 @@ function CheckoutForm() {
           <div className="w-full rounded-2xl px-6 py-8 text-center" style={{ backgroundColor: '#f0fdf4', border: '2px solid #7DC142' }}>
             <p className="text-3xl mb-3">✓</p>
             <p className="font-bold text-[#141F0C] text-xl mb-1">PIX confirmado!</p>
-            <p className="text-[#476B18] text-sm mb-6">Seu guia está pronto. O link também foi enviado por e-mail.</p>
+            <p className="text-[#476B18] text-sm mb-1">Seu guia está pronto. O link também foi enviado por e-mail.</p>
+            <p className="text-gray-400 text-xs mb-6">Não encontrou? Verifique a caixa de spam ou promoções.</p>
             <a
               href={downloadUrl}
               className="inline-block w-full font-bold text-xl py-6 rounded-xl transition-all hover:brightness-105 shadow-lg"
@@ -432,7 +433,6 @@ function CheckoutForm() {
           <div className="w-full rounded-2xl px-6 py-5 text-left" style={{ backgroundColor: '#f0fdf4', border: '2px solid #d8f3dc' }}>
             <p className="font-bold text-[#141F0C] text-base">Aguardando pagamento</p>
             <p className="text-[#476B18] text-sm mt-1 leading-relaxed">Você receberá o link de download do ebook por e-mail assim que o PIX for confirmado.</p>
-            <p className="text-gray-400 text-xs mt-2">Não encontrou? Verifique a caixa de spam ou promoções.</p>
           </div>
         )}
         <UpsellBump
@@ -457,7 +457,8 @@ function CheckoutForm() {
           <div className="w-full rounded-2xl px-6 py-8 text-center" style={{ backgroundColor: '#f0fdf4', border: '2px solid #7DC142' }}>
             <p className="text-3xl mb-3">✓</p>
             <p className="font-bold text-[#141F0C] text-xl mb-1">Pagamento confirmado!</p>
-            <p className="text-[#476B18] text-sm mb-6">Seu guia está pronto. O link também foi enviado por e-mail.</p>
+            <p className="text-[#476B18] text-sm mb-1">Seu guia está pronto. O link também foi enviado por e-mail.</p>
+            <p className="text-gray-400 text-xs mb-6">Não encontrou? Verifique a caixa de spam ou promoções.</p>
             <a
               href={downloadUrl}
               className="inline-block w-full font-bold text-xl py-6 rounded-xl transition-all hover:brightness-105 shadow-lg"

@@ -89,6 +89,7 @@ function fmt(dateStr: string) {
   return new Date(dateStr).toLocaleString('pt-BR', {
     day: '2-digit', month: '2-digit', year: '2-digit',
     hour: '2-digit', minute: '2-digit',
+    timeZone: 'America/Sao_Paulo',
   })
 }
 
@@ -118,8 +119,9 @@ export default async function AdminPage() {
 
   const service = await createServiceClient()
 
-  const now = new Date()
-  const todayISO = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+  // Midnight in Brazil (UTC-3) as a UTC ISO string
+  const todayBRT = new Date().toLocaleDateString('sv', { timeZone: 'America/Sao_Paulo' })
+  const todayISO = new Date(todayBRT + 'T00:00:00-03:00').toISOString()
   const weekISO = new Date(Date.now() - 7 * 86400000).toISOString()
   const monthISO = new Date(Date.now() - 30 * 86400000).toISOString()
 
@@ -140,7 +142,7 @@ export default async function AdminPage() {
   const visitsMonth = visitsMonthRes.count ?? 0
   const visitsRaw: RawEvent[] = (visitsRawRes.data ?? []).map(r => ({ date: r.created_at, utm: r.utm_source, referer: r.referer }))
 
-  const toDay = (iso: string) => iso.slice(0, 10)
+  const toDay = (iso: string) => new Date(iso).toLocaleDateString('sv', { timeZone: 'America/Sao_Paulo' })
   const checkoutsRaw: RawEvent[] = (pixRes.data ?? [])
     .filter(r => toDay(r.created_at) >= toDay(monthISO))
     .map(r => ({ date: r.created_at, utm: r.utm_source }))
