@@ -7,6 +7,7 @@ import AdminHeader from './AdminHeader'
 import TrafficChart, { type RawEvent } from './TrafficChart'
 import { PRODUCTS } from '@/config/products'
 import type { ProductId } from '@/config/products'
+import { AB_TESTS } from '@/config/ab-tests'
 
 export const dynamic = 'force-dynamic'
 
@@ -162,17 +163,28 @@ export default async function AdminPage() {
     if (r.utm_content) adVisits[r.utm_content] = (adVisits[r.utm_content] ?? 0) + 1
   }
   const expiredCount = expiredRes.count ?? 0
-  const abCount: Record<'A' | 'B', number> = { A: 0, B: 0 }
-  for (const r of abRes.data ?? []) {
-    if (r.ab_variant === 'A' || r.ab_variant === 'B') abCount[r.ab_variant as 'A' | 'B']++
-  }
-  const abTotal = abCount.A + abCount.B
   const pixRows: PixCharge[] = pixRes.data ?? []
-  const abConversions: Record<'A' | 'B', number> = { A: 0, B: 0 }
+
+  // Build per-test reach and conversion maps from 'testId:variant' format
+  const abReach: Record<string, Record<string, number>> = {}
+  for (const r of abRes.data ?? []) {
+    if (!r.ab_variant) continue
+    const colonIdx = r.ab_variant.indexOf(':')
+    if (colonIdx < 0) continue
+    const testId = r.ab_variant.slice(0, colonIdx)
+    const variant = r.ab_variant.slice(colonIdx + 1)
+    if (!abReach[testId]) abReach[testId] = {}
+    abReach[testId][variant] = (abReach[testId][variant] ?? 0) + 1
+  }
+  const abConv: Record<string, Record<string, number>> = {}
   for (const p of pixRows) {
-    if (p.status === 'confirmed' && (p.ab_variant === 'A' || p.ab_variant === 'B')) {
-      abConversions[p.ab_variant as 'A' | 'B']++
-    }
+    if (p.status !== 'confirmed' || !p.ab_variant) continue
+    const colonIdx = p.ab_variant.indexOf(':')
+    if (colonIdx < 0) continue
+    const testId = p.ab_variant.slice(0, colonIdx)
+    const variant = p.ab_variant.slice(colonIdx + 1)
+    if (!abConv[testId]) abConv[testId] = {}
+    abConv[testId][variant] = (abConv[testId][variant] ?? 0) + 1
   }
 
   const confirmedRows = pixRows.filter(p => p.status === 'confirmed')
@@ -388,42 +400,53 @@ export default async function AdminPage() {
           </div>
         )}
 
-        {/* Zone 5: Teste A/B */}
-        <div id="ab-test">
-          <SectionHeader title="Teste A/B — headline checkout (30 dias)" />
-          {abTotal === 0 ? (
-            <p className="text-gray-400 text-sm">Sem dados ainda — aguardando visitantes chegarem à seção de checkout.</p>
-          ) : (
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <table className="w-full text-base">
-                <thead className="bg-gray-50 text-gray-500 text-sm uppercase tracking-wide font-semibold">
-                  <tr>
-                    <th className="text-left px-4 py-3">Variante</th>
-                    <th className="text-right px-4 py-3">Checkout</th>
-                    <th className="text-right px-4 py-3">Vendas</th>
-                    <th className="text-right px-4 py-3 text-gray-400">Conv.</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {(['A', 'B'] as const).map(v => (
-                    <tr key={v} className="hover:bg-gray-50/60">
-                      <td className="px-4 py-3">
-                        <span className="font-bold text-gray-800 mr-2">Variante {v}</span>
-                        <span className="text-sm text-gray-500 italic">
-                          {v === 'A' ? '"Dê o primeiro passo com segurança."' : '"O primeiro passo mais importante do seu projeto."'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right text-gray-600">{abCount[v]}</td>
-                      <td className="px-4 py-3 text-right font-bold text-[#1b4332]">{abConversions[v]}</td>
-                      <td className="px-4 py-3 text-right text-gray-400 text-sm">
-                        {abCount[v] > 0 ? Math.round((abConversions[v] / abCount[v]) * 100) : 0}%
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+        {/* Zone 5: Testes A/B */}
+        <div id="ab-test" className="space-y-6">
+          {AB_TESTS.map(test => {
+            const reach = abReach[test.id] ?? {}
+            const conv = abConv[test.id] ?? {}
+            const total = Object.values(reach).reduce((s, n) => s + n, 0)
+            return (
+              <div key={test.id}>
+                <SectionHeader title={`Teste A/B — ${test.name} (30 dias)`} />
+                {total === 0 ? (
+                  <p className="text-gray-400 text-sm">Sem dados ainda — aguardando visitantes chegarem à seção de checkout.</p>
+                ) : (
+                  <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                    <table className="w-full text-base">
+                      <thead className="bg-gray-50 text-gray-500 text-sm uppercase tracking-wide font-semibold">
+                        <tr>
+                          <th className="text-left px-4 py-3">Variante</th>
+                          <th className="text-right px-4 py-3">Checkout</th>
+                          <th className="text-right px-4 py-3">Vendas</th>
+                          <th className="text-right px-4 py-3 text-gray-400">Conv.</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {Object.entries(test.variants).map(([variantId, label]) => {
+                          const r = reach[variantId] ?? 0
+                          const c = conv[variantId] ?? 0
+                          return (
+                            <tr key={variantId} className="hover:bg-gray-50/60">
+                              <td className="px-4 py-3">
+                                <span className="font-bold text-gray-800 mr-2">Variante {variantId}</span>
+                                <span className="text-sm text-gray-500 italic">&quot;{label}&quot;</span>
+                              </td>
+                              <td className="px-4 py-3 text-right text-gray-600">{r}</td>
+                              <td className="px-4 py-3 text-right font-bold text-[#1b4332]">{c}</td>
+                              <td className="px-4 py-3 text-right text-gray-400 text-sm">
+                                {r > 0 ? Math.round((c / r) * 100) : 0}%
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
 
         {/* Zone 6: Ações pendentes */}
@@ -470,7 +493,10 @@ export default async function AdminPage() {
                         <td className="px-4 py-3"><PaymentBadge method={row.payment_method} installments={row.installment_count} /></td>
                         <td className="px-4 py-3 text-gray-400 text-sm whitespace-nowrap">{fmt(row.created_at)}</td>
                         <td className="px-4 py-3 text-right">
-                          <AdminActions mode="confirm-pix" id={row.id} />
+                          <div className="flex flex-col items-end gap-2">
+                            <AdminActions mode="copy-pix" pixPayload={row.pix_payload ?? undefined} />
+                            <AdminActions mode="confirm-pix" id={row.id} />
+                          </div>
                         </td>
                       </tr>
                     ))}

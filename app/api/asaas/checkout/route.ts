@@ -65,6 +65,7 @@ export async function POST(request: Request) {
             whatsapp: whatsapp || null,
             utm_source, utm_medium, utm_campaign, utm_term, utm_content,
             ab_variant: ab_variant || null,
+            pix_payload: qr.payload || null,
           },
           { onConflict: 'asaas_payment_id' }
         )

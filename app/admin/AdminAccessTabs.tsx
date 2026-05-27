@@ -33,6 +33,7 @@ export interface PixCharge {
   installment_count: number | null
   whatsapp: string | null
   ab_variant: string | null
+  pix_payload: string | null
 }
 
 interface Props {

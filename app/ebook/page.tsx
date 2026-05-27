@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
+import { getABTest } from '@/config/ab-tests'
 
 const PAGES = [
   { src: '/preview/pagina_17.png', cap: 'Cap. 2', title: 'O Que É Sintropia' },
@@ -62,6 +63,34 @@ function PageLightbox({ index, onClose, onPrev, onNext }: {
 const LIME   = '#7DC142'  // verde lima dos títulos
 const DARK   = '#141F0C'  // fundo floresta escuro
 const FOREST = '#476B18'  // verde floresta médio
+async function copyToClipboard(text: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(text)
+  } catch {
+    const el = document.createElement('textarea')
+    el.value = text
+    el.style.cssText = 'position:fixed;opacity:0;top:0;left:0'
+    document.body.appendChild(el)
+    el.focus()
+    el.select()
+    document.execCommand('copy')
+    document.body.removeChild(el)
+  }
+}
+
+function getABAssignments(): Record<string, string> {
+  try { return JSON.parse(localStorage.getItem('ab_assignments') || '{}') } catch { return {} }
+}
+
+function assignABVariant(testId: string, variants: string[]): string {
+  const stored = getABAssignments()
+  if (stored[testId]) return stored[testId]
+  const picked = variants[Math.floor(Math.random() * variants.length)]
+  stored[testId] = picked
+  localStorage.setItem('ab_assignments', JSON.stringify(stored))
+  return picked
+}
+
 function nextSundayLabel() {
   const now = new Date()
   const daysUntil = now.getDay() === 0 ? 7 : 7 - now.getDay()
@@ -341,7 +370,7 @@ function CheckoutForm() {
       body: JSON.stringify({
         productId: 'ebook', email, name, cpf, whatsapp, paymentMethod,
         ...utmParams,
-        ab_variant: localStorage.getItem('cta_variant'),
+        ab_variant: `checkout_headline:${getABAssignments()['checkout_headline'] ?? ''}` || undefined,
         ...(paymentMethod === 'card' ? { cardNumber, cardExpiry, cardCvv, cardPostalCode, cardAddressNumber, installmentCount } : {}),
       }),
     })
@@ -399,9 +428,9 @@ function CheckoutForm() {
     }
   }
 
-  function handleCopy() {
+  async function handleCopy() {
     if (!pixData) return
-    navigator.clipboard.writeText(pixData.payload)
+    await copyToClipboard(pixData.payload)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -632,9 +661,9 @@ function UpsellBump({
 }: UpsellBumpProps) {
   const inputCls = "border-2 border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 bg-white focus:outline-none focus:border-[#7DC142] transition-colors"
 
-  function handleCopyUpsell() {
+  async function handleCopyUpsell() {
     if (!upsellPixData) return
-    navigator.clipboard.writeText(upsellPixData.payload)
+    await copyToClipboard(upsellPixData.payload)
     setUpsellCopied(true)
     setTimeout(() => setUpsellCopied(false), 2000)
   }
@@ -826,10 +855,10 @@ export default function EbookLandingPage() {
   const nextPage = useCallback(() => setLightbox(i => i !== null ? (i + 1) % PAGES.length : null), [])
 
   useEffect(() => {
-    const stored = localStorage.getItem('cta_variant') as 'A' | 'B' | null
-    const variant = stored ?? (Math.random() < 0.5 ? 'A' : 'B')
-    if (!stored) localStorage.setItem('cta_variant', variant)
-    setAbVariant(variant)
+    const test = getABTest('checkout_headline')
+    if (!test) return
+    const variant = assignABVariant(test.id, Object.keys(test.variants))
+    setAbVariant(variant as 'A' | 'B')
   }, [])
 
   useEffect(() => {
@@ -838,11 +867,12 @@ export default function EbookLandingPage() {
     const obs = new IntersectionObserver(([entry]) => {
       if (!entry.isIntersecting) return
       obs.disconnect()
-      const variant = localStorage.getItem('cta_variant')
+      const variant = getABAssignments()['checkout_headline']
+      if (!variant) return
       fetch('/api/track', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ page: '/ebook/checkout', ab_variant: variant }),
+        body: JSON.stringify({ page: '/ebook/checkout', ab_variant: `checkout_headline:${variant}` }),
       }).catch(() => {})
     }, { threshold: 0.2 })
     obs.observe(el)
