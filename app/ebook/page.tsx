@@ -546,7 +546,9 @@ function CheckoutForm() {
         <div className="font-black text-white leading-none" style={{ fontSize: 'clamp(3.5rem, 14vw, 6rem)' }}>
           R$<span style={{ color: LIME }}>67</span>
         </div>
-        <p className="text-gray-400 text-sm mt-2">Pagamento único · PIX ou cartão · Acesso permanente</p>
+        <p className="text-gray-400 text-sm mt-1">à vista no PIX</p>
+        <p className="text-sm mt-1" style={{ color: LIME }}>ou 8x de R$8,38 no cartão s/juros</p>
+        <p className="text-gray-400 text-sm mt-2">Acesso permanente · entrega imediata</p>
       </div>
 
       {/* formulário */}
@@ -577,15 +579,15 @@ function CheckoutForm() {
 
           {paymentMethod === 'card' && (
             <div className="flex flex-col gap-3">
-              <div className="flex gap-2">
-                {[1, 2, 3].map(n => {
+              <div className="grid grid-cols-4 gap-2">
+                {[1, 2, 4, 8].map(n => {
                   const val = Math.ceil(6700 / n) / 100
                   const label = n === 1
                     ? `1x R$67,00`
                     : `${n}x R$${val.toFixed(2).replace('.', ',')} s/juros`
                   return (
                     <button key={n} type="button" onClick={() => setInstallmentCount(n)}
-                      className={`flex-1 py-3 rounded-xl text-sm font-bold border-2 transition-colors ${
+                      className={`flex-1 py-3 rounded-xl text-xs font-bold border-2 transition-colors ${
                         installmentCount === n
                           ? 'border-[#7DC142] bg-[#7DC142]/10 text-[#141F0C]'
                           : 'border-gray-200 text-gray-500 hover:border-gray-300'
