@@ -547,23 +547,13 @@ function CheckoutForm() {
           R$<span style={{ color: LIME }}>67</span>
         </div>
         <p className="text-gray-400 text-sm mt-1">à vista no PIX</p>
-        <p className="text-sm mt-1" style={{ color: LIME }}>ou 8x de R$8,38 no cartão s/juros</p>
+        <p className="text-lg font-bold mt-1" style={{ color: LIME }}>ou 8x de R$8,38 no cartão s/juros</p>
         <p className="text-gray-400 text-sm mt-2">Acesso permanente · entrega imediata</p>
       </div>
 
       {/* formulário */}
       <div className="bg-white px-8 pt-7 pb-8">
         <form onSubmit={handleBuy} className="flex flex-col gap-4 w-full">
-          <input type="text" required name="name" autoComplete="name" placeholder="Seu nome completo" value={name} onChange={e => setName(e.target.value)} className={inputCls} />
-          <input type="email" required name="email" autoComplete="email" placeholder="Seu melhor e-mail" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
-          <input type="text" required inputMode="numeric" placeholder="CPF (somente números)" value={cpf}
-            onChange={e => setCpf(formatCpf(e.target.value))} className={inputCls} />
-          <input type="text" inputMode="numeric"
-            placeholder={paymentMethod === 'card' ? 'Celular com DDD (obrigatório para cartão)' : 'WhatsApp'}
-            required={paymentMethod === 'card'}
-            value={whatsapp}
-            onChange={e => setWhatsapp(formatWhatsapp(e.target.value))} className={inputCls} />
-
           <div className="flex rounded-xl overflow-hidden border-2 border-gray-200">
             <button type="button" onClick={() => setPaymentMethod('pix')}
               className="flex-1 py-3.5 text-base font-bold transition-colors"
@@ -576,6 +566,16 @@ function CheckoutForm() {
               Cartão de crédito
             </button>
           </div>
+
+          <input type="text" required name="name" autoComplete="name" placeholder="Seu nome completo" value={name} onChange={e => setName(e.target.value)} className={inputCls} />
+          <input type="email" required name="email" autoComplete="email" placeholder="Seu melhor e-mail" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
+          <input type="text" required inputMode="numeric" placeholder="CPF (somente números)" value={cpf}
+            onChange={e => setCpf(formatCpf(e.target.value))} className={inputCls} />
+          <input type="text" inputMode="numeric"
+            placeholder={paymentMethod === 'card' ? 'Celular com DDD (obrigatório para cartão)' : 'WhatsApp'}
+            required={paymentMethod === 'card'}
+            value={whatsapp}
+            onChange={e => setWhatsapp(formatWhatsapp(e.target.value))} className={inputCls} />
 
           {paymentMethod === 'card' && (
             <div className="flex flex-col gap-3">
@@ -1000,6 +1000,103 @@ export default function EbookLandingPage() {
         </div>
       </section>
 
+      {/* ── CARROSSEL DE INFOGRÁFICOS ────────────────────────── */}
+      <InfographicsCarousel />
+
+      {/* ── PÁGINAS DO GUIA ──────────────────────────────────── */}
+      <div style={{ height: 4, backgroundColor: LIME }} />
+      <section style={{ backgroundColor: CREAM }} className="py-28 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <p className="uppercase tracking-[0.2em] text-sm font-semibold mb-4" style={{ color: FOREST }}>
+              Veja por dentro
+            </p>
+            <h2 className="font-serif font-black leading-tight mb-4" style={{ fontSize: 'clamp(2rem, 4.5vw, 3.2rem)', color: DARK }}>
+              Espie por dentro do ebook.
+            </h2>
+            <p className="text-xl text-gray-500 max-w-xl mx-auto leading-relaxed">
+              Texto e infográfico integrados em cada capítulo, do conceito à visualização.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {PAGES.map((pg, i) => (
+              <button key={pg.src} onClick={() => setLightbox(i)}
+                className="group flex flex-col text-left focus:outline-none focus-visible:ring-2 rounded-xl"
+                style={{ ['--ring-color' as string]: LIME }}>
+                <div className="relative overflow-hidden rounded-xl shadow-xl ring-1 ring-black/10
+                  group-hover:-translate-y-2 group-hover:shadow-2xl transition-all duration-300 w-full"
+                  style={{ transform: `rotate(${i % 2 === 0 ? '-0.6' : '0.6'}deg)` }}>
+                  <Image
+                    src={pg.src}
+                    alt={pg.title}
+                    width={744} height={1052}
+                    className="w-full h-auto"
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-center justify-center">
+                    <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/90 text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-full"
+                      style={{ color: DARK }}>
+                      Ver página
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-4 px-1">
+                  <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: GOLD }}>{pg.cap}</p>
+                  <p className="text-sm font-semibold leading-snug" style={{ color: DARK }}>{pg.title}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CAPÍTULOS ────────────────────────────────────────── */}
+      <section id="dentro" style={{ backgroundColor: CREAM }} className="pt-0 pb-28 px-6">
+        <div className="max-w-4xl mx-auto">
+          <p className="uppercase tracking-[0.2em] text-sm font-semibold mb-4" style={{ color: FOREST }}>
+            Conteúdo completo do ebook
+          </p>
+          <h2 className="font-serif font-black leading-tight mb-4" style={{ fontSize: 'clamp(2rem, 4.5vw, 3.2rem)', color: DARK }}>
+            5 partes · 27 capítulos.
+          </h2>
+          <p className="text-xl text-gray-500 mb-14 max-w-xl leading-relaxed">
+            Uma progressão sem lacunas: da lógica da floresta ao sistema vivo na sua terra.
+          </p>
+
+          <div className="flex flex-col gap-10">
+            {ALL_PARTS.map(part => (
+              <div key={part.num}>
+                {/* cabeçalho da parte */}
+                <div className="flex items-baseline gap-4 mb-5 pb-4 border-b-2" style={{ borderColor: LIME }}>
+                  <span className="font-serif font-black leading-none" style={{ fontSize: '2.8rem', color: LIME, minWidth: '2.4rem' }}>
+                    {part.num}
+                  </span>
+                  <div>
+                    <p className="font-black text-lg leading-tight" style={{ color: DARK }}>{part.title}</p>
+                    <p className="text-sm italic leading-snug mt-0.5" style={{ color: FOREST }}>{part.subtitle}</p>
+                  </div>
+                </div>
+                {/* grid de capítulos */}
+                <div className="grid sm:grid-cols-2 gap-1">
+                  {part.chapters.map(ch => (
+                    <div key={ch.n} className="flex items-start gap-3 py-2.5 px-3 rounded-lg hover:bg-white/70 transition-colors">
+                      <span className="font-serif font-black text-base flex-shrink-0 mt-px" style={{ color: GOLD, minWidth: '1.8rem' }}>
+                        {ch.n}
+                      </span>
+                      <span className="text-sm font-medium leading-snug" style={{ color: DARK }}>{ch.title}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-12 rounded-2xl px-8 py-6 text-base font-semibold" style={{ backgroundColor: DARK, color: LIME }}>
+            📘 <strong className="text-white">207 páginas · 27 capítulos · 25+ infográficos exclusivos</strong>. Tudo em português, do fundamento à prática.
+          </div>
+        </div>
+      </section>
+
       {/* ── STRIP DE CREDIBILIDADE ───────────────────────────── */}
       <div style={{ backgroundColor: LIME, color: DARK }} className="py-5 px-6">
         <div className="max-w-5xl mx-auto flex flex-wrap justify-center gap-8 text-sm font-black uppercase tracking-widest">
@@ -1014,9 +1111,6 @@ export default function EbookLandingPage() {
       {/* ── AGITAÇÃO ─────────────────────────────────────────── */}
       <section style={{ backgroundColor: CREAM }} className="py-24 px-6">
         <div className="max-w-5xl mx-auto">
-          <p className="text-center font-semibold uppercase tracking-[0.2em] text-sm mb-5" style={{ color: FOREST }}>
-            O que está em jogo
-          </p>
           <h2 className="font-serif font-black text-center mb-16 leading-tight" style={{ fontSize: 'clamp(1.8rem, 4vw, 3rem)', color: DARK }}>
             A maioria começa errado. E só descobre depois.
           </h2>
@@ -1133,103 +1227,6 @@ export default function EbookLandingPage() {
       </section>
 
       <div style={{ height: 4, backgroundColor: LIME }} />
-
-      {/* ── CARROSSEL DE INFOGRÁFICOS ────────────────────────── */}
-      <InfographicsCarousel />
-
-      {/* ── PÁGINAS DO GUIA ──────────────────────────────────── */}
-      <div style={{ height: 4, backgroundColor: LIME }} />
-      <section style={{ backgroundColor: CREAM }} className="py-28 px-6">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <p className="uppercase tracking-[0.2em] text-sm font-semibold mb-4" style={{ color: FOREST }}>
-              Veja por dentro
-            </p>
-            <h2 className="font-serif font-black leading-tight mb-4" style={{ fontSize: 'clamp(2rem, 4.5vw, 3.2rem)', color: DARK }}>
-              Espie por dentro do ebook.
-            </h2>
-            <p className="text-xl text-gray-500 max-w-xl mx-auto leading-relaxed">
-              Texto e infográfico integrados em cada capítulo, do conceito à visualização.
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {PAGES.map((pg, i) => (
-              <button key={pg.src} onClick={() => setLightbox(i)}
-                className="group flex flex-col text-left focus:outline-none focus-visible:ring-2 rounded-xl"
-                style={{ ['--ring-color' as string]: LIME }}>
-                <div className="relative overflow-hidden rounded-xl shadow-xl ring-1 ring-black/10
-                  group-hover:-translate-y-2 group-hover:shadow-2xl transition-all duration-300 w-full"
-                  style={{ transform: `rotate(${i % 2 === 0 ? '-0.6' : '0.6'}deg)` }}>
-                  <Image
-                    src={pg.src}
-                    alt={pg.title}
-                    width={744} height={1052}
-                    className="w-full h-auto"
-                  />
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-center justify-center">
-                    <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/90 text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-full"
-                      style={{ color: DARK }}>
-                      Ver página
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-4 px-1">
-                  <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: GOLD }}>{pg.cap}</p>
-                  <p className="text-sm font-semibold leading-snug" style={{ color: DARK }}>{pg.title}</p>
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── CAPÍTULOS ────────────────────────────────────────── */}
-      <section id="dentro" style={{ backgroundColor: CREAM }} className="pt-0 pb-28 px-6">
-        <div className="max-w-4xl mx-auto">
-          <p className="uppercase tracking-[0.2em] text-sm font-semibold mb-4" style={{ color: FOREST }}>
-            Conteúdo completo do ebook
-          </p>
-          <h2 className="font-serif font-black leading-tight mb-4" style={{ fontSize: 'clamp(2rem, 4.5vw, 3.2rem)', color: DARK }}>
-            5 partes · 27 capítulos.
-          </h2>
-          <p className="text-xl text-gray-500 mb-14 max-w-xl leading-relaxed">
-            Uma progressão sem lacunas: da lógica da floresta ao sistema vivo na sua terra.
-          </p>
-
-          <div className="flex flex-col gap-10">
-            {ALL_PARTS.map(part => (
-              <div key={part.num}>
-                {/* cabeçalho da parte */}
-                <div className="flex items-baseline gap-4 mb-5 pb-4 border-b-2" style={{ borderColor: LIME }}>
-                  <span className="font-serif font-black leading-none" style={{ fontSize: '2.8rem', color: LIME, minWidth: '2.4rem' }}>
-                    {part.num}
-                  </span>
-                  <div>
-                    <p className="font-black text-lg leading-tight" style={{ color: DARK }}>{part.title}</p>
-                    <p className="text-sm italic leading-snug mt-0.5" style={{ color: FOREST }}>{part.subtitle}</p>
-                  </div>
-                </div>
-                {/* grid de capítulos */}
-                <div className="grid sm:grid-cols-2 gap-1">
-                  {part.chapters.map(ch => (
-                    <div key={ch.n} className="flex items-start gap-3 py-2.5 px-3 rounded-lg hover:bg-white/70 transition-colors">
-                      <span className="font-serif font-black text-base flex-shrink-0 mt-px" style={{ color: GOLD, minWidth: '1.8rem' }}>
-                        {ch.n}
-                      </span>
-                      <span className="text-sm font-medium leading-snug" style={{ color: DARK }}>{ch.title}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-12 rounded-2xl px-8 py-6 text-base font-semibold" style={{ backgroundColor: DARK, color: LIME }}>
-            📘 <strong className="text-white">207 páginas · 27 capítulos · 25+ infográficos exclusivos</strong>. Tudo em português, do fundamento à prática.
-          </div>
-        </div>
-      </section>
 
       {/* ── DEPOIMENTOS (oculto temporariamente) ──────────────── */}
 
