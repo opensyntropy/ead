@@ -62,7 +62,7 @@ export default async function AdminPage() {
 
   const [productsRes, refundsRes, pixRes, downloadsRes, visitsTodayRes, visitsWeekRes, visitsMonthRes, expiredRes] = await Promise.all([
     service.from('user_products').select('*').order('created_at', { ascending: false }),
-    service.from('refund_requests').select('*').order('created_at', { ascending: false }),
+    service.from('refund_requests').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
     service.from('pix_charges').select('*,payment_method,installment_count').order('created_at', { ascending: false }),
     service.from('download_tokens').select('email').or('used.eq.true,download_count.gt.0'),
     service.from('page_visits').select('id', { count: 'exact', head: true }).eq('page', '/ebook').gte('created_at', todayISO),
@@ -117,7 +117,6 @@ export default async function AdminPage() {
   }))
   const downloadedEmails: string[] = [...new Set((downloadsRes.data ?? []).map(d => d.email))]
   const refundRows: RefundRequest[] = refundsRes.data ?? []
-  const pendingRefunds = refundRows.filter(r => r.status === 'pending').length
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
@@ -260,58 +259,43 @@ export default async function AdminPage() {
             </div>
           )}
 
-          <div>
-            <SectionHeader
-              title="Pedidos de devolução"
-              count={refundRows.length}
-              badge={pendingRefunds > 0 ? (
-                <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                  {pendingRefunds} pendente{pendingRefunds > 1 ? 's' : ''}
-                </span>
-              ) : undefined}
-            />
-            <div className="bg-white rounded-xl border border-red-100 overflow-x-auto">
-              <table className="w-full text-base">
-                <thead className="bg-red-50 text-red-800 text-sm uppercase tracking-wide font-semibold">
-                  <tr>
-                    <th className="text-left px-4 py-3">Email</th>
-                    <th className="text-left px-4 py-3">Motivo</th>
-                    <th className="text-left px-4 py-3">Status</th>
-                    <th className="text-left px-4 py-3">Data</th>
-                    <th className="px-4 py-3 text-right">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-red-50">
-                  {refundRows.map(row => (
-                    <tr key={row.id} className="hover:bg-red-50/30 transition-colors">
-                      <td className="px-4 py-3 font-medium text-gray-800">{row.email}</td>
-                      <td className="px-4 py-3 text-gray-500 max-w-xs truncate">{row.reason ?? '—'}</td>
-                      <td className="px-4 py-3">
-                        <span className={`inline-block px-2 py-0.5 rounded-full text-sm font-medium ${
-                          row.status === 'pending'  ? 'bg-yellow-100 text-yellow-800' :
-                          row.status === 'resolved' ? 'bg-green-100 text-green-800' :
-                          'bg-gray-100 text-gray-600'
-                        }`}>
-                          {row.status === 'pending' ? 'Pendente' : row.status === 'resolved' ? 'Resolvido' : row.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-400 text-sm whitespace-nowrap">{fmt(row.created_at)}</td>
-                      <td className="px-4 py-3 text-right">
-                        <AdminActions mode="resolve-refund" id={row.id} status={row.status} />
-                      </td>
-                    </tr>
-                  ))}
-                  {refundRows.length === 0 && (
+          {refundRows.length > 0 && (
+            <div>
+              <SectionHeader
+                title="Pedidos de devolução"
+                count={refundRows.length}
+                badge={
+                  <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                    {refundRows.length} pendente{refundRows.length > 1 ? 's' : ''}
+                  </span>
+                }
+              />
+              <div className="bg-white rounded-xl border border-red-100 overflow-x-auto">
+                <table className="w-full text-base">
+                  <thead className="bg-red-50 text-red-800 text-sm uppercase tracking-wide font-semibold">
                     <tr>
-                      <td colSpan={5} className="px-4 py-10 text-center text-gray-300 text-base">
-                        Nenhum pedido de devolução.
-                      </td>
+                      <th className="text-left px-4 py-3">Email</th>
+                      <th className="text-left px-4 py-3">Motivo</th>
+                      <th className="text-left px-4 py-3">Data</th>
+                      <th className="px-4 py-3 text-right">Ações</th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-red-50">
+                    {refundRows.map(row => (
+                      <tr key={row.id} className="hover:bg-red-50/30 transition-colors">
+                        <td className="px-4 py-3 font-medium text-gray-800">{row.email}</td>
+                        <td className="px-4 py-3 text-gray-500 max-w-xs truncate">{row.reason ?? '—'}</td>
+                        <td className="px-4 py-3 text-gray-400 text-sm whitespace-nowrap">{fmt(row.created_at)}</td>
+                        <td className="px-4 py-3 text-right">
+                          <AdminActions mode="resolve-refund" id={row.id} status={row.status} />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Zone 6: Clientes */}

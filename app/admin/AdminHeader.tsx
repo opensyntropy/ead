@@ -21,6 +21,12 @@ export default function AdminHeader() {
           >
             Relatórios
           </a>
+          <a
+            href="/admin/devolucoes"
+            className="text-sm font-semibold text-white/80 hover:text-white border border-white/30 hover:border-white/60 rounded-lg px-4 py-1.5 transition-colors"
+          >
+            Devoluções
+          </a>
           <button
             onClick={() => setShowAdd(true)}
             className="text-sm font-semibold text-white/80 hover:text-white border border-white/30 hover:border-white/60 rounded-lg px-4 py-1.5 transition-colors flex items-center gap-1.5"
