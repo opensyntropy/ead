@@ -787,12 +787,9 @@ function InfographicsCarousel() {
   }, [paused, n])
 
   return (
-    <section className="py-28 px-6 bg-white overflow-hidden">
+    <section className="py-20 px-6 bg-white overflow-hidden">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-14">
-          <p className="uppercase tracking-[0.2em] text-sm font-semibold mb-4" style={{ color: LIME }}>
-            Visual e direto
-          </p>
+        <div className="text-center mb-12">
           <h2 className="font-serif font-black leading-tight mb-4" style={{ fontSize: 'clamp(2rem, 4.5vw, 3.2rem)', color: DARK }}>
             O conhecimento que você vai carregar.
           </h2>
@@ -939,7 +936,7 @@ export default function EbookLandingPage() {
       )}
 
       {/* ── HERO ─────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden px-6 py-12 md:py-28" style={{ backgroundColor: DARK }}>
+      <section className="relative overflow-hidden px-6 py-8 md:py-16" style={{ backgroundColor: DARK }}>
         {/* background: hero_capa embaçada e escurecida */}
         <div className="absolute inset-0 overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -956,13 +953,13 @@ export default function EbookLandingPage() {
           {/* 1 — título (mobile: row 1 | desktop: col 1 row 1) */}
           <div className="md:row-start-1 md:col-start-1 min-w-0 text-center md:text-left">
             <p className="font-sans text-white text-base md:text-lg font-semibold uppercase tracking-[0.2em] mb-3 md:mb-4">
-              Guia de Introdução à
+              O seu guia de introdução à
             </p>
             <h1 className="leading-none" style={{ fontFamily: 'var(--font-display)' }}>
-              <span className="block text-white" style={{ fontSize: 'clamp(4.5rem, 10vw, 8rem)' }}>
+              <span className="block text-white" style={{ fontSize: 'clamp(3.2rem, 7.5vw, 6rem)' }}>
                 AGROFLORESTA
               </span>
-              <span className="block" style={{ fontSize: 'clamp(3.8rem, 8.5vw, 7.2rem)', color: LIME }}>
+              <span className="block" style={{ fontSize: 'clamp(2.7rem, 6.5vw, 5.2rem)', color: LIME }}>
                 SINTRÓPICA
               </span>
             </h1>
