@@ -138,11 +138,11 @@ export default async function AdminPage() {
               </span>
             </div>
           )}
-          {pendingRefunds > 0 && (
+          {refundRows.length > 0 && (
             <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-4 py-2">
               <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
               <span className="text-sm font-semibold text-red-800">
-                {pendingRefunds} devolução{pendingRefunds > 1 ? 'ões' : ''} pendente{pendingRefunds > 1 ? 's' : ''}
+                {refundRows.length} devolução{refundRows.length > 1 ? 'ões' : ''} pendente{refundRows.length > 1 ? 's' : ''}
               </span>
             </div>
           )}
