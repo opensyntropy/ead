@@ -303,7 +303,7 @@ function CheckoutForm() {
   const [cardCvv, setCardCvv] = useState('')
   const [cardPostalCode, setCardPostalCode] = useState('')
   const [cardAddressNumber, setCardAddressNumber] = useState('')
-  const [installmentCount, setInstallmentCount] = useState(1)
+  const [installmentCount, setInstallmentCount] = useState(8)
 
   // Upsell (sessão pós-compra)
   const [upsellPaymentMethod, setUpsellPaymentMethod] = useState<'pix' | 'card'>('pix')
