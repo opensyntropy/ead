@@ -874,6 +874,7 @@ export default function EbookLandingPage() {
   }, [])
 
   useEffect(() => {
+    if (document.cookie.split(';').some(c => c.trim() === 'admin_flag=1')) return
     const el = document.getElementById('comprar')
     if (!el) return
     const obs = new IntersectionObserver(([entry]) => {
@@ -896,6 +897,7 @@ export default function EbookLandingPage() {
   }, [])
 
   useEffect(() => {
+    if (document.cookie.split(';').some(c => c.trim() === 'admin_flag=1')) return
     const p = new URLSearchParams(window.location.search)
     const hasFbclid = p.has('fbclid')
     const ua = navigator.userAgent
