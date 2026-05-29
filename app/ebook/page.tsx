@@ -215,6 +215,7 @@ const TESTIMONIALS = [
 ]
 
 const FAQ_ITEMS = [
+  { q: 'Posso imprimir o guia?', a: 'Sim. O PDF não tem restrição de impressão. Você pode imprimir quantas vezes quiser para uso pessoal.' },
   { q: 'Preciso ter terra para aproveitar?', a: 'Não. O guia é teórico-prático. Você pode estudar e planejar antes de plantar: a lógica é útil em qualquer escala e em qualquer fase.' },
   { q: 'O conteúdo funciona para qualquer clima ou região?', a: 'Sim. A lógica sintrópica é universal. O guia ensina os princípios, não um receituário específico de uma região. Você leva para qualquer bioma.' },
   { q: 'É só teoria ou tem parte prática?', a: 'As 6 práticas operacionais (cap. 03) e o exercício de leitura de paisagem (cap. 04) são completamente aplicáveis desde a primeira leitura.' },
@@ -537,9 +538,10 @@ function CheckoutForm() {
       {/* cabeçalho escuro com preço */}
       <div className="px-8 py-7 text-center" style={{ backgroundColor: '#0D1608' }}>
         <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Ebook Digital — PDF · +200 páginas</p>
+        <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Leia onde quiser ou imprima</p>
         <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: LIME }}>Acesso permanente · entrega imediata</p>
         <div className="flex items-center justify-center gap-4 mb-1">
-          <span className="text-gray-500 text-lg line-through">R$ 107</span>
+          <span className="text-gray-500 text-3xl line-through">R$ 107</span>
           <span className="text-xs font-black px-2.5 py-1 rounded-full" style={{ backgroundColor: LIME + '22', color: LIME }}>41% OFF</span>
         </div>
         <div className="font-black text-white leading-none" style={{ fontSize: 'clamp(3.5rem, 14vw, 6rem)' }}>
@@ -1081,9 +1083,6 @@ export default function EbookLandingPage() {
             ))}
           </div>
 
-          <div className="mt-12 rounded-2xl px-8 py-6 text-base font-semibold" style={{ backgroundColor: DARK, color: LIME }}>
-            📘 <strong className="text-white">207 páginas · 27 capítulos · 25+ infográficos exclusivos</strong>. Tudo em português, do fundamento à prática.
-          </div>
         </div>
       </section>
 
@@ -1272,7 +1271,7 @@ export default function EbookLandingPage() {
           <div className="text-center mb-10">
             <div className="inline-flex items-center gap-2 text-sm font-black uppercase tracking-widest px-5 py-2.5 rounded-full mb-6"
               style={{ backgroundColor: LIME, color: DARK }}>
-              ⚡ Preço de lançamento, encerra em breve
+              ⚡ Preço de lançamento · encerra em {nextSundayLabel()}
             </div>
             <h2 className="font-serif font-black text-white leading-tight mb-3"
               style={{ fontSize: 'clamp(1.8rem, 5vw, 2.8rem)' }}>
