@@ -96,11 +96,9 @@ function assignABVariant(testId: string, variants: string[]): string {
 }
 
 function nextSundayLabel() {
-  const now = new Date()
-  const daysUntil = now.getDay() === 0 ? 7 : 7 - now.getDay()
-  const next = new Date(now)
-  next.setDate(now.getDate() + daysUntil)
-  return next.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' })
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }))
+  const next = new Date(now.getFullYear(), now.getMonth() + 1, 10)
+  return next.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
 }
 const CREAM  = '#F2F0E9'  // creme parchment da barra inferior
 const GOLD   = '#C69B2D'  // dourado âmbar dos acentos
@@ -538,7 +536,8 @@ function CheckoutForm() {
     <>
       {/* cabeçalho escuro com preço */}
       <div className="px-8 py-7 text-center" style={{ backgroundColor: '#0D1608' }}>
-        <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">Ebook Digital — PDF · +200 páginas</p>
+        <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Ebook Digital — PDF · +200 páginas</p>
+        <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: LIME }}>Acesso permanente · entrega imediata</p>
         <div className="flex items-center justify-center gap-4 mb-1">
           <span className="text-gray-500 text-lg line-through">R$ 107</span>
           <span className="text-xs font-black px-2.5 py-1 rounded-full" style={{ backgroundColor: LIME + '22', color: LIME }}>41% OFF</span>
@@ -548,7 +547,6 @@ function CheckoutForm() {
         </div>
         <p className="text-gray-400 text-sm mt-1">à vista no PIX</p>
         <p className="text-lg font-bold mt-1" style={{ color: LIME }}>ou 8x de R$8,38 no cartão s/juros</p>
-        <p className="text-gray-400 text-sm mt-2">Acesso permanente · entrega imediata</p>
       </div>
 
       {/* formulário */}
@@ -791,7 +789,7 @@ function InfographicsCarousel() {
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="font-serif font-black leading-tight mb-4" style={{ fontSize: 'clamp(2rem, 4.5vw, 3.2rem)', color: DARK }}>
-            O conhecimento que você vai carregar.
+            Tudo que você precisa saber antes de plantar sua primeira agrofloresta.
           </h2>
           <p className="text-lg text-gray-500 max-w-xl mx-auto leading-relaxed">
             25+ infográficos criados exclusivamente para este guia.
@@ -950,18 +948,18 @@ export default function EbookLandingPage() {
         <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(10,16,6,0.05) 0%, rgba(10,16,6,0.55) 100%)' }} />
 
         {/* grid: mobile 1 col (título→capa→corpo), desktop 2 col (esq: título+corpo | dir: capa) */}
-        <div className="relative z-10 max-w-6xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-16">
+        <div className="relative z-10 max-w-6xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-16 md:items-center">
 
-          {/* 1 — título (mobile: row 1 | desktop: col 1 row 1) */}
-          <div className="md:row-start-1 md:col-start-1 min-w-0 text-center md:text-left">
+          {/* 1 — título (mobile: row 1 | desktop: col 1 rows 1-2) */}
+          <div className="md:row-start-1 md:row-end-3 md:col-start-1 min-w-0 text-center md:text-left flex flex-col justify-center">
             <p className="font-sans text-white text-base md:text-lg font-semibold uppercase tracking-[0.2em] mb-3 md:mb-4">
               O seu guia de introdução à
             </p>
             <h1 className="leading-none" style={{ fontFamily: 'var(--font-display)' }}>
-              <span className="block text-white" style={{ fontSize: 'clamp(3.2rem, 7.5vw, 6rem)' }}>
+              <span className="block text-white" style={{ fontSize: 'clamp(4rem, 10vw, 8rem)' }}>
                 AGROFLORESTA
               </span>
-              <span className="block" style={{ fontSize: 'clamp(2.7rem, 6.5vw, 5.2rem)', color: LIME }}>
+              <span className="block" style={{ fontSize: 'clamp(3.4rem, 8.5vw, 6.8rem)', color: LIME }}>
                 SINTRÓPICA
               </span>
             </h1>
@@ -987,13 +985,6 @@ export default function EbookLandingPage() {
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="animate-bounce opacity-80">
               <polyline points="6 9 12 15 18 9" />
             </svg>
-          </div>
-
-          {/* 3 — corpo: subtítulo */}
-          <div className="md:row-start-2 md:col-start-1 min-w-0 text-center md:text-left">
-            <p className="font-sans text-xl md:text-2xl text-gray-200 leading-snug font-semibold">
-              A lógica da agrofloresta sintrópica, explicada do começo ao fim. Para você saber exatamente o que plantar, quando e por quê.
-            </p>
           </div>
 
         </div>
