@@ -2,6 +2,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { sendRefundEmail } from '@/lib/email'
+import { refundPayment } from '@/lib/asaas'
 
 export async function PATCH(request: Request) {
   const jar = await cookies()
@@ -21,16 +22,8 @@ export async function PATCH(request: Request) {
 
   if (!refundReq) return NextResponse.json({ error: 'Não encontrado' }, { status: 404 })
 
-  const { error } = await service
-    .from('refund_requests')
-    .update({ status })
-    .eq('id', id)
-
-  if (error) return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
-
-  // Ações adicionais apenas na primeira aprovação
+  // Estorno real apenas na primeira resolução
   if (status === 'resolved' && refundReq.status !== 'resolved') {
-    // Marca user_products.refunded = true via asaas_payment_id
     const { data: charge } = await service
       .from('pix_charges')
       .select('asaas_payment_id')
@@ -41,7 +34,14 @@ export async function PATCH(request: Request) {
       .limit(1)
       .maybeSingle()
 
-    if (charge) {
+    // Estorna na Asaas antes de marcar resolvido — se falhar, aborta sem alterar nada
+    if (charge?.asaas_payment_id) {
+      try {
+        await refundPayment(charge.asaas_payment_id)
+      } catch (err) {
+        console.error('Erro ao estornar na Asaas:', err)
+        return NextResponse.json({ error: `Falha ao estornar na Asaas: ${err instanceof Error ? err.message : 'erro desconhecido'}` }, { status: 502 })
+      }
       await service
         .from('user_products')
         .update({ refunded: true })
@@ -55,6 +55,13 @@ export async function PATCH(request: Request) {
       console.error('Erro ao enviar email de estorno:', err)
     }
   }
+
+  const { error } = await service
+    .from('refund_requests')
+    .update({ status })
+    .eq('id', id)
+
+  if (error) return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
 
   return NextResponse.json({ ok: true })
 }

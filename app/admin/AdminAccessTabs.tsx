@@ -10,6 +10,7 @@ export interface UserProduct {
   product: string
   asaas_payment_id: string | null
   manual_paid?: boolean | null
+  refunded?: boolean | null
   created_at: string
   email?: string
   name?: string
@@ -267,6 +268,11 @@ function AccessTable({ rows, pixUtmMap, downloadedSet, emptyMsg }: { rows: UserP
                   )}
                   {(row.product === 'ebook' || row.product === 'bundle') && row.email && (
                     <AdminActions mode="copy-link" email={row.email} />
+                  )}
+                  {row.asaas_payment_id && (
+                    row.refunded
+                      ? <span className="text-xs text-gray-400 font-medium px-2">Estornado</span>
+                      : <AdminActions mode="estorno" paymentId={row.asaas_payment_id} email={row.email} />
                   )}
                   <AdminActions id={row.id} email={row.email ?? ''} product={row.product} userId={row.user_id} />
                 </div>

@@ -115,6 +115,18 @@ export async function getPaymentStatus(paymentId: string): Promise<string> {
   return data.status
 }
 
+// Estorna o pagamento na Asaas. Sem body = estorno total.
+export async function refundPayment(paymentId: string): Promise<void> {
+  const res = await fetch(`${ASAAS_BASE}/payments/${paymentId}/refund`, {
+    method: 'POST',
+    headers: headers(),
+  })
+  if (!res.ok) {
+    const err = await res.json()
+    throw new Error(JSON.stringify(err.errors ?? err))
+  }
+}
+
 export async function createCreditCardCharge(params: {
   customerId: string
   value: number

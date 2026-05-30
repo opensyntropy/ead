@@ -2,16 +2,17 @@
 import { useState } from 'react'
 
 interface Props {
-  mode?: 'add' | 'resolve-refund' | 'confirm-pix' | 'resend-download' | 'copy-link' | 'copy-pix'
+  mode?: 'add' | 'resolve-refund' | 'confirm-pix' | 'resend-download' | 'copy-link' | 'copy-pix' | 'estorno'
   id?: string
   email?: string
   product?: string
   userId?: string
   status?: string
   pixPayload?: string
+  paymentId?: string
 }
 
-export default function AdminActions({ mode, id, email, product, userId, status, pixPayload }: Props) {
+export default function AdminActions({ mode, id, email, product, userId, status, pixPayload, paymentId }: Props) {
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
 
@@ -51,7 +52,7 @@ export default function AdminActions({ mode, id, email, product, userId, status,
   }
 
   async function handleResolveRefund() {
-    if (!confirm('Marcar este pedido como resolvido?')) return
+    if (!confirm(`Estornar o pagamento de ${email} na Asaas?\n\nIsso devolve o valor ao cliente, revoga o acesso, envia email e marca o pedido como resolvido.`)) return
     setLoading(true)
     const res = await fetch('/api/admin/refund', {
       method: 'PATCH',
@@ -60,6 +61,20 @@ export default function AdminActions({ mode, id, email, product, userId, status,
     })
     setLoading(false)
     if (res.ok) window.location.reload()
+    else { const d = await res.json().catch(() => ({})); alert(d.error || 'Erro ao estornar.') }
+  }
+
+  async function handleEstorno() {
+    if (!confirm(`Estornar o pagamento de ${email} na Asaas?\n\nIsso devolve o valor ao cliente, revoga o acesso e envia email de confirmação.`)) return
+    setLoading(true)
+    const res = await fetch('/api/admin/estorno', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paymentId, email }),
+    })
+    setLoading(false)
+    if (res.ok) { setDone(true); window.location.reload() }
+    else { const d = await res.json().catch(() => ({})); alert(d.error || 'Erro ao estornar.') }
   }
 
   async function handleConfirmPix() {
@@ -184,14 +199,32 @@ export default function AdminActions({ mode, id, email, product, userId, status,
   }
 
   if (mode === 'resolve-refund') {
-    if (status === 'resolved') return <span className="text-sm text-gray-400">Resolvido</span>
+    if (status === 'resolved') return <span className="text-sm text-gray-400">Estornado</span>
     return (
       <button
         onClick={handleResolveRefund}
         disabled={loading}
-        className="text-sm text-green-600 hover:text-green-800 font-semibold disabled:opacity-50"
+        className="text-sm text-red-600 hover:text-red-800 font-semibold disabled:opacity-50"
       >
-        {loading ? '...' : 'Marcar resolvido'}
+        {loading ? '...' : 'Estornar'}
+      </button>
+    )
+  }
+
+  if (mode === 'estorno') {
+    if (done) return <span className="text-xs text-green-600 font-medium">Estornado ✓</span>
+    return (
+      <button
+        onClick={handleEstorno}
+        disabled={loading}
+        title={`Estornar pagamento de ${email} na Asaas`}
+        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-orange-700 bg-orange-50 hover:bg-orange-100 border border-orange-200 disabled:opacity-40 transition-colors"
+      >
+        {loading
+          ? <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+          : <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
+        }
+        Estornar
       </button>
     )
   }
