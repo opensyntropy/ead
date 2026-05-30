@@ -1,12 +1,16 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { sendRecoveryEmail } from '@/lib/email'
+import { getPaymentStatus } from '@/lib/asaas'
 import { PRODUCTS } from '@/config/products'
 import type { ProductId } from '@/config/products'
 
 export const maxDuration = 60
 
 const BASE_URL = (process.env.NEXT_PUBLIC_BASE_URL ?? 'https://ead.opensyntropy.earth').replace(/\/$/, '')
+
+// Status da Asaas que indicam pagamento recebido — não devem receber lembrete.
+const PAID_STATUSES = new Set(['RECEIVED', 'CONFIRMED', 'RECEIVED_IN_CASH'])
 
 function productName(product: string): string {
   return (PRODUCTS[product as ProductId] as { name: string } | undefined)?.name ?? product
@@ -69,6 +73,19 @@ export async function GET(request: Request) {
           await supabase.from('pix_charges').update({ [column]: now }).eq('id', charge.id)
           console.log(`cron/recovery: pulando ${charge.email} — já possui compra confirmada`)
           continue
+        }
+
+        // Re-checa ao vivo na Asaas: o webhook pode ter atrasado e a cobrança já
+        // estar paga mesmo com status local 'pending'. Se falhar, segue com o envio.
+        try {
+          const liveStatus = await getPaymentStatus(charge.asaas_payment_id)
+          if (PAID_STATUSES.has(liveStatus)) {
+            await supabase.from('pix_charges').update({ [column]: now }).eq('id', charge.id)
+            console.log(`cron/recovery: pulando ${charge.email} — Asaas reporta ${liveStatus} (webhook atrasado)`)
+            continue
+          }
+        } catch (err) {
+          console.error(`cron/recovery: falha ao consultar status Asaas de ${charge.asaas_payment_id}:`, err)
         }
 
         await sendRecoveryEmail(charge.email, charge.name, productName(charge.product), `${BASE_URL}/ebook`, attempt)

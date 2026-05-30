@@ -102,6 +102,19 @@ export async function getPixQrCode(paymentId: string): Promise<AsaasPixQrCode> {
   return res.json() as Promise<AsaasPixQrCode>
 }
 
+// Status atual do pagamento na Asaas (fonte da verdade, caso o webhook tenha atrasado).
+export async function getPaymentStatus(paymentId: string): Promise<string> {
+  const res = await fetch(`${ASAAS_BASE}/payments/${paymentId}`, {
+    headers: headers(),
+  })
+  if (!res.ok) {
+    const err = await res.json()
+    throw new Error(JSON.stringify(err.errors ?? err))
+  }
+  const data = (await res.json()) as { status: string }
+  return data.status
+}
+
 export async function createCreditCardCharge(params: {
   customerId: string
   value: number
