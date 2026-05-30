@@ -93,7 +93,8 @@ export default async function AdminPage() {
   const checkoutsMonth = pixRows.filter(p => p.created_at >= monthISO).length
 
   const cutoff25h = new Date(Date.now() - 25 * 60 * 60 * 1000)
-  const pendingPix = pixRows.filter(p => p.status === 'pending' && new Date(p.created_at) > cutoff25h)
+  // Sai da lista após pagamento (status != pending) ou após o 2º lembrete (recovery_sent_at_2)
+  const pendingPix = pixRows.filter(p => p.status === 'pending' && !p.recovery_sent_at_2 && new Date(p.created_at) > cutoff25h)
   const pixUtmMap = Object.fromEntries(pixRows.map(p => [p.asaas_payment_id, p]))
 
   const pixNameMap = Object.fromEntries(pixRows.filter(p => p.name).map(p => [p.asaas_payment_id, p.name!]))

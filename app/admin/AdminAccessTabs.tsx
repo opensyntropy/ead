@@ -24,6 +24,8 @@ export interface PixCharge {
   status: string
   created_at: string
   confirmed_at: string | null
+  recovery_sent_at: string | null
+  recovery_sent_at_2: string | null
   utm_source: string | null
   utm_medium: string | null
   utm_campaign: string | null
