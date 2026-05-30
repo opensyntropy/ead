@@ -180,14 +180,18 @@ export async function sendSessionPurchaseEmail(email: string, downloadToken: str
   if (sendError2) throw new Error(`Resend error: ${JSON.stringify(sendError2)}`)
 }
 
-export async function sendRecoveryEmail(email: string, name: string | null, productName: string, checkoutUrl: string) {
+export async function sendRecoveryEmail(email: string, name: string | null, productName: string, checkoutUrl: string, attempt: 1 | 2 = 1) {
   const greeting = name ? `Olá, ${name.split(' ')[0]},` : 'Olá,'
+  const heading = attempt === 2 ? 'Última chance para finalizar' : 'Falta pouco para finalizar'
+  const subject = attempt === 2
+    ? `Última chance — ${productName}`
+    : `Você não finalizou sua compra — ${productName}`
   const { error } = await resend.emails.send({
     from: process.env.NODE_ENV === 'production'
       ? 'Michel Bottan <nao-responda@opensyntropy.earth>'
       : 'Michel Bottan <onboarding@resend.dev>',
     to: process.env.NODE_ENV === 'production' ? email : 'devops@opensyntropy.earth',
-    subject: `Você não finalizou sua compra — ${productName}`,
+    subject,
     html: `
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -201,7 +205,7 @@ export async function sendRecoveryEmail(email: string, name: string | null, prod
           <td style="background:#141F0C;padding:36px 40px;text-align:center">
             <p style="margin:0;color:#7DC142;font-size:13px;letter-spacing:3px;text-transform:uppercase;font-family:Arial,sans-serif">OpenSyntropy</p>
             <h1 style="margin:12px 0 0;color:#ffffff;font-size:24px;font-weight:700;line-height:1.3">
-              Falta pouco para finalizar
+              ${heading}
             </h1>
           </td>
         </tr>
