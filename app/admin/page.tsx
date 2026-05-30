@@ -9,17 +9,6 @@ import type { ProductId } from '@/config/products'
 
 export const dynamic = 'force-dynamic'
 
-function PaymentBadge({ method, installments }: { method: string | null; installments: number | null }) {
-  if (method === 'card') {
-    const label = installments && installments > 1 ? `Cartão ${installments}x` : 'Cartão 1x'
-    return <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">{label}</span>
-  }
-  if (method === 'pix') {
-    return <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">PIX</span>
-  }
-  return <span className="text-gray-300 text-xs">—</span>
-}
-
 function fmt(dateStr: string) {
   return new Date(dateStr).toLocaleString('pt-BR', {
     day: '2-digit', month: '2-digit', year: '2-digit',
@@ -119,6 +108,9 @@ export default async function AdminPage() {
   const downloadedEmails: string[] = [...new Set((downloadsRes.data ?? []).map(d => d.email))]
   const refundRows: RefundRequest[] = refundsRes.data ?? []
 
+  // Acessos pagos: via Asaas (PIX/cartão) ou marcados como pagos manualmente — exclui cortesias
+  const paidRows = rows.filter(r => r.asaas_payment_id || r.manual_paid)
+
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       <AdminHeader />
@@ -128,16 +120,20 @@ export default async function AdminPage() {
         {/* Zone 1: Barra de status */}
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-4 py-2">
-            <span className="text-sm text-gray-500">Acessos ativos</span>
-            <span className="text-sm font-bold text-[#1b4332]">{rows.length}</span>
+            <span className="text-sm text-gray-500">Acessos ativos (pagos)</span>
+            <span className="text-sm font-bold text-[#1b4332]">{paidRows.length}</span>
           </div>
           {pendingPix.length > 0 && (
-            <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-2">
+            <a
+              href="/admin/aguardando"
+              className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 hover:border-yellow-400 rounded-lg px-4 py-2 transition-colors"
+            >
               <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
               <span className="text-sm font-semibold text-yellow-800">
-                {pendingPix.length} PIX aguardando confirmação
+                {pendingPix.length} PIX aguardando recuperação
               </span>
-            </div>
+              <span className="text-yellow-600 text-xs">→</span>
+            </a>
           )}
           {refundRows.length > 0 && (
             <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-lg px-4 py-2">
@@ -204,62 +200,7 @@ export default async function AdminPage() {
         </div>
 
         {/* Zone 6: Ações pendentes */}
-        <div className={`grid gap-8 ${pendingPix.length > 0 ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
-          {pendingPix.length > 0 && (
-            <div>
-              <SectionHeader
-                title="PIX aguardando confirmação"
-                badge={
-                  <span className="bg-yellow-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                    {pendingPix.length} pendente{pendingPix.length > 1 ? 's' : ''}
-                  </span>
-                }
-              />
-              <div className="bg-white rounded-xl border border-yellow-200 overflow-x-auto">
-                <table className="w-full text-base">
-                  <thead className="bg-yellow-50 text-yellow-800 text-sm uppercase tracking-wide font-semibold">
-                    <tr>
-                      <th className="text-left px-4 py-3">Email</th>
-                      <th className="text-left px-4 py-3">Produto</th>
-                      <th className="text-left px-4 py-3">Pagamento</th>
-                      <th className="text-left px-4 py-3">Data</th>
-                      <th className="px-4 py-3 text-right">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-yellow-50">
-                    {pendingPix.map(row => (
-                      <tr key={row.id} className="hover:bg-amber-50/40 transition-colors">
-                        <td className="px-4 py-3">
-                          <p className="font-medium text-gray-800 text-sm">{row.email}</p>
-                          {row.name && <p className="text-xs text-gray-400">{row.name}</p>}
-                          {row.whatsapp && (() => {
-                            const digits = row.whatsapp.replace(/\D/g, '')
-                            const waNumber = digits.startsWith('55') ? digits : `55${digits}`
-                            return (
-                              <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer"
-                                className="text-xs text-green-600 hover:text-green-800 hover:underline">
-                                {row.whatsapp}
-                              </a>
-                            )
-                          })()}
-                        </td>
-                        <td className="px-4 py-3"><ProductBadge product={row.product} /></td>
-                        <td className="px-4 py-3"><PaymentBadge method={row.payment_method} installments={row.installment_count} /></td>
-                        <td className="px-4 py-3 text-gray-400 text-sm whitespace-nowrap">{fmt(row.created_at)}</td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex flex-col items-end gap-2">
-                            <AdminActions mode="copy-pix" pixPayload={row.pix_payload ?? undefined} />
-                            <AdminActions mode="confirm-pix" id={row.id} />
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
+        <div className="grid grid-cols-1 gap-8">
           {refundRows.length > 0 && (
             <div>
               <SectionHeader
@@ -319,21 +260,5 @@ function FunnelCell({ value, rate, highlight }: { value: number; rate?: number |
         </span>
       )}
     </td>
-  )
-}
-
-function ProductBadge({ product }: { product: string }) {
-  const config: Record<string, { label: string; cls: string }> = {
-    ebook:   { label: 'Ebook',            cls: 'bg-[#d8f3dc] text-[#1b4332]' },
-    session:        { label: 'Ebook + Sessão',   cls: 'bg-blue-100 text-blue-700' },
-    session_upsell: { label: 'Sessão (upsell)', cls: 'bg-indigo-100 text-indigo-700' },
-    bundle:  { label: 'Bundle',           cls: 'bg-[#1b4332] text-white' },
-    course:  { label: 'Curso',            cls: 'bg-purple-100 text-purple-700' },
-  }
-  const { label, cls } = config[product] ?? { label: product, cls: 'bg-gray-100 text-gray-600' }
-  return (
-    <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${cls}`}>
-      {label}
-    </span>
   )
 }

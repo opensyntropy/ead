@@ -16,6 +16,12 @@ export default function AdminHeader() {
         </div>
         <div className="flex items-center gap-3">
           <a
+            href="/admin/aguardando"
+            className="text-sm font-semibold text-white/80 hover:text-white border border-white/30 hover:border-white/60 rounded-lg px-4 py-1.5 transition-colors"
+          >
+            Recuperação
+          </a>
+          <a
             href="/admin/relatorios"
             className="text-sm font-semibold text-white/80 hover:text-white border border-white/30 hover:border-white/60 rounded-lg px-4 py-1.5 transition-colors"
           >
