@@ -122,11 +122,78 @@ function OriginBadge({ row }: { row?: { utm_source?: string | null; utm_medium?:
 
 function AccessTable({ rows, pixUtmMap, downloadedSet, emptyMsg }: { rows: UserProduct[]; pixUtmMap: Record<string, PixCharge>; downloadedSet: Set<string>; emptyMsg: string }) {
   const [page, setPage] = useState(0)
-  const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
-  const pageRows = rows.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+  const [query, setQuery] = useState('')
+  const [onlyNotDownloaded, setOnlyNotDownloaded] = useState(false)
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
+
+  const q = query.trim().toLowerCase()
+  const filtered = rows.filter(row => {
+    if (onlyNotDownloaded && downloadedSet.has(row.email ?? '')) return false
+    if (q && !`${row.name ?? ''} ${row.email ?? ''}`.toLowerCase().includes(q)) return false
+    const day = row.created_at.slice(0, 10) // YYYY-MM-DD — comparação lexicográfica é segura
+    if (dateFrom && day < dateFrom) return false
+    if (dateTo && day > dateTo) return false
+    return true
+  })
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const safePage = Math.min(page, totalPages - 1)
+  const pageRows = filtered.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE)
 
   return (
     <div>
+    <div className="flex flex-wrap items-center gap-3 mb-3">
+      <div className="relative flex-1 min-w-[200px]">
+        <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          type="text"
+          value={query}
+          onChange={e => { setQuery(e.target.value); setPage(0) }}
+          placeholder="Buscar por nome ou email…"
+          className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#52b788]/40 focus:border-[#52b788]"
+        />
+      </div>
+      <label className="flex items-center gap-2 text-sm font-medium text-gray-600 cursor-pointer select-none whitespace-nowrap">
+        <input
+          type="checkbox"
+          checked={onlyNotDownloaded}
+          onChange={e => { setOnlyNotDownloaded(e.target.checked); setPage(0) }}
+          className="w-4 h-4 rounded border-gray-300 text-[#1b4332] focus:ring-[#52b788]/40"
+        />
+        Não baixaram o PDF
+      </label>
+      <div className="flex items-center gap-1.5 text-sm text-gray-600 whitespace-nowrap">
+        <span className="text-gray-400">De</span>
+        <input
+          type="date"
+          value={dateFrom}
+          max={dateTo || undefined}
+          onChange={e => { setDateFrom(e.target.value); setPage(0) }}
+          className="px-2 py-1.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#52b788]/40 focus:border-[#52b788]"
+        />
+        <span className="text-gray-400">até</span>
+        <input
+          type="date"
+          value={dateTo}
+          min={dateFrom || undefined}
+          onChange={e => { setDateTo(e.target.value); setPage(0) }}
+          className="px-2 py-1.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-[#52b788]/40 focus:border-[#52b788]"
+        />
+        {(dateFrom || dateTo) && (
+          <button
+            onClick={() => { setDateFrom(''); setDateTo(''); setPage(0) }}
+            className="px-2 py-1.5 rounded-lg text-xs font-medium text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            title="Limpar datas"
+          >limpar</button>
+        )}
+      </div>
+      <span className="text-sm text-gray-400 whitespace-nowrap">
+        {filtered.length} de {rows.length}
+      </span>
+    </div>
     <div className="bg-white rounded-xl border border-[#b7e4c7] overflow-x-auto">
       <table className="min-w-[900px] w-full text-base">
         <thead className="bg-[#f0fdf4] text-[#1b4332] text-sm uppercase tracking-wide font-semibold">
@@ -206,9 +273,11 @@ function AccessTable({ rows, pixUtmMap, downloadedSet, emptyMsg }: { rows: UserP
               </td>
             </tr>
           ))}
-          {rows.length === 0 && (
+          {filtered.length === 0 && (
             <tr>
-              <td colSpan={9} className="px-4 py-10 text-center text-gray-300 text-base">{emptyMsg}</td>
+              <td colSpan={9} className="px-4 py-10 text-center text-gray-300 text-base">
+                {rows.length === 0 ? emptyMsg : 'Nenhum resultado para o filtro.'}
+              </td>
             </tr>
           )}
         </tbody>
@@ -217,30 +286,30 @@ function AccessTable({ rows, pixUtmMap, downloadedSet, emptyMsg }: { rows: UserP
     {totalPages > 1 && (
       <div className="flex items-center justify-between px-1 pt-3">
         <span className="text-sm text-gray-400">
-          {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, rows.length)} de {rows.length}
+          {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, filtered.length)} de {filtered.length}
         </span>
         <div className="flex items-center gap-1">
           <button
             onClick={() => setPage(0)}
-            disabled={page === 0}
+            disabled={safePage === 0}
             className="px-2 py-1.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-default transition-colors"
           >«</button>
           <button
-            onClick={() => setPage(p => p - 1)}
-            disabled={page === 0}
+            onClick={() => setPage(safePage - 1)}
+            disabled={safePage === 0}
             className="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-default transition-colors"
           >‹ Anterior</button>
           <span className="px-3 py-1.5 text-sm font-semibold text-gray-700">
-            {page + 1} / {totalPages}
+            {safePage + 1} / {totalPages}
           </span>
           <button
-            onClick={() => setPage(p => p + 1)}
-            disabled={page >= totalPages - 1}
+            onClick={() => setPage(safePage + 1)}
+            disabled={safePage >= totalPages - 1}
             className="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-default transition-colors"
           >Próxima ›</button>
           <button
             onClick={() => setPage(totalPages - 1)}
-            disabled={page >= totalPages - 1}
+            disabled={safePage >= totalPages - 1}
             className="px-2 py-1.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-default transition-colors"
           >»</button>
         </div>
