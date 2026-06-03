@@ -97,7 +97,9 @@ function assignABVariant(testId: string, variants: string[]): string {
 
 function nextSundayLabel() {
   const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }))
-  const next = new Date(now.getFullYear(), now.getMonth() + 1, 10)
+  // Próximo dia 10: neste mês se ainda não passou, senão no mês seguinte.
+  const monthOffset = now.getDate() <= 10 ? 0 : 1
+  const next = new Date(now.getFullYear(), now.getMonth() + monthOffset, 10)
   return next.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
 }
 const CREAM  = '#F2F0E9'  // creme parchment da barra inferior
