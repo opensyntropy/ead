@@ -391,7 +391,12 @@ function CheckoutForm() {
     } else if (data.cardSuccess) {
       setCardSuccess(true)
       if (data.downloadUrl) setDownloadUrl(data.downloadUrl)
-      ;(window as any).fbq?.('track', 'Purchase', { value: 67, currency: 'BRL', eventID: data.chargeId })
+      // Só conta conversão quando o cartão é de fato confirmado. Cobranças
+      // pendentes/em análise viram venda só depois — a CAPI no webhook dispara
+      // o Purchase nesse caso (deduplicado pelo mesmo eventID = id da cobrança).
+      if (data.chargeStatus === 'CONFIRMED') {
+        ;(window as any).fbq?.('track', 'Purchase', { value: 67, currency: 'BRL', eventID: data.chargeId })
+      }
     } else {
       setError(data.error ?? 'Erro ao processar pagamento. Tente novamente.')
     }
