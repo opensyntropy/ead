@@ -88,7 +88,10 @@ export async function GET(request: Request) {
           console.error(`cron/recovery: falha ao consultar status Asaas de ${charge.asaas_payment_id}:`, err)
         }
 
-        await sendRecoveryEmail(charge.email, charge.name, productName(charge.product), `${BASE_URL}/ebook`, attempt)
+        // Link tagueado para atribuir a venda à recuperação quando o cliente
+        // volta pelo e-mail (checkout marca via_recovery na nova cobrança).
+        const checkoutUrl = `${BASE_URL}/ebook?utm_source=email&utm_medium=recovery&utm_content=attempt${attempt}`
+        await sendRecoveryEmail(charge.email, charge.name, productName(charge.product), checkoutUrl, attempt)
         await supabase.from('pix_charges').update({ [column]: now }).eq('id', charge.id)
         sent++
       } catch (err) {

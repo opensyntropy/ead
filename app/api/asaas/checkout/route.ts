@@ -66,6 +66,7 @@ export async function POST(request: Request) {
             utm_source, utm_medium, utm_campaign, utm_term, utm_content,
             ab_variant: ab_variant || null,
             pix_payload: qr.payload || null,
+            via_recovery: utm_medium === 'recovery',
           },
           { onConflict: 'asaas_payment_id' }
         )
@@ -98,6 +99,7 @@ export async function POST(request: Request) {
             whatsapp: whatsapp || null,
             utm_source, utm_medium, utm_campaign, utm_term, utm_content,
             ab_variant: ab_variant || null,
+            via_recovery: utm_medium === 'recovery',
           },
           { onConflict: 'asaas_payment_id' }
         )
@@ -148,6 +150,7 @@ export async function POST(request: Request) {
         whatsapp: whatsapp || null,
         utm_source, utm_medium, utm_campaign, utm_term, utm_content,
         ab_variant: ab_variant || null,
+        via_recovery: utm_medium === 'recovery',
       },
       { onConflict: 'asaas_payment_id' }
     )

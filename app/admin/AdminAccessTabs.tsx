@@ -37,6 +37,7 @@ export interface PixCharge {
   whatsapp: string | null
   ab_variant: string | null
   pix_payload: string | null
+  via_recovery: boolean | null
 }
 
 interface Props {
@@ -229,7 +230,16 @@ function AccessTable({ rows, pixUtmMap, downloadedSet, emptyMsg }: { rows: UserP
                     })()
                   : <span className="text-gray-200">—</span>}
               </td>
-              <td className="px-4 py-3"><ProductBadge product={row.product} /></td>
+              <td className="px-4 py-3">
+                <div className="flex flex-col items-start gap-1">
+                  <ProductBadge product={row.product} />
+                  {row.asaas_payment_id && pixUtmMap[row.asaas_payment_id]?.via_recovery && (
+                    <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-100 text-amber-700" title="Venda recuperada pelo e-mail de recuperação">
+                      🔁 Recuperado
+                    </span>
+                  )}
+                </div>
+              </td>
               <td className="px-4 py-3">
                 {row.asaas_payment_id
                   ? <PaymentBadge method={pixUtmMap[row.asaas_payment_id]?.payment_method} installments={pixUtmMap[row.asaas_payment_id]?.installment_count} />
