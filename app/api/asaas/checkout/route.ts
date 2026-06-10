@@ -4,6 +4,7 @@ import { findOrCreateCustomer, createCreditCardCharge, createPixCharge, createCh
 import { createServiceClient } from '@/lib/supabase/server'
 import { createDownloadToken } from '@/lib/download'
 import { sendDownloadEmail, sendSessionPurchaseEmail, sendPurchaseNotification } from '@/lib/email'
+import { sendPurchaseEvent } from '@/lib/meta-pixel'
 
 export async function POST(request: Request) {
   const body = await request.json()
@@ -145,6 +146,10 @@ export async function POST(request: Request) {
       {
         asaas_payment_id: charge.id, email, name: name || email.split('@')[0],
         product: productId, status: charge.status === 'CONFIRMED' ? 'confirmed' : 'pending',
+        // Preenche confirmed_at na confirmação síncrona para que o guard de
+        // idempotência do webhook (.is('confirmed_at', null)) não reprocesse e
+        // reenvie e-mail/notificação/CAPI quando o PAYMENT_CONFIRMED chegar.
+        confirmed_at: charge.status === 'CONFIRMED' ? new Date().toISOString() : null,
         payment_method: 'card',
         installment_count: installmentCount && installmentCount > 1 ? installmentCount : null,
         whatsapp: whatsapp || null,
@@ -217,6 +222,16 @@ async function grantAccessAndSendEmail(email: string, productId: ProductId, paym
     await sendPurchaseNotification(email, productId, paymentId)
   } catch (err) {
     console.error('Erro ao enviar notificação de venda:', err)
+  }
+
+  // Meta Conversions API — dispara o Purchase server-side com o mesmo eventId
+  // (charge.id) usado pelo fbq do navegador, para que o Meta deduplique os dois.
+  // O webhook não reprocessa este pagamento (confirmed_at já fica setado no upsert).
+  try {
+    const value = (PRODUCTS[productId]?.price ?? 6700) / 100
+    await sendPurchaseEvent({ email, value, eventId: paymentId })
+  } catch (err) {
+    console.error('Erro CAPI (checkout):', err)
   }
 }
 

@@ -65,11 +65,15 @@ export async function POST(request: Request) {
 
   // Insere o produto (ignora duplicatas via upsert)
   if (userId) {
+    // ignoreDuplicates: não sobrescreve o asaas_payment_id já gravado. Em cartão
+    // parcelado o Asaas envia um PAYMENT_CONFIRMED por parcela (ids diferentes);
+    // sem isso, a parcela 2+ clobberava o id que casa com pix_charges e quebrava
+    // o join do admin (tag de pagamento sumia). Mantém o id da 1ª parcela/charge.id.
     const { error: upsertError } = await supabase
       .from('user_products')
       .upsert(
         { user_id: userId, product: productId, asaas_payment_id: payment.id },
-        { onConflict: 'user_id,product' }
+        { onConflict: 'user_id,product', ignoreDuplicates: true }
       )
     if (upsertError) {
       console.error('Webhook: erro ao inserir user_products', upsertError)

@@ -395,7 +395,7 @@ function CheckoutForm() {
       // pendentes/em análise viram venda só depois — a CAPI no webhook dispara
       // o Purchase nesse caso (deduplicado pelo mesmo eventID = id da cobrança).
       if (data.chargeStatus === 'CONFIRMED') {
-        ;(window as any).fbq?.('track', 'Purchase', { value: 67, currency: 'BRL', eventID: data.chargeId })
+        ;(window as any).fbq?.('track', 'Purchase', { value: 67, currency: 'BRL' }, { eventID: data.chargeId })
       }
     } else {
       setError(data.error ?? 'Erro ao processar pagamento. Tente novamente.')

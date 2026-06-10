@@ -9,11 +9,11 @@ export default function AdminHeader() {
   return (
     <>
       <div className="bg-[#1b4332] text-white px-6 py-4 flex items-center justify-between font-sans">
-        <div className="flex items-center gap-3">
+        <a href="/admin" className="flex items-center gap-3 hover:opacity-80 transition-opacity" title="Ir para o painel">
           <span className="text-[#52b788] font-bold tracking-widest uppercase">OpenSyntropy</span>
           <span className="text-[#52b788]/40">·</span>
           <span className="text-white/70 font-medium">Painel Admin</span>
-        </div>
+        </a>
         <div className="flex items-center gap-3">
           <a
             href="/admin/aguardando"
