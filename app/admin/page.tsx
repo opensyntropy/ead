@@ -86,6 +86,18 @@ export default async function AdminPage() {
   const pendingPix = pixRows.filter(p => p.status === 'pending' && !p.recovery_sent_at_2 && new Date(p.created_at) > cutoff25h)
   const pixUtmMap = Object.fromEntries(pixRows.map(p => [p.asaas_payment_id, p]))
 
+  // Fallback robusto: resolve a cobrança por email+produto (confirmada, mais recente).
+  // O join por asaas_payment_id quebra em cartão parcelado (o Asaas confirma cada
+  // parcela com um id distinto), deixando a linha de user_products apontando para um
+  // id que não existe em pix_charges — e a tag de pagamento somia ("—").
+  const pixByBuyer: Record<string, PixCharge> = {}
+  for (const p of pixRows) {
+    if (p.status !== 'confirmed' || !p.email) continue
+    const key = `${p.email.toLowerCase()}|${p.product}`
+    const cur = pixByBuyer[key]
+    if (!cur || (p.confirmed_at ?? p.created_at) > (cur.confirmed_at ?? cur.created_at)) pixByBuyer[key] = p
+  }
+
   const pixNameMap = Object.fromEntries(pixRows.filter(p => p.name).map(p => [p.asaas_payment_id, p.name!]))
   const pixEmailMap = Object.fromEntries(pixRows.map(p => [p.asaas_payment_id, p.email]))
 
@@ -241,7 +253,7 @@ export default async function AdminPage() {
         </div>
 
         {/* Zone 6: Clientes */}
-        <AdminAccessTabs rows={rows} pixUtmMap={pixUtmMap} downloadedEmails={downloadedEmails} />
+        <AdminAccessTabs rows={rows} pixUtmMap={pixUtmMap} pixByBuyer={pixByBuyer} downloadedEmails={downloadedEmails} />
 
       </div>
     </div>

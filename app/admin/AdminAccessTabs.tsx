@@ -43,6 +43,7 @@ export interface PixCharge {
 interface Props {
   rows: UserProduct[]
   pixUtmMap: Record<string, PixCharge>
+  pixByBuyer: Record<string, PixCharge>
   downloadedEmails: string[]
 }
 
@@ -122,7 +123,11 @@ function OriginBadge({ row }: { row?: { utm_source?: string | null; utm_medium?:
   )
 }
 
-function AccessTable({ rows, pixUtmMap, downloadedSet, emptyMsg }: { rows: UserProduct[]; pixUtmMap: Record<string, PixCharge>; downloadedSet: Set<string>; emptyMsg: string }) {
+function buyerKey(email: string | undefined, product: string): string {
+  return `${(email ?? '').toLowerCase()}|${product}`
+}
+
+function AccessTable({ rows, pixUtmMap, pixByBuyer, downloadedSet, emptyMsg }: { rows: UserProduct[]; pixUtmMap: Record<string, PixCharge>; pixByBuyer: Record<string, PixCharge>; downloadedSet: Set<string>; emptyMsg: string }) {
   const [page, setPage] = useState(0)
   const [query, setQuery] = useState('')
   const [onlyNotDownloaded, setOnlyNotDownloaded] = useState(false)
@@ -212,19 +217,24 @@ function AccessTable({ rows, pixUtmMap, downloadedSet, emptyMsg }: { rows: UserP
           </tr>
         </thead>
         <tbody className="divide-y divide-[#d8f3dc]">
-          {pageRows.map(row => (
+          {pageRows.map(row => {
+            // Resolve a cobrança: primeiro pelo asaas_payment_id; se não casar
+            // (cartão parcelado clobbera o id), cai pro fallback por email+produto.
+            const pix = (row.asaas_payment_id ? pixUtmMap[row.asaas_payment_id] : undefined)
+              ?? pixByBuyer[buyerKey(row.email, row.product)]
+            return (
             <tr key={row.id} className="hover:bg-[#f0fdf4]/60 transition-colors">
               <td className="px-4 py-3 text-gray-600 max-w-[140px] truncate" title={row.name ?? undefined}>{row.name ?? <span className="text-gray-300">—</span>}</td>
               <td className="px-4 py-3 font-medium text-gray-800 max-w-[180px] truncate" title={row.email}>{row.email}</td>
               <td className="px-4 py-3 text-sm whitespace-nowrap">
-                {row.asaas_payment_id && pixUtmMap[row.asaas_payment_id]?.whatsapp
+                {pix?.whatsapp
                   ? (() => {
-                      const digits = pixUtmMap[row.asaas_payment_id].whatsapp!.replace(/\D/g, '')
+                      const digits = pix.whatsapp!.replace(/\D/g, '')
                       const waNumber = digits.startsWith('55') ? digits : `55${digits}`
                       return (
                         <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer"
                           className="text-green-600 hover:text-green-800 hover:underline font-medium">
-                          {pixUtmMap[row.asaas_payment_id].whatsapp}
+                          {pix.whatsapp}
                         </a>
                       )
                     })()
@@ -233,7 +243,7 @@ function AccessTable({ rows, pixUtmMap, downloadedSet, emptyMsg }: { rows: UserP
               <td className="px-4 py-3">
                 <div className="flex flex-col items-start gap-1">
                   <ProductBadge product={row.product} />
-                  {row.asaas_payment_id && pixUtmMap[row.asaas_payment_id]?.via_recovery && (
+                  {pix?.via_recovery && (
                     <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-100 text-amber-700" title="Venda recuperada pelo e-mail de recuperação">
                       🔁 Recuperado
                     </span>
@@ -241,11 +251,13 @@ function AccessTable({ rows, pixUtmMap, downloadedSet, emptyMsg }: { rows: UserP
                 </div>
               </td>
               <td className="px-4 py-3">
-                {row.asaas_payment_id
-                  ? <PaymentBadge method={pixUtmMap[row.asaas_payment_id]?.payment_method} installments={pixUtmMap[row.asaas_payment_id]?.installment_count} />
-                  : row.manual_paid
-                    ? <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">Pago</span>
-                    : <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">Cortesia</span>}
+                {pix
+                  ? <PaymentBadge method={pix.payment_method} installments={pix.installment_count} />
+                  : row.asaas_payment_id
+                    ? <PaymentBadge method={undefined} installments={undefined} />
+                    : row.manual_paid
+                      ? <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">Pago</span>
+                      : <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">Cortesia</span>}
               </td>
               <td className="px-4 py-3">
                 {downloadedSet.has(row.email ?? '')
@@ -255,7 +267,7 @@ function AccessTable({ rows, pixUtmMap, downloadedSet, emptyMsg }: { rows: UserP
               <td className="px-4 py-3 text-gray-400 text-sm whitespace-nowrap">{fmt(row.created_at)}</td>
               <td className="px-4 py-3">
                 {row.asaas_payment_id
-                  ? <OriginBadge row={pixUtmMap[row.asaas_payment_id]} />
+                  ? <OriginBadge row={pix} />
                   : <span className="text-sm text-gray-300">manual</span>}
               </td>
               <td className="px-4 py-3 text-right">
@@ -288,7 +300,8 @@ function AccessTable({ rows, pixUtmMap, downloadedSet, emptyMsg }: { rows: UserP
                 </div>
               </td>
             </tr>
-          ))}
+            )
+          })}
           {filtered.length === 0 && (
             <tr>
               <td colSpan={9} className="px-4 py-10 text-center text-gray-300 text-base">
@@ -335,7 +348,7 @@ function AccessTable({ rows, pixUtmMap, downloadedSet, emptyMsg }: { rows: UserP
   )
 }
 
-export default function AdminAccessTabs({ rows, pixUtmMap, downloadedEmails }: Props) {
+export default function AdminAccessTabs({ rows, pixUtmMap, pixByBuyer, downloadedEmails }: Props) {
   const [tab, setTab] = useState<'ebooks' | 'sessions'>('ebooks')
   const downloadedSet = new Set(downloadedEmails)
 
@@ -368,8 +381,8 @@ export default function AdminAccessTabs({ rows, pixUtmMap, downloadedEmails }: P
         </div>
       </div>
       {tab === 'ebooks'
-        ? <AccessTable rows={ebookRows} pixUtmMap={pixUtmMap} downloadedSet={downloadedSet} emptyMsg="Nenhum acesso de ebook cadastrado." />
-        : <AccessTable rows={sessionRows} pixUtmMap={pixUtmMap} downloadedSet={downloadedSet} emptyMsg="Nenhuma sessão cadastrada ainda." />
+        ? <AccessTable rows={ebookRows} pixUtmMap={pixUtmMap} pixByBuyer={pixByBuyer} downloadedSet={downloadedSet} emptyMsg="Nenhum acesso de ebook cadastrado." />
+        : <AccessTable rows={sessionRows} pixUtmMap={pixUtmMap} pixByBuyer={pixByBuyer} downloadedSet={downloadedSet} emptyMsg="Nenhuma sessão cadastrada ainda." />
       }
     </div>
   )
