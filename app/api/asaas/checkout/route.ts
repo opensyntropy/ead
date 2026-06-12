@@ -209,13 +209,15 @@ async function grantAccessAndSendEmail(email: string, productId: ProductId, paym
     console.error('Aviso: erro ao registrar usuário (acesso será liberado pelo webhook):', authErr)
   }
 
-  if (productId === 'ebook' || productId === 'bundle') {
-    const token = await createDownloadToken(email, 'ebook')
-    await sendDownloadEmail(email, token)
-  }
-  if (productId === 'session' || productId === 'session_upsell') {
-    const token = await createDownloadToken(email, 'ebook')
-    await sendSessionPurchaseEmail(email, token)
+  // Meta Conversions API PRIMEIRO — a conversão é prioridade e não pode ser perdida
+  // se o envio do e-mail abaixo falhar. Como o checkout seta confirmed_at, o webhook
+  // faz no-op e NÃO dispara a CAPI de backup; então este é o único disparo server-side.
+  // Mesmo eventId (charge.id) do fbq do navegador para o Meta deduplicar os dois.
+  try {
+    const value = (PRODUCTS[productId]?.price ?? 6700) / 100
+    await sendPurchaseEvent({ email, value, eventId: paymentId })
+  } catch (err) {
+    console.error('Erro CAPI (checkout):', err)
   }
 
   try {
@@ -224,14 +226,15 @@ async function grantAccessAndSendEmail(email: string, productId: ProductId, paym
     console.error('Erro ao enviar notificação de venda:', err)
   }
 
-  // Meta Conversions API — dispara o Purchase server-side com o mesmo eventId
-  // (charge.id) usado pelo fbq do navegador, para que o Meta deduplique os dois.
-  // O webhook não reprocessa este pagamento (confirmed_at já fica setado no upsert).
-  try {
-    const value = (PRODUCTS[productId]?.price ?? 6700) / 100
-    await sendPurchaseEvent({ email, value, eventId: paymentId })
-  } catch (err) {
-    console.error('Erro CAPI (checkout):', err)
+  // E-mail do comprador por último: se falhar, propaga pro caller sinalizar postError,
+  // mas conversão e notificação já foram disparadas.
+  if (productId === 'ebook' || productId === 'bundle') {
+    const token = await createDownloadToken(email, 'ebook')
+    await sendDownloadEmail(email, token)
+  }
+  if (productId === 'session' || productId === 'session_upsell') {
+    const token = await createDownloadToken(email, 'ebook')
+    await sendSessionPurchaseEmail(email, token)
   }
 }
 
