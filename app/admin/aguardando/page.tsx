@@ -50,8 +50,9 @@ export default async function AguardandoPage() {
 
   const pixRows: PixCharge[] = data ?? []
   const cutoff25h = new Date(Date.now() - 25 * 60 * 60 * 1000)
-  // Aguardando recuperação: pendente, ainda dentro da janela de 25h e sem o 2º lembrete enviado
-  const pendingPix = pixRows.filter(p => p.status === 'pending' && !p.recovery_sent_at_2 && new Date(p.created_at) > cutoff25h)
+  // Aguardando recuperação: PIX pendente, dentro da janela de 25h e sem o 2º lembrete.
+  // Exclui cartão (também gravado em pix_charges); payment_method null = PIX legado.
+  const pendingPix = pixRows.filter(p => p.status === 'pending' && p.payment_method !== 'card' && !p.recovery_sent_at_2 && new Date(p.created_at) > cutoff25h)
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">

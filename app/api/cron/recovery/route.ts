@@ -49,6 +49,9 @@ export async function GET(request: Request) {
       .from('pix_charges')
       .select('*')
       .eq('status', 'pending')
+      // Só PIX: cartão também grava linha em pix_charges, mas não deve receber
+      // lembrete de "complete seu PIX". payment_method null = PIX legado.
+      .or('payment_method.is.null,payment_method.neq.card')
       .is(column, null)
       .lt('created_at', cutoff)
 

@@ -82,8 +82,11 @@ export default async function AdminPage() {
   const checkoutsMonth = pixRows.filter(p => p.created_at >= monthISO).length
 
   const cutoff25h = new Date(Date.now() - 25 * 60 * 60 * 1000)
+  // Só PIX: cartão também grava linha em pix_charges (paga ou em análise) e não deve
+  // contar como "PIX aguardando recuperação". payment_method pode ser null em linhas
+  // antigas (anteriores à coluna) — todas PIX — então excluímos só 'card'.
   // Sai da lista após pagamento (status != pending) ou após o 2º lembrete (recovery_sent_at_2)
-  const pendingPix = pixRows.filter(p => p.status === 'pending' && !p.recovery_sent_at_2 && new Date(p.created_at) > cutoff25h)
+  const pendingPix = pixRows.filter(p => p.status === 'pending' && p.payment_method !== 'card' && !p.recovery_sent_at_2 && new Date(p.created_at) > cutoff25h)
   const pixUtmMap = Object.fromEntries(pixRows.map(p => [p.asaas_payment_id, p]))
 
   // Fallback robusto: resolve a cobrança por email+produto (confirmada, mais recente).
