@@ -117,28 +117,47 @@ export async function POST(request: Request) {
     const [expiryMonth, expiryYearShort] = cardExpiry.split('/')
     const expiryYear = expiryYearShort.length === 2 ? `20${expiryYearShort}` : expiryYearShort
 
-    const charge = await createCreditCardCharge({
-      customerId: customer.id,
-      value: product.price,
-      description: product.asaasDescription,
-      externalReference: `${productId}:${email}`,
-      installmentCount: installmentCount && installmentCount > 1 ? installmentCount : undefined,
-      creditCard: {
-        holderName: name || email.split('@')[0],
-        number: cardNumber.replace(/\s/g, ''),
-        expiryMonth: expiryMonth.trim(),
-        expiryYear,
-        ccv: cardCvv.trim(),
-      },
-      creditCardHolderInfo: {
-        name: name || email.split('@')[0],
-        email,
-        cpfCnpj,
-        postalCode: cardPostalCode.replace(/\D/g, ''),
-        addressNumber: cardAddressNumber.trim(),
-        mobilePhone: (whatsapp || '').replace(/\D/g, '') || undefined,
-      },
-    })
+    let charge
+    try {
+      charge = await createCreditCardCharge({
+        customerId: customer.id,
+        value: product.price,
+        description: product.asaasDescription,
+        externalReference: `${productId}:${email}`,
+        installmentCount: installmentCount && installmentCount > 1 ? installmentCount : undefined,
+        creditCard: {
+          holderName: name || email.split('@')[0],
+          number: cardNumber.replace(/\s/g, ''),
+          expiryMonth: expiryMonth.trim(),
+          expiryYear,
+          ccv: cardCvv.trim(),
+        },
+        creditCardHolderInfo: {
+          name: name || email.split('@')[0],
+          email,
+          cpfCnpj,
+          postalCode: cardPostalCode.replace(/\D/g, ''),
+          addressNumber: cardAddressNumber.trim(),
+          mobilePhone: (whatsapp || '').replace(/\D/g, '') || undefined,
+        },
+      })
+    } catch (cardErr) {
+      // Cartão recusado: a Asaas não gera cobrança, então registramos só o contato
+      // (NUNCA número/CVV) para a recuperação de cartão enviar e-mail depois.
+      const reason = friendlyAsaasError(cardErr instanceof Error ? cardErr.message : String(cardErr))
+      try {
+        const supabase = await createServiceClient()
+        await supabase.from('failed_card_attempts').insert({
+          email, name: name || email.split('@')[0], whatsapp: whatsapp || null,
+          product: productId, reason,
+          utm_source, utm_medium, utm_campaign, utm_term, utm_content,
+          ab_variant: ab_variant || null,
+        })
+      } catch (logErr) {
+        console.error('[checkout] falha ao registrar cartão recusado:', logErr)
+      }
+      throw cardErr // mantém a mensagem amigável pro cliente (catch externo)
+    }
 
     // Registra cobrança de cartão na pix_charges para aparecer no admin
     const supabase = await createServiceClient()

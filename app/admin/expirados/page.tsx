@@ -7,6 +7,30 @@ import { PRODUCTS, type ProductId } from '@/config/products'
 
 export const dynamic = 'force-dynamic'
 
+interface FailedCardAttempt {
+  id: string
+  email: string
+  name: string | null
+  whatsapp: string | null
+  product: string
+  reason: string | null
+  created_at: string
+}
+
+// Item unificado da lista de "não pagou": cobrança expirada (PIX/cartão) ou
+// tentativa de cartão recusada.
+interface Item {
+  id: string
+  email: string
+  name: string | null
+  whatsapp: string | null
+  product: string
+  payment_method: string | null
+  installment_count: number | null
+  reason: string | null
+  created_at: string
+}
+
 function fmt(dateStr: string) {
   return new Date(dateStr).toLocaleString('pt-BR', {
     day: '2-digit', month: '2-digit', year: '2-digit',
@@ -33,13 +57,10 @@ function ProductBadge({ product }: { product: string }) {
 
 function PaymentBadge({ method, installments }: { method: string | null; installments: number | null }) {
   if (method === 'card') {
-    const label = installments && installments > 1 ? `Cartão ${installments}x` : 'Cartão 1x'
+    const label = installments && installments > 1 ? `Cartão ${installments}x` : 'Cartão'
     return <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700">{label}</span>
   }
-  if (method === 'pix') {
-    return <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">PIX</span>
-  }
-  // Linhas antigas (anteriores à coluna payment_method) são todas PIX
+  // PIX (inclui linhas antigas com payment_method nulo)
   return <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">PIX</span>
 }
 
@@ -48,12 +69,14 @@ export default async function ExpiradosPage() {
   if (jar.get('admin_session')?.value !== '1') redirect('/admin/login')
 
   const service = await createServiceClient()
-  const [pixRes, productsRes] = await Promise.all([
+  const [pixRes, productsRes, cardRes] = await Promise.all([
     service.from('pix_charges').select('*,payment_method,installment_count').order('created_at', { ascending: false }),
     service.from('user_products').select('user_id,product'),
+    service.from('failed_card_attempts').select('*').order('created_at', { ascending: false }),
   ])
   const pixRows: PixCharge[] = pixRes.data ?? []
   const productRows = productsRes.data ?? []
+  const cardRows: FailedCardAttempt[] = cardRes.data ?? []
 
   // Resolve os e-mails dos acessos já concedidos (Asaas, manual ou cortesia) para
   // confirmar quem já tem o produto e não deve aparecer como "não pago".
@@ -67,7 +90,7 @@ export default async function ExpiradosPage() {
 
   // email|produto que já está quitado: pagamento confirmado OU acesso concedido.
   // É esta a verificação "pelo e-mail" — se a pessoa pagou (mesmo numa cobrança
-  // posterior) ou recebeu acesso, a cobrança expirada não conta como perdida.
+  // posterior) ou recebeu acesso, a cobrança/tentativa não conta como perdida.
   const settledKey = new Set<string>()
   const paidEmails = new Set<string>() // qualquer compra confirmada → flag "já é cliente"
   for (const p of pixRows) {
@@ -82,24 +105,38 @@ export default async function ExpiradosPage() {
     if (e) settledKey.add(`${e}|${up.product}`)
   }
 
-  // Expiradas (PIX e cartão) sem pagamento/acesso do mesmo produto.
-  const candidates = pixRows.filter(p =>
-    p.status === 'expired' && p.email && !settledKey.has(`${p.email.toLowerCase()}|${p.product}`)
-  )
+  // Candidatos: PIX/cartão expirados (status 'expired') + cartões recusados,
+  // excluindo quem já está quitado pelo e-mail.
+  const candidates: Item[] = [
+    ...pixRows
+      .filter(p => p.status === 'expired' && p.email)
+      .map((p): Item => ({
+        id: p.id, email: p.email, name: p.name, whatsapp: p.whatsapp,
+        product: p.product, payment_method: p.payment_method,
+        installment_count: p.installment_count, reason: null, created_at: p.created_at,
+      })),
+    ...cardRows
+      .filter(c => c.email)
+      .map((c): Item => ({
+        id: c.id, email: c.email, name: c.name, whatsapp: c.whatsapp,
+        product: c.product, payment_method: 'card',
+        installment_count: null, reason: c.reason, created_at: c.created_at,
+      })),
+  ].filter(it => !settledKey.has(`${it.email.toLowerCase()}|${it.product}`))
 
   // Dedup por e-mail+produto: mantém a tentativa mais recente e conta as tentativas.
-  const byKey = new Map<string, { row: PixCharge; attempts: number }>()
-  for (const p of candidates) {
-    const key = `${p.email.toLowerCase()}|${p.product}`
+  const byKey = new Map<string, { item: Item; attempts: number }>()
+  for (const it of candidates) {
+    const key = `${it.email.toLowerCase()}|${it.product}`
     const cur = byKey.get(key)
-    if (!cur) byKey.set(key, { row: p, attempts: 1 })
+    if (!cur) byKey.set(key, { item: it, attempts: 1 })
     else {
       cur.attempts++
-      if (p.created_at > cur.row.created_at) cur.row = p
+      if (it.created_at > cur.item.created_at) cur.item = it
     }
   }
-  const items = [...byKey.values()].sort((a, b) => b.row.created_at.localeCompare(a.row.created_at))
-  const lostCents = items.reduce((s, it) => s + (PRODUCTS[it.row.product as ProductId]?.price ?? 0), 0)
+  const items = [...byKey.values()].sort((a, b) => b.item.created_at.localeCompare(a.item.created_at))
+  const lostCents = items.reduce((s, it) => s + (PRODUCTS[it.item.product as ProductId]?.price ?? 0), 0)
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
@@ -120,8 +157,8 @@ export default async function ExpiradosPage() {
         </div>
 
         <p className="text-sm text-gray-400 mb-6 max-w-2xl">
-          Cobranças (PIX e cartão) que expiraram sem pagamento. Já excluímos quem,
-          pelo e-mail, pagou em outra cobrança ou recebeu acesso ao mesmo produto.
+          PIX e cartão que expiraram, mais tentativas de cartão recusadas. Já excluímos
+          quem, pelo e-mail, pagou em outra cobrança ou recebeu acesso ao mesmo produto.
         </p>
 
         <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
@@ -137,43 +174,44 @@ export default async function ExpiradosPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {items.map(({ row, attempts }) => (
-                <tr key={row.id} className="hover:bg-gray-50/60 transition-colors">
+              {items.map(({ item, attempts }) => (
+                <tr key={item.id} className="hover:bg-gray-50/60 transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <p className="font-medium text-gray-800 text-sm">{row.email}</p>
-                      {row.email && paidEmails.has(row.email.toLowerCase()) && (
+                      <p className="font-medium text-gray-800 text-sm">{item.email}</p>
+                      {paidEmails.has(item.email.toLowerCase()) && (
                         <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-600 whitespace-nowrap"
                           title="Este e-mail já comprou outro produto">
                           já é cliente
                         </span>
                       )}
                     </div>
-                    {row.name && <p className="text-xs text-gray-400">{row.name}</p>}
-                    {row.whatsapp && (() => {
-                      const digits = row.whatsapp.replace(/\D/g, '')
+                    {item.name && <p className="text-xs text-gray-400">{item.name}</p>}
+                    {item.reason && <p className="text-xs text-rose-400">{item.reason}</p>}
+                    {item.whatsapp && (() => {
+                      const digits = item.whatsapp.replace(/\D/g, '')
                       const waNumber = digits.startsWith('55') ? digits : `55${digits}`
                       return (
                         <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer"
                           className="text-xs text-green-600 hover:text-green-800 hover:underline">
-                          {row.whatsapp}
+                          {item.whatsapp}
                         </a>
                       )
                     })()}
                   </td>
-                  <td className="px-4 py-3"><ProductBadge product={row.product} /></td>
-                  <td className="px-4 py-3"><PaymentBadge method={row.payment_method} installments={row.installment_count} /></td>
+                  <td className="px-4 py-3"><ProductBadge product={item.product} /></td>
+                  <td className="px-4 py-3"><PaymentBadge method={item.payment_method} installments={item.installment_count} /></td>
                   <td className="px-4 py-3 text-right text-gray-500 text-sm tabular-nums">{attempts}</td>
                   <td className="px-4 py-3 text-right text-gray-500 text-sm tabular-nums whitespace-nowrap">
-                    {fmtBRL(PRODUCTS[row.product as ProductId]?.price ?? 0)}
+                    {fmtBRL(PRODUCTS[item.product as ProductId]?.price ?? 0)}
                   </td>
-                  <td className="px-4 py-3 text-gray-400 text-sm whitespace-nowrap">{fmt(row.created_at)}</td>
+                  <td className="px-4 py-3 text-gray-400 text-sm whitespace-nowrap">{fmt(item.created_at)}</td>
                 </tr>
               ))}
               {items.length === 0 && (
                 <tr>
                   <td colSpan={6} className="px-4 py-10 text-center text-gray-300 text-base">
-                    Nenhuma cobrança expirada sem pagamento.
+                    Nenhuma cobrança expirada ou cartão recusado sem pagamento.
                   </td>
                 </tr>
               )}

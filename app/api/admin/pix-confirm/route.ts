@@ -2,7 +2,9 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { createDownloadToken } from '@/lib/download'
 import { sendDownloadEmail, sendSessionPurchaseEmail, sendPurchaseNotification } from '@/lib/email'
 import { NextResponse } from 'next/server'
+import { PRODUCTS } from '@/config/products'
 import type { ProductId } from '@/config/products'
+import { sendPurchaseEvent } from '@/lib/meta-pixel'
 
 async function checkAdmin(): Promise<boolean> {
   const supabase = await createClient()
@@ -74,6 +76,13 @@ export async function POST(request: Request) {
   await supabase.from('pix_charges')
     .update({ status: 'confirmed', confirmed_at: new Date().toISOString() })
     .eq('id', pixChargeId)
+
+  try {
+    const value = (PRODUCTS[product as ProductId]?.price ?? 6700) / 100
+    await sendPurchaseEvent({ email, value, eventId: charge.asaas_payment_id })
+  } catch (err) {
+    console.error('pix-confirm: erro CAPI', err)
+  }
 
   return NextResponse.json({ ok: true })
 }

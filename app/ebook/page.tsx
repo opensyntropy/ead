@@ -352,6 +352,7 @@ function CheckoutForm() {
         const json = await res.json()
         if (json.confirmed && json.downloadUrl) {
           setDownloadUrl(json.downloadUrl)
+          ;(window as any).fbq?.('track', 'Purchase', { value: 67, currency: 'BRL' }, { eventID: pixChargeId })
           return
         }
       } catch { /* ignora erros de rede */ }
