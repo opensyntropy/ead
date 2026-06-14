@@ -352,7 +352,7 @@ function CheckoutForm() {
         const json = await res.json()
         if (json.confirmed && json.downloadUrl) {
           setDownloadUrl(json.downloadUrl)
-          ;(window as any).fbq?.('track', 'Purchase', { value: 67, currency: 'BRL' }, { eventID: pixChargeId })
+          ;(window as any).fbq?.('track', 'Purchase', { value: 87, currency: 'BRL' }, { eventID: pixChargeId })
           return
         }
       } catch { /* ignora erros de rede */ }
@@ -367,7 +367,7 @@ function CheckoutForm() {
 
   async function handleBuy(e: React.FormEvent) {
     e.preventDefault()
-    ;(window as any).fbq?.('track', 'InitiateCheckout', { value: 67, currency: 'BRL', num_items: 1 })
+    ;(window as any).fbq?.('track', 'InitiateCheckout', { value: 87, currency: 'BRL', num_items: 1 })
     setLoading(true)
     setError('')
     const res = await fetch('/api/asaas/checkout', {
@@ -396,7 +396,7 @@ function CheckoutForm() {
       // pendentes/em análise viram venda só depois — a CAPI no webhook dispara
       // o Purchase nesse caso (deduplicado pelo mesmo eventID = id da cobrança).
       if (data.chargeStatus === 'CONFIRMED') {
-        ;(window as any).fbq?.('track', 'Purchase', { value: 67, currency: 'BRL' }, { eventID: data.chargeId })
+        ;(window as any).fbq?.('track', 'Purchase', { value: 87, currency: 'BRL' }, { eventID: data.chargeId })
       }
     } else {
       setError(data.error ?? 'Erro ao processar pagamento. Tente novamente.')
@@ -549,14 +549,14 @@ function CheckoutForm() {
         <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Leia onde quiser ou imprima</p>
         <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: LIME }}>Acesso permanente · entrega imediata</p>
         <div className="flex items-center justify-center gap-4 mb-1">
-          <span className="text-gray-500 text-3xl line-through">R$ 107</span>
-          <span className="text-xs font-black px-2.5 py-1 rounded-full" style={{ backgroundColor: LIME + '22', color: LIME }}>41% OFF</span>
+          <span className="text-gray-500 text-3xl line-through">R$ 127</span>
+          <span className="text-xs font-black px-2.5 py-1 rounded-full" style={{ backgroundColor: LIME + '22', color: LIME }}>31% OFF</span>
         </div>
         <div className="font-black text-white leading-none" style={{ fontSize: 'clamp(3.5rem, 14vw, 6rem)' }}>
-          R$<span style={{ color: LIME }}>67</span>
+          R$<span style={{ color: LIME }}>87</span>
         </div>
         <p className="text-gray-400 text-sm mt-1">à vista no PIX</p>
-        <p className="text-lg font-bold mt-1" style={{ color: LIME }}>ou 8x de R$8,38 no cartão s/juros</p>
+        <p className="text-lg font-bold mt-1" style={{ color: LIME }}>ou 8x de R$10,88 no cartão s/juros</p>
       </div>
 
       {/* formulário */}
@@ -589,9 +589,9 @@ function CheckoutForm() {
             <div className="flex flex-col gap-3">
               <div className="grid grid-cols-4 gap-2">
                 {[1, 2, 4, 8].map(n => {
-                  const val = Math.ceil(6700 / n) / 100
+                  const val = Math.ceil(8700 / n) / 100
                   const label = n === 1
-                    ? `1x R$67,00`
+                    ? `1x R$87,00`
                     : `${n}x R$${val.toFixed(2).replace('.', ',')} s/juros`
                   return (
                     <button key={n} type="button" onClick={() => setInstallmentCount(n)}
@@ -901,7 +901,7 @@ export default function EbookLandingPage() {
   }, [])
 
   useEffect(() => {
-    ;(window as any).fbq?.('track', 'ViewContent', { content_name: 'Guia Agrofloresta Sintrópica', content_type: 'product', value: 67, currency: 'BRL' })
+    ;(window as any).fbq?.('track', 'ViewContent', { content_name: 'Guia Agrofloresta Sintrópica', content_type: 'product', value: 87, currency: 'BRL' })
   }, [])
 
   useEffect(() => {
