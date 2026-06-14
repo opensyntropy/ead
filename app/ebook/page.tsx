@@ -102,6 +102,12 @@ function nextSundayLabel() {
   const next = new Date(now.getFullYear(), now.getMonth() + monthOffset, 10)
   return next.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
 }
+
+function getOfferDeadline(): Date {
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }))
+  const monthOffset = now.getDate() <= 10 ? 0 : 1
+  return new Date(now.getFullYear(), now.getMonth() + monthOffset, 10, 23, 59, 59)
+}
 const CREAM  = '#F2F0E9'  // creme parchment da barra inferior
 const GOLD   = '#C69B2D'  // dourado âmbar dos acentos
 
@@ -870,6 +876,10 @@ function InfographicsCarousel() {
 export default function EbookLandingPage() {
   const [abVariant, setAbVariant] = useState<'A' | 'B'>('A')
   const [lightbox, setLightbox] = useState<number | null>(null)
+  const [returning, setReturning] = useState(false)
+  const [recentBuyers, setRecentBuyers] = useState<{ firstName: string; region: string | null; time: string }[]>([])
+  const [tickerIdx, setTickerIdx] = useState(0)
+  const [tickerVisible, setTickerVisible] = useState(true)
   const closeLightbox = useCallback(() => setLightbox(null), [])
   const prevPage = useCallback(() => setLightbox(i => i !== null ? (i - 1 + PAGES.length) % PAGES.length : null), [])
   const nextPage = useCallback(() => setLightbox(i => i !== null ? (i + 1) % PAGES.length : null), [])
@@ -905,6 +915,33 @@ export default function EbookLandingPage() {
   }, [])
 
   useEffect(() => {
+    try {
+      const count = parseInt(localStorage.getItem('ebook_visits') ?? '0', 10) + 1
+      localStorage.setItem('ebook_visits', String(count))
+      if (count >= 3) setReturning(true)
+    } catch { /* localStorage bloqueado (modo privado restrito) */ }
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/recent-buyers')
+      .then(r => r.json())
+      .then(data => setRecentBuyers(data))
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    if (recentBuyers.length === 0) return
+    const cycle = setInterval(() => {
+      setTickerVisible(false)
+      setTimeout(() => {
+        setTickerIdx(i => (i + 1) % recentBuyers.length)
+        setTickerVisible(true)
+      }, 400)
+    }, 3600)
+    return () => clearInterval(cycle)
+  }, [recentBuyers])
+
+  useEffect(() => {
     if (document.cookie.split(';').some(c => c.trim() === 'admin_flag=1')) return
     const p = new URLSearchParams(window.location.search)
     const hasFbclid = p.has('fbclid')
@@ -937,9 +974,23 @@ export default function EbookLandingPage() {
     <div className="min-h-screen bg-white text-[#141F0C]">
 
       {/* ── BANNER URGÊNCIA ──────────────────────────────── */}
-      <div className="w-full py-2.5 px-4 text-center text-sm font-bold" style={{ backgroundColor: LIME, color: DARK }}>
-        Preço de lançamento · até {nextSundayLabel()}
-      </div>
+      {recentBuyers.length > 0 && (
+        <div className="w-full py-2.5 px-4 text-center text-sm font-bold overflow-hidden" style={{ backgroundColor: LIME, color: DARK }}>
+          <span
+            style={{
+              display: 'inline-block',
+              transition: 'opacity 0.4s ease, transform 0.4s ease',
+              opacity: tickerVisible ? 1 : 0,
+              transform: tickerVisible ? 'translateY(0)' : 'translateY(-6px)',
+            }}
+          >
+            {(() => {
+              const b = recentBuyers[tickerIdx]
+              return b ? `● ${b.firstName}${b.region ? `, de ${b.region},` : ''} comprou ${b.time}` : ''
+            })()}
+          </span>
+        </div>
+      )}
 
       {lightbox !== null && (
         <PageLightbox index={lightbox} onClose={closeLightbox} onPrev={prevPage} onNext={nextPage} />
@@ -1050,6 +1101,7 @@ export default function EbookLandingPage() {
         </div>
       </section>
 
+      {!returning && <>
       {/* ── CAPÍTULOS ────────────────────────────────────────── */}
       <section id="dentro" style={{ backgroundColor: CREAM }} className="pt-0 pb-28 px-6">
         <div className="max-w-4xl mx-auto">
@@ -1094,6 +1146,9 @@ export default function EbookLandingPage() {
         </div>
       </section>
 
+      </>}
+
+      {!returning && <>
       {/* ── STRIP DE CREDIBILIDADE ───────────────────────────── */}
       <div style={{ backgroundColor: LIME, color: DARK }} className="py-5 px-6">
         <div className="max-w-5xl mx-auto flex flex-wrap justify-center gap-8 text-sm font-black uppercase tracking-widest">
@@ -1104,6 +1159,7 @@ export default function EbookLandingPage() {
           <span>25+ infográficos</span>
         </div>
       </div>
+      </>}
 
       {/* ── DEPOIMENTO ────────────────────────────────────────── */}
       <section style={{ backgroundColor: CREAM }} className="py-16 px-6">
@@ -1119,6 +1175,7 @@ export default function EbookLandingPage() {
         </div>
       </section>
 
+      {!returning && <>
       {/* ── AGITAÇÃO ─────────────────────────────────────────── */}
       <section style={{ backgroundColor: CREAM }} className="py-24 px-6">
         <div className="max-w-5xl mx-auto">
@@ -1279,6 +1336,7 @@ export default function EbookLandingPage() {
           </div>
         </div>
       </section>
+      </>}
 
       {/* ── GARANTIA ─────────────────────────────────────────── */}
       <section className="py-20 px-6 bg-white">
