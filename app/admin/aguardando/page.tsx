@@ -107,6 +107,7 @@ export default async function AguardandoPage() {
                     <div className="flex flex-col items-end gap-2">
                       <AdminActions mode="copy-pix" pixPayload={row.pix_payload ?? undefined} />
                       <AdminActions mode="confirm-pix" id={row.id} />
+                      <AdminActions mode="delete-charge" id={row.id} email={row.email} />
                     </div>
                   </td>
                 </tr>

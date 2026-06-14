@@ -2,7 +2,7 @@
 import { useState } from 'react'
 
 interface Props {
-  mode?: 'add' | 'resolve-refund' | 'confirm-pix' | 'resend-download' | 'copy-link' | 'copy-pix' | 'estorno'
+  mode?: 'add' | 'resolve-refund' | 'confirm-pix' | 'resend-download' | 'copy-link' | 'copy-pix' | 'estorno' | 'delete-charge'
   id?: string
   email?: string
   product?: string
@@ -225,6 +225,35 @@ export default function AdminActions({ mode, id, email, product, userId, status,
           : <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>
         }
         Estornar
+      </button>
+    )
+  }
+
+  if (mode === 'delete-charge') {
+    if (done) return <span className="text-xs text-gray-400 italic">Excluído</span>
+    return (
+      <button
+        onClick={async () => {
+          if (!confirm(`Excluir cobrança de ${email}? Esta ação não pode ser desfeita.`)) return
+          setLoading(true)
+          const res = await fetch('/api/admin/delete-charge', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id }),
+          })
+          setLoading(false)
+          if (res.ok) { setDone(true); window.location.reload() }
+          else { const d = await res.json().catch(() => ({})); alert(d.error || 'Erro ao excluir.') }
+        }}
+        disabled={loading}
+        title={`Excluir cobrança de ${email}`}
+        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 disabled:opacity-40 transition-colors"
+      >
+        {loading
+          ? <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+          : <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        }
+        Excluir
       </button>
     )
   }
