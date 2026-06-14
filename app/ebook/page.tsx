@@ -1105,6 +1105,20 @@ export default function EbookLandingPage() {
         </div>
       </div>
 
+      {/* ── DEPOIMENTO ────────────────────────────────────────── */}
+      <section style={{ backgroundColor: CREAM }} className="py-16 px-6">
+        <div className="max-w-xl mx-auto">
+          <p className="text-xs font-bold uppercase tracking-widest text-center mb-6" style={{ color: FOREST }}>O que dizem os leitores</p>
+          <Image
+            src="/testemunho_01.png"
+            alt="Depoimento de leitor"
+            width={600}
+            height={400}
+            className="w-full rounded-2xl shadow-lg"
+          />
+        </div>
+      </section>
+
       {/* ── AGITAÇÃO ─────────────────────────────────────────── */}
       <section style={{ backgroundColor: CREAM }} className="py-24 px-6">
         <div className="max-w-5xl mx-auto">
