@@ -8,6 +8,11 @@ export const PRODUCT_PRICE: Record<string, number> = {
   session_upsell: 120,
 }
 
+// Usa o valor gravado na cobrança; fallback para config atual se não houver
+export function rowValue(row: { value?: number | null; product: string }): number {
+  return row.value != null ? row.value / 100 : (PRODUCT_PRICE[row.product] ?? 87)
+}
+
 export function checkAuth(req: Request): boolean {
   const token = process.env.ANALYTICS_TOKEN
   if (!token) return false
@@ -48,7 +53,7 @@ export async function fetchFunnelData(from: string, to: string) {
       .eq('page', '/ebook/checkout-click')
       .gte('created_at', fromUTC).lte('created_at', toUTC),
     sb.from('pix_charges')
-      .select('created_at,confirmed_at,status,payment_method,product,page_version')
+      .select('created_at,confirmed_at,status,payment_method,product,page_version,value')
       .gte('created_at', fromUTC).lte('created_at', toUTC),
   ])
 
@@ -66,7 +71,7 @@ export async function fetchUnpaidData(from: string, to: string) {
 
   const [chargesRes, failedRes] = await Promise.all([
     sb.from('pix_charges')
-      .select('created_at,confirmed_at,status,payment_method')
+      .select('created_at,confirmed_at,status,payment_method,value,product')
       .gte('created_at', fromUTC).lte('created_at', toUTC),
     sb.from('failed_card_attempts')
       .select('created_at,reason')
@@ -94,7 +99,7 @@ export async function fetchBySourceData(from: string, to: string) {
       .eq('page', '/ebook/checkout-click')
       .gte('created_at', fromUTC).lte('created_at', toUTC),
     sb.from('pix_charges')
-      .select('utm_source,utm_campaign,utm_content,status,product,confirmed_at')
+      .select('utm_source,utm_campaign,utm_content,status,product,confirmed_at,value')
       .gte('created_at', fromUTC).lte('created_at', toUTC),
   ])
 

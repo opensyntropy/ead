@@ -63,6 +63,7 @@ export async function POST(request: Request) {
           {
             asaas_payment_id: charge.id, email, name: name || email.split('@')[0],
             product: productId, status: 'pending', payment_method: 'pix',
+            value: product.price,
             whatsapp: whatsapp || null,
             utm_source, utm_medium, utm_campaign, utm_term, utm_content,
             page_version: page_version || null,
@@ -97,6 +98,7 @@ export async function POST(request: Request) {
           {
             asaas_payment_id: charge.id, email, name: name || email.split('@')[0],
             product: productId, status: 'pending', payment_method: 'pix',
+            value: product.price,
             whatsapp: whatsapp || null,
             utm_source, utm_medium, utm_campaign, utm_term, utm_content,
             page_version: page_version || null,
@@ -169,6 +171,7 @@ export async function POST(request: Request) {
         // reenvie e-mail/notificação/CAPI quando o PAYMENT_CONFIRMED chegar.
         confirmed_at: charge.status === 'CONFIRMED' ? new Date().toISOString() : null,
         payment_method: 'card',
+        value: product.price,
         installment_count: installmentCount && installmentCount > 1 ? installmentCount : null,
         whatsapp: whatsapp || null,
         utm_source, utm_medium, utm_campaign, utm_term, utm_content,

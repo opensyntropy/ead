@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { checkAuth, fetchFunnelData, toSpDay, pct, PRODUCT_PRICE } from '@/lib/analytics'
+import { checkAuth, fetchFunnelData, toSpDay, pct, rowValue } from '@/lib/analytics'
 
 export async function GET(req: NextRequest) {
   if (!checkAuth(req)) return new NextResponse('Unauthorized', { status: 401 })
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     const confirmed_card  = dayConfirmed.filter(r => r.payment_method === 'card').length
     const confirmed_total = dayConfirmed.length
 
-    const revenue = dayConfirmed.reduce((sum, r) => sum + (PRODUCT_PRICE[r.product] ?? 87), 0)
+    const revenue = dayConfirmed.reduce((sum, r) => sum + (rowValue(r)), 0)
     const avg_ticket = confirmed_total > 0 ? Math.round((revenue / confirmed_total) * 100) / 100 : 0
 
     const visitors_normal    = dayVisits.filter(r => r.page_version !== 'returning').length

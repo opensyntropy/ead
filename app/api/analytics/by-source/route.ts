@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { checkAuth, fetchBySourceData, pct, PRODUCT_PRICE } from '@/lib/analytics'
+import { checkAuth, fetchBySourceData, pct, rowValue } from '@/lib/analytics'
 
 function srcKey(r: { utm_source?: string | null; utm_campaign?: string | null }): string {
   const src = r.utm_source ?? 'direto'
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     ensure(r).charges_generated++
     if (r.status === 'confirmed') {
       ensure(r).payments_confirmed++
-      ensure(r).revenue += PRODUCT_PRICE[r.product] ?? 87
+      ensure(r).revenue += rowValue(r)
     }
   }
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { checkAuth, fetchFunnelData, fetchUnpaidData, fetchBySourceData, toSpDay, pct, PRODUCT_PRICE } from '@/lib/analytics'
+import { checkAuth, fetchFunnelData, fetchUnpaidData, fetchBySourceData, toSpDay, pct, PRODUCT_PRICE, rowValue } from '@/lib/analytics'
 
 // MCP server via Streamable HTTP (protocol 2025-03-26)
 // Stateless — cada POST é uma chamada independente, sem sessão SSE
@@ -77,7 +77,7 @@ async function callFunnel(args: Record<string, string>) {
     const confirmed_card = cf.filter(r => r.payment_method === 'card').length
     const confirmed_total = cf.length
     const charges_total = dh.length
-    const revenue = cf.reduce((s, r) => s + (PRODUCT_PRICE[r.product] ?? 87), 0)
+    const revenue = cf.reduce((s, r) => s + (rowValue(r)), 0)
     const visitors_normal    = dv.filter(r => r.page_version !== 'returning').length
     const visitors_returning = dv.filter(r => r.page_version === 'returning').length
     const purchases_normal    = cf.filter(r => r.page_version !== 'returning').length
@@ -148,7 +148,7 @@ async function callBySource(args: Record<string, string>) {
   }
   for (const r of visits)  ensure(r).pageviews++
   for (const r of clicks)  ensure(r).checkout_clicks++
-  for (const r of charges) { ensure(r).charges_generated++; if (r.status === 'confirmed') { ensure(r).payments_confirmed++; ensure(r).revenue += PRODUCT_PRICE[r.product] ?? 87 } }
+  for (const r of charges) { ensure(r).charges_generated++; if (r.status === 'confirmed') { ensure(r).payments_confirmed++; ensure(r).revenue += rowValue(r) } }
   return { period: { from, to }, sources: Object.values(map).map(r => ({ ...r, revenue: Math.round(r.revenue * 100) / 100, conversion_rate: pct(r.payments_confirmed, r.pageviews) })).sort((a, b) => b.payments_confirmed - a.payments_confirmed) }
 }
 
