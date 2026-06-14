@@ -1160,6 +1160,18 @@ export default function EbookLandingPage() {
         </div>
       </section>
 
+      {/* ── CTA INTERMEDIÁRIO ────────────────────────────────── */}
+      <section style={{ backgroundColor: CREAM }} className="pb-16 px-6">
+        <div className="max-w-sm mx-auto text-center">
+          <a href="#comprar"
+            className="block w-full py-5 rounded-2xl font-black text-lg transition-opacity hover:opacity-90"
+            style={{ backgroundColor: LIME, color: DARK }}>
+            Quero começar agora →
+          </a>
+          <p className="text-xs text-gray-400 mt-3">R$87 · acesso imediato · 7 dias de garantia</p>
+        </div>
+      </section>
+
       {/* ── PRIMEIRO GUIA PONTA A PONTA ──────────────────────── */}
       <section style={{ backgroundColor: DARK }} className="py-28 px-6">
         <div className="max-w-5xl mx-auto">
@@ -1296,7 +1308,7 @@ export default function EbookLandingPage() {
 
           {/* nota de urgência abaixo do card */}
           <p className="text-center text-xs text-gray-500 mt-5 leading-relaxed">
-            Após o período de lançamento o preço volta a <strong className="text-gray-400">R$ 107</strong>.
+            Após o período de lançamento o preço volta a <strong className="text-gray-400">R$ 127</strong>.
             Compre agora e garanta o valor atual para sempre.
           </p>
         </div>
