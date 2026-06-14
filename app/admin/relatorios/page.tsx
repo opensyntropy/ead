@@ -55,9 +55,10 @@ export default async function RelatoriosPage() {
   const service = await createServiceClient()
   const monthISO = new Date(Date.now() - 30 * 86400000).toISOString()
 
-  const [visitsMonthRes, visitsRawRes, pixRes] = await Promise.all([
+  const [visitsMonthRes, visitsRawRes, visitsTotalRes, pixRes] = await Promise.all([
     service.from('page_visits').select('id', { count: 'exact', head: true }).eq('page', '/ebook').gte('created_at', monthISO),
     service.from('page_visits').select('created_at,utm_source,utm_content,referer').eq('page', '/ebook').gte('created_at', monthISO),
+    service.from('page_visits').select('id', { count: 'exact', head: true }),
     service.from('pix_charges').select('*').order('created_at', { ascending: false }),
   ])
 
@@ -118,6 +119,21 @@ export default async function RelatoriosPage() {
             {dbErrors.map((e, i) => <p key={i}>{e}</p>)}
           </div>
         )}
+
+        {/* Resumo */}
+        <div className="flex gap-4 flex-wrap">
+          {[
+            { label: 'Visitas /ebook (30d)', value: visitsMonth },
+            { label: 'Visitas totais (histórico)', value: visitsTotalRes.count ?? 0 },
+            { label: 'Cobranças geradas (total)', value: pixRes.data?.length ?? 0 },
+            { label: 'Confirmadas (total)', value: confirmedRows.length },
+          ].map(({ label, value }) => (
+            <div key={label} className="bg-white rounded-xl border border-gray-200 px-5 py-4 flex-1 min-w-[160px]">
+              <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{label}</p>
+              <p className="text-2xl font-black text-gray-800">{value}</p>
+            </div>
+          ))}
+        </div>
 
         {/* Gráficos de tendência */}
         <div>
