@@ -503,39 +503,6 @@ function CheckoutForm() {
               />
             </div>
 
-            <div className="w-full">
-              <p className="text-xs text-gray-400 mb-3">Abrir app do banco (copia o código automaticamente)</p>
-              <div className="flex flex-wrap gap-2 justify-center">
-                {([
-                  { name: 'Nubank',       scheme: 'nubank://',          domain: 'nubank.com.br' },
-                  { name: 'Itaú',         scheme: 'itauonline://',      domain: 'itau.com.br' },
-                  { name: 'Bradesco',     scheme: 'bradescoonline://',  domain: 'bradesco.com.br' },
-                  { name: 'BB',           scheme: 'bb://',              domain: 'bb.com.br' },
-                  { name: 'Caixa',        scheme: 'caixa://',           domain: 'caixa.gov.br' },
-                  { name: 'Santander',    scheme: 'santandermobile://', domain: 'santander.com.br' },
-                  { name: 'Inter',        scheme: 'inter://',           domain: 'inter.co' },
-                  { name: 'C6',           scheme: 'c6bank://',          domain: 'c6bank.com.br' },
-                  { name: 'PicPay',       scheme: 'picpay://',          domain: 'picpay.com' },
-                  { name: 'Mercado Pago', scheme: 'mercadopago://',     domain: 'mercadopago.com.br' },
-                ]).map(bank => (
-                  <a
-                    key={bank.name}
-                    href={bank.scheme}
-                    onClick={() => copyToClipboard(pixData.payload).catch(() => {})}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-700 hover:border-gray-300 transition-all active:scale-95 shadow-sm no-underline"
-                  >
-                    <img
-                      src={`https://www.google.com/s2/favicons?domain=${bank.domain}&sz=32`}
-                      alt={bank.name}
-                      width={18}
-                      height={18}
-                      className="rounded-sm"
-                    />
-                    {bank.name}
-                  </a>
-                ))}
-              </div>
-            </div>
 
             <div className="flex flex-col items-center gap-2 opacity-70">
               <p className="text-xs text-gray-400">ou escaneie o QR Code</p>
