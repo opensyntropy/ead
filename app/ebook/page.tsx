@@ -921,6 +921,7 @@ export default function EbookLandingPage() {
     const utmCampaign = p.get('utm_campaign') ?? null
     const utmTerm     = p.get('utm_term')     ?? null
     const utmContent  = p.get('utm_content')  ?? null
+    const visitCount = (() => { try { return parseInt(localStorage.getItem('ebook_visits') ?? '0', 10) } catch { return 0 } })()
     fetch('/api/track', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -932,6 +933,7 @@ export default function EbookLandingPage() {
         utm_term: utmTerm,
         utm_content: utmContent,
         referer: document.referrer || null,
+        page_version: visitCount >= 3 ? 'returning' : 'normal',
       }),
     }).catch(() => {})
   }, [])

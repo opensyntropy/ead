@@ -8,9 +8,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true })
   }
   try {
-    const { page, utm_source, utm_medium, utm_campaign, utm_term, utm_content, referer } = await req.json()
+    const { page, utm_source, utm_medium, utm_campaign, utm_term, utm_content, referer, page_version } = await req.json()
     const sb = createServiceClient()
-    await sb.from('page_visits').insert({ page, utm_source, utm_medium, utm_campaign, utm_term: utm_term || null, utm_content: utm_content || null, referer: referer || null })
+    await sb.from('page_visits').insert({ page, utm_source, utm_medium, utm_campaign, utm_term: utm_term || null, utm_content: utm_content || null, referer: referer || null, page_version: page_version || null })
   } catch {}
   return NextResponse.json({ ok: true })
 }
