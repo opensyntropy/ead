@@ -362,11 +362,19 @@ function CheckoutForm() {
     ;(window as any).fbq?.('track', 'InitiateCheckout', { value: 87, currency: 'BRL', num_items: 1 })
     setLoading(true)
     setError('')
+    const visits = (() => { try { return parseInt(localStorage.getItem('ebook_visits') ?? '0', 10) } catch { return 0 } })()
+    const page_version = visits >= 3 ? 'returning' : 'normal'
+    fetch('/api/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ page: '/ebook/checkout-click', ...utmParams }),
+    }).catch(() => {})
     const res = await fetch('/api/asaas/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         productId: 'ebook', email, name, cpf, whatsapp, paymentMethod,
+        page_version,
         ...utmParams,
         ...(paymentMethod === 'card' ? { cardNumber, cardExpiry, cardCvv, cardPostalCode, cardAddressNumber, installmentCount } : {}),
       }),

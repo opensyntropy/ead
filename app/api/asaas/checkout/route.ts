@@ -13,6 +13,7 @@ export async function POST(request: Request) {
     cardNumber, cardExpiry, cardCvv, cardPostalCode, cardAddressNumber,
     installmentCount, whatsapp,
     utm_source, utm_medium, utm_campaign, utm_term, utm_content,
+    page_version,
   } = body as {
     productId: string
     email: string
@@ -31,6 +32,7 @@ export async function POST(request: Request) {
     utm_campaign?: string
     utm_term?: string
     utm_content?: string
+    page_version?: string
   }
 
   if (!productId || !email) {
@@ -63,6 +65,7 @@ export async function POST(request: Request) {
             product: productId, status: 'pending', payment_method: 'pix',
             whatsapp: whatsapp || null,
             utm_source, utm_medium, utm_campaign, utm_term, utm_content,
+            page_version: page_version || null,
             pix_payload: qr.payload || null,
             via_recovery: utm_medium === 'recovery',
           },
@@ -96,6 +99,7 @@ export async function POST(request: Request) {
             product: productId, status: 'pending', payment_method: 'pix',
             whatsapp: whatsapp || null,
             utm_source, utm_medium, utm_campaign, utm_term, utm_content,
+            page_version: page_version || null,
             via_recovery: utm_medium === 'recovery',
           },
           { onConflict: 'asaas_payment_id' }
@@ -168,6 +172,7 @@ export async function POST(request: Request) {
         installment_count: installmentCount && installmentCount > 1 ? installmentCount : null,
         whatsapp: whatsapp || null,
         utm_source, utm_medium, utm_campaign, utm_term, utm_content,
+        page_version: page_version || null,
         via_recovery: utm_medium === 'recovery',
       },
       { onConflict: 'asaas_payment_id' }
