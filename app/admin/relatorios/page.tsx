@@ -61,6 +61,12 @@ export default async function RelatoriosPage() {
     service.from('pix_charges').select('*').order('created_at', { ascending: false }),
   ])
 
+  const dbErrors = [
+    visitsMonthRes.error && `page_visits count: ${visitsMonthRes.error.message}`,
+    visitsRawRes.error  && `page_visits data: ${visitsRawRes.error.message}`,
+    pixRes.error        && `pix_charges: ${pixRes.error.message}`,
+  ].filter(Boolean) as string[]
+
   const visitsMonth = visitsMonthRes.count ?? 0
   const toDay = (iso: string) => new Date(iso).toLocaleDateString('sv', { timeZone: 'America/Sao_Paulo' })
 
@@ -105,6 +111,13 @@ export default async function RelatoriosPage() {
     <div className="min-h-screen bg-gray-50 font-sans">
       <AdminHeader />
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+
+        {dbErrors.length > 0 && (
+          <div className="bg-red-50 border border-red-200 rounded-xl px-5 py-4 text-sm text-red-700 space-y-1">
+            <p className="font-bold">Erro ao carregar dados:</p>
+            {dbErrors.map((e, i) => <p key={i}>{e}</p>)}
+          </div>
+        )}
 
         {/* Gráficos de tendência */}
         <div>
