@@ -312,6 +312,12 @@ function CheckoutForm() {
   const [upsellCardAddressNumber, setUpsellCardAddressNumber] = useState('')
 
   useEffect(() => {
+    if (process.env.NODE_ENV === 'development' && searchParams.get('preview') === 'pix') {
+      setPixData({ qrCode: '', payload: '00020126580014br.gov.bcb.pix0136preview-teste-nao-use-em-producao5204000053039865802BR5913Opensyntropy6009Sao Paulo62070503***6304ABCD' })
+    }
+  }, [searchParams])
+
+  useEffect(() => {
     const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content']
     const fromUrl: Record<string, string> = {}
     UTM_KEYS.forEach(k => { const v = searchParams.get(k); if (v) fromUrl[k] = v })
@@ -446,25 +452,7 @@ function CheckoutForm() {
 
   if (pixData) {
     return (
-      <div className="bg-white px-8 py-6 flex flex-col gap-6 items-center text-center">
-        {!downloadUrl && (
-          <img src={`data:image/png;base64,${pixData.qrCode}`} alt="QR Code PIX" className="w-52 h-52 rounded-2xl border-2 border-[#7DC142]" />
-        )}
-        {!downloadUrl && (
-        <div className="w-full">
-          <p className="text-sm text-gray-400 mb-2 uppercase tracking-widest font-semibold">PIX Copia e Cola</p>
-          <input
-            readOnly
-            value={pixData.payload}
-            className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-600 bg-gray-50 font-mono mb-2"
-            onClick={e => (e.target as HTMLInputElement).select()}
-            onFocus={e => e.target.select()}
-          />
-          <button type="button" onClick={handleCopy} className="w-full py-3 text-white rounded-xl text-sm font-bold transition-colors" style={{ backgroundColor: LIME }}>
-            {copied ? '✓ Código copiado!' : 'Copiar código PIX'}
-          </button>
-        </div>
-        )}
+      <div className="bg-white px-6 py-8 flex flex-col gap-5 items-center text-center">
         {downloadUrl ? (
           <div className="w-full rounded-2xl px-6 py-8 text-center" style={{ backgroundColor: '#f0fdf4', border: '2px solid #7DC142' }}>
             <p className="text-3xl mb-3">✓</p>
@@ -480,22 +468,87 @@ function CheckoutForm() {
             </a>
           </div>
         ) : (
-          <div className="w-full rounded-2xl px-6 py-5 text-left" style={{ backgroundColor: '#f0fdf4', border: '2px solid #d8f3dc' }}>
-            <p className="font-bold text-[#141F0C] text-base">Aguardando pagamento</p>
-            <p className="text-[#476B18] text-sm mt-1 leading-relaxed">Você receberá o link de download do ebook por e-mail assim que o PIX for confirmado.</p>
-          </div>
+          <>
+            <div>
+              <p className="text-lg font-black text-[#141F0C] mb-1">Pague o PIX e seu acesso</p>
+              <p className="text-lg font-black mb-3" style={{ color: '#52b788' }}>é liberado na hora, automaticamente.</p>
+              <p className="text-xs text-gray-400">Cole o código abaixo no app do seu banco.</p>
+            </div>
+
+            <div className="w-full">
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="w-full py-5 rounded-2xl text-base font-black transition-all shadow-md active:scale-95"
+                style={{ backgroundColor: copied ? '#2d6a4f' : LIME, color: DARK }}
+              >
+                {copied ? '✓ Código copiado!' : 'Copiar código PIX'}
+              </button>
+              <input
+                readOnly
+                value={pixData.payload}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-400 bg-gray-50 font-mono mt-3"
+                onClick={e => (e.target as HTMLInputElement).select()}
+                onFocus={e => e.target.select()}
+              />
+            </div>
+
+            <div className="w-full">
+              <p className="text-xs text-gray-400 mb-3">Abrir app do banco (copia o código automaticamente)</p>
+              <div className="flex flex-wrap gap-2 justify-center">
+                {([
+                  { name: 'Nubank',       scheme: 'nubank://',          domain: 'nubank.com.br' },
+                  { name: 'Itaú',         scheme: 'itauonline://',      domain: 'itau.com.br' },
+                  { name: 'Bradesco',     scheme: 'bradescoonline://',  domain: 'bradesco.com.br' },
+                  { name: 'BB',           scheme: 'bb://',              domain: 'bb.com.br' },
+                  { name: 'Caixa',        scheme: 'caixa://',           domain: 'caixa.gov.br' },
+                  { name: 'Santander',    scheme: 'santandermobile://', domain: 'santander.com.br' },
+                  { name: 'Inter',        scheme: 'inter://',           domain: 'inter.co' },
+                  { name: 'C6',           scheme: 'c6bank://',          domain: 'c6bank.com.br' },
+                  { name: 'PicPay',       scheme: 'picpay://',          domain: 'picpay.com' },
+                  { name: 'Mercado Pago', scheme: 'mercadopago://',     domain: 'mercadopago.com.br' },
+                ]).map(bank => (
+                  <button
+                    key={bank.name}
+                    type="button"
+                    onClick={async () => {
+                      await copyToClipboard(pixData.payload)
+                      window.location.href = bank.scheme
+                    }}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-700 hover:border-gray-300 transition-all active:scale-95 shadow-sm"
+                  >
+                    <img
+                      src={`https://www.google.com/s2/favicons?domain=${bank.domain}&sz=32`}
+                      alt={bank.name}
+                      width={18}
+                      height={18}
+                      className="rounded-sm"
+                    />
+                    {bank.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center gap-2 opacity-70">
+              <p className="text-xs text-gray-400">ou escaneie o QR Code</p>
+              <img src={`data:image/png;base64,${pixData.qrCode}`} alt="QR Code PIX" className="w-40 h-40 rounded-xl border border-gray-200" />
+            </div>
+          </>
         )}
-        <UpsellBump
-          upsellPaymentMethod={upsellPaymentMethod} setUpsellPaymentMethod={setUpsellPaymentMethod}
-          upsellLoading={upsellLoading} upsellPixData={upsellPixData} upsellSuccess={upsellSuccess}
-          upsellCopied={upsellCopied} setUpsellCopied={setUpsellCopied} upsellError={upsellError}
-          upsellCardNumber={upsellCardNumber} setUpsellCardNumber={setUpsellCardNumber}
-          upsellCardExpiry={upsellCardExpiry} setUpsellCardExpiry={setUpsellCardExpiry}
-          upsellCardCvv={upsellCardCvv} setUpsellCardCvv={setUpsellCardCvv}
-          upsellCardPostalCode={upsellCardPostalCode} setUpsellCardPostalCode={setUpsellCardPostalCode}
-          upsellCardAddressNumber={upsellCardAddressNumber} setUpsellCardAddressNumber={setUpsellCardAddressNumber}
-          handleUpsell={handleUpsell}
-        />
+        {downloadUrl && (
+          <UpsellBump
+            upsellPaymentMethod={upsellPaymentMethod} setUpsellPaymentMethod={setUpsellPaymentMethod}
+            upsellLoading={upsellLoading} upsellPixData={upsellPixData} upsellSuccess={upsellSuccess}
+            upsellCopied={upsellCopied} setUpsellCopied={setUpsellCopied} upsellError={upsellError}
+            upsellCardNumber={upsellCardNumber} setUpsellCardNumber={setUpsellCardNumber}
+            upsellCardExpiry={upsellCardExpiry} setUpsellCardExpiry={setUpsellCardExpiry}
+            upsellCardCvv={upsellCardCvv} setUpsellCardCvv={setUpsellCardCvv}
+            upsellCardPostalCode={upsellCardPostalCode} setUpsellCardPostalCode={setUpsellCardPostalCode}
+            upsellCardAddressNumber={upsellCardAddressNumber} setUpsellCardAddressNumber={setUpsellCardAddressNumber}
+            handleUpsell={handleUpsell}
+          />
+        )}
       </div>
     )
   }
@@ -525,17 +578,19 @@ function CheckoutForm() {
             <p className="text-gray-400 text-xs">Não encontrou? Verifique a caixa de spam ou promoções.</p>
           </div>
         )}
-        <UpsellBump
-          upsellPaymentMethod={upsellPaymentMethod} setUpsellPaymentMethod={setUpsellPaymentMethod}
-          upsellLoading={upsellLoading} upsellPixData={upsellPixData} upsellSuccess={upsellSuccess}
-          upsellCopied={upsellCopied} setUpsellCopied={setUpsellCopied} upsellError={upsellError}
-          upsellCardNumber={upsellCardNumber} setUpsellCardNumber={setUpsellCardNumber}
-          upsellCardExpiry={upsellCardExpiry} setUpsellCardExpiry={setUpsellCardExpiry}
-          upsellCardCvv={upsellCardCvv} setUpsellCardCvv={setUpsellCardCvv}
-          upsellCardPostalCode={upsellCardPostalCode} setUpsellCardPostalCode={setUpsellCardPostalCode}
-          upsellCardAddressNumber={upsellCardAddressNumber} setUpsellCardAddressNumber={setUpsellCardAddressNumber}
-          handleUpsell={handleUpsell}
-        />
+        {downloadUrl && (
+          <UpsellBump
+            upsellPaymentMethod={upsellPaymentMethod} setUpsellPaymentMethod={setUpsellPaymentMethod}
+            upsellLoading={upsellLoading} upsellPixData={upsellPixData} upsellSuccess={upsellSuccess}
+            upsellCopied={upsellCopied} setUpsellCopied={setUpsellCopied} upsellError={upsellError}
+            upsellCardNumber={upsellCardNumber} setUpsellCardNumber={setUpsellCardNumber}
+            upsellCardExpiry={upsellCardExpiry} setUpsellCardExpiry={setUpsellCardExpiry}
+            upsellCardCvv={upsellCardCvv} setUpsellCardCvv={setUpsellCardCvv}
+            upsellCardPostalCode={upsellCardPostalCode} setUpsellCardPostalCode={setUpsellCardPostalCode}
+            upsellCardAddressNumber={upsellCardAddressNumber} setUpsellCardAddressNumber={setUpsellCardAddressNumber}
+            handleUpsell={handleUpsell}
+          />
+        )}
       </div>
     )
   }
@@ -867,6 +922,17 @@ function InfographicsCarousel() {
 }
 
 export default function EbookLandingPage() {
+  const searchParamsLanding = useSearchParams()
+  if (process.env.NODE_ENV === 'development' && searchParamsLanding.get('preview') === 'pix') {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
+        <div className="w-full max-w-sm rounded-2xl overflow-hidden shadow-xl">
+          <CheckoutForm />
+        </div>
+      </div>
+    )
+  }
+
   const [lightbox, setLightbox] = useState<number | null>(null)
   const [returning, setReturning] = useState(false)
   const [recentBuyers, setRecentBuyers] = useState<{ firstName: string; region: string | null; time: string }[]>([])
