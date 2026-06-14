@@ -11,7 +11,10 @@ export const PRODUCT_PRICE: Record<string, number> = {
 export function checkAuth(req: Request): boolean {
   const token = process.env.ANALYTICS_TOKEN
   if (!token) return false
-  return req.headers.get('authorization') === `Bearer ${token}`
+  // Bearer header (Claude Code CLI) ou ?token= na URL (claude.ai web connector)
+  const header = req.headers.get('authorization') === `Bearer ${token}`
+  const query  = new URL(req.url).searchParams.get('token') === token
+  return header || query
 }
 
 // SP midnight → UTC ISO for Supabase range queries
