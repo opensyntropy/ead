@@ -152,8 +152,17 @@ async function callBySource(args: Record<string, string>) {
   return { period: { from, to }, sources: Object.values(map).map(r => ({ ...r, revenue: Math.round(r.revenue * 100) / 100, conversion_rate: pct(r.payments_confirmed, r.pageviews) })).sort((a, b) => b.payments_confirmed - a.payments_confirmed) }
 }
 
+const BASE = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://ead.opensyntropy.earth'
+
+function unauthorized() {
+  return new NextResponse('Unauthorized', {
+    status: 401,
+    headers: { 'WWW-Authenticate': `Bearer realm="${BASE}", error="unauthorized"` },
+  })
+}
+
 export async function POST(req: NextRequest) {
-  if (!checkAuth(req)) return new NextResponse('Unauthorized', { status: 401 })
+  if (!checkAuth(req)) return unauthorized()
 
   let body: JsonRpcRequest
   try { body = await req.json() } catch { return err(null, -32700, 'Parse error') }
@@ -191,6 +200,6 @@ export async function POST(req: NextRequest) {
 
 // GET: responde 200 com capabilities para health-check / discovery
 export async function GET(req: NextRequest) {
-  if (!checkAuth(req)) return new NextResponse('Unauthorized', { status: 401 })
+  if (!checkAuth(req)) return unauthorized()
   return NextResponse.json({ server: SERVER_INFO, protocol: PROTOCOL, tools: TOOLS.map(t => t.name) })
 }
