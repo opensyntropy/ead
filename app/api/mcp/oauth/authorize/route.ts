@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// Exibe formulário de login — o "token" é a senha de acesso ao analytics
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS })
+}
+
 export async function GET(req: NextRequest) {
   const p = req.nextUrl.searchParams
-  const redirect_uri    = p.get('redirect_uri')    ?? ''
-  const state           = p.get('state')           ?? ''
-  const code_challenge  = p.get('code_challenge')  ?? ''
+  const redirect_uri          = p.get('redirect_uri')          ?? ''
+  const state                 = p.get('state')                 ?? ''
+  const code_challenge        = p.get('code_challenge')        ?? ''
   const code_challenge_method = p.get('code_challenge_method') ?? ''
 
   const html = `<!DOCTYPE html>
@@ -21,11 +30,10 @@ export async function GET(req: NextRequest) {
     h1{font-size:1.1rem;font-weight:700;margin-bottom:.25rem}
     p{font-size:.85rem;color:#666;margin-bottom:1.5rem}
     label{font-size:.8rem;font-weight:600;display:block;margin-bottom:.4rem}
-    input{width:100%;padding:.6rem .8rem;border:1.5px solid #ddd;border-radius:8px;font-size:.9rem;outline:none}
-    input:focus{border-color:#7DC142}
+    input[type=password]{width:100%;padding:.6rem .8rem;border:1.5px solid #ddd;border-radius:8px;font-size:.9rem;outline:none}
+    input[type=password]:focus{border-color:#7DC142}
     button{margin-top:1rem;width:100%;padding:.7rem;background:#7DC142;color:#141F0C;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:.95rem}
     button:hover{opacity:.9}
-    .err{color:#c00;font-size:.8rem;margin-top:.5rem;display:none}
   </style>
 </head>
 <body>
@@ -39,14 +47,13 @@ export async function GET(req: NextRequest) {
       <input type="hidden" name="code_challenge_method" value="${code_challenge_method}">
       <label for="token">Token</label>
       <input id="token" name="token" type="password" placeholder="cole o token aqui" autocomplete="off" required>
-      <p class="err" id="err">Token inválido.</p>
       <button type="submit">Autorizar</button>
     </form>
   </div>
 </body>
 </html>`
 
-  return new NextResponse(html, { headers: { 'Content-Type': 'text/html' } })
+  return new NextResponse(html, { headers: { 'Content-Type': 'text/html', ...CORS } })
 }
 
 export async function POST(req: NextRequest) {
@@ -56,13 +63,13 @@ export async function POST(req: NextRequest) {
   const state        = form.get('state')        as string
 
   if (!token || token !== process.env.ANALYTICS_TOKEN) {
-    return new NextResponse('Token inválido', { status: 401 })
+    return new NextResponse('Token inválido', { status: 401, headers: CORS })
   }
 
-  // O "código" é o próprio token — a troca no /token valida e devolve access_token
   const url = new URL(redirect_uri)
   url.searchParams.set('code', token)
   if (state) url.searchParams.set('state', state)
 
-  return NextResponse.redirect(url.toString())
+  // 302 para que o browser faça GET no callback (não mantém POST como 307)
+  return NextResponse.redirect(url.toString(), { status: 302, headers: CORS })
 }
