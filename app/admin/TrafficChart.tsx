@@ -142,7 +142,7 @@ function MiniChart({
 
 export default function TrafficChart({ visits, checkouts, conversions }: Props) {
   const [filter, setFilter] = useState<string | null>(null)
-  const [days, setDays] = useState(7)
+  const [days, setDays] = useState(30)
 
   const sources = useMemo(() => {
     const s = new Set<string>()
