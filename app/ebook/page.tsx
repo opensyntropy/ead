@@ -2,7 +2,6 @@
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
-import { getABTest } from '@/config/ab-tests'
 
 const PAGES = [
   { src: '/preview/pagina_17.png', cap: 'Cap. 2', title: 'O Que É Sintropia' },
@@ -80,19 +79,6 @@ async function copyToClipboard(text: string): Promise<void> {
   el.setSelectionRange(0, text.length)
   document.execCommand('copy')
   document.body.removeChild(el)
-}
-
-function getABAssignments(): Record<string, string> {
-  try { return JSON.parse(localStorage.getItem('ab_assignments') || '{}') } catch { return {} }
-}
-
-function assignABVariant(testId: string, variants: string[]): string {
-  const stored = getABAssignments()
-  if (stored[testId]) return stored[testId]
-  const picked = variants[Math.floor(Math.random() * variants.length)]
-  stored[testId] = picked
-  localStorage.setItem('ab_assignments', JSON.stringify(stored))
-  return picked
 }
 
 function nextSundayLabel() {
@@ -382,7 +368,6 @@ function CheckoutForm() {
       body: JSON.stringify({
         productId: 'ebook', email, name, cpf, whatsapp, paymentMethod,
         ...utmParams,
-        ab_variant: `checkout_headline:${getABAssignments()['checkout_headline'] ?? ''}` || undefined,
         ...(paymentMethod === 'card' ? { cardNumber, cardExpiry, cardCvv, cardPostalCode, cardAddressNumber, installmentCount } : {}),
       }),
     })
@@ -874,7 +859,6 @@ function InfographicsCarousel() {
 }
 
 export default function EbookLandingPage() {
-  const [abVariant, setAbVariant] = useState<'A' | 'B'>('A')
   const [lightbox, setLightbox] = useState<number | null>(null)
   const [returning, setReturning] = useState(false)
   const [recentBuyers, setRecentBuyers] = useState<{ firstName: string; region: string | null; time: string }[]>([])
@@ -883,32 +867,6 @@ export default function EbookLandingPage() {
   const closeLightbox = useCallback(() => setLightbox(null), [])
   const prevPage = useCallback(() => setLightbox(i => i !== null ? (i - 1 + PAGES.length) % PAGES.length : null), [])
   const nextPage = useCallback(() => setLightbox(i => i !== null ? (i + 1) % PAGES.length : null), [])
-
-  useEffect(() => {
-    const test = getABTest('checkout_headline')
-    if (!test) return
-    const variant = assignABVariant(test.id, Object.keys(test.variants))
-    setAbVariant(variant as 'A' | 'B')
-  }, [])
-
-  useEffect(() => {
-    if (document.cookie.split(';').some(c => c.trim() === 'admin_flag=1')) return
-    const el = document.getElementById('comprar')
-    if (!el) return
-    const obs = new IntersectionObserver(([entry]) => {
-      if (!entry.isIntersecting) return
-      obs.disconnect()
-      const variant = getABAssignments()['checkout_headline']
-      if (!variant) return
-      fetch('/api/track', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ page: '/ebook/checkout', ab_variant: `checkout_headline:${variant}` }),
-      }).catch(() => {})
-    }, { threshold: 0.2 })
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [])
 
   useEffect(() => {
     ;(window as any).fbq?.('track', 'ViewContent', { content_name: 'Guia Agrofloresta Sintrópica', content_type: 'product', value: 87, currency: 'BRL' })
@@ -1367,7 +1325,7 @@ export default function EbookLandingPage() {
             </div>
             <h2 className="font-serif font-black text-white leading-tight mb-3"
               style={{ fontSize: 'clamp(1.8rem, 5vw, 2.8rem)' }}>
-              {abVariant === 'A' ? 'Dê o primeiro passo com segurança.' : 'O primeiro passo mais importante do seu projeto.'}
+              Dê o primeiro passo com segurança.
             </h2>
           </div>
 

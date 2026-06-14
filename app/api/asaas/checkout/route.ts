@@ -13,7 +13,6 @@ export async function POST(request: Request) {
     cardNumber, cardExpiry, cardCvv, cardPostalCode, cardAddressNumber,
     installmentCount, whatsapp,
     utm_source, utm_medium, utm_campaign, utm_term, utm_content,
-    ab_variant,
   } = body as {
     productId: string
     email: string
@@ -32,7 +31,6 @@ export async function POST(request: Request) {
     utm_campaign?: string
     utm_term?: string
     utm_content?: string
-    ab_variant?: string
   }
 
   if (!productId || !email) {
@@ -65,7 +63,6 @@ export async function POST(request: Request) {
             product: productId, status: 'pending', payment_method: 'pix',
             whatsapp: whatsapp || null,
             utm_source, utm_medium, utm_campaign, utm_term, utm_content,
-            ab_variant: ab_variant || null,
             pix_payload: qr.payload || null,
             via_recovery: utm_medium === 'recovery',
           },
@@ -99,7 +96,6 @@ export async function POST(request: Request) {
             product: productId, status: 'pending', payment_method: 'pix',
             whatsapp: whatsapp || null,
             utm_source, utm_medium, utm_campaign, utm_term, utm_content,
-            ab_variant: ab_variant || null,
             via_recovery: utm_medium === 'recovery',
           },
           { onConflict: 'asaas_payment_id' }
@@ -151,7 +147,6 @@ export async function POST(request: Request) {
           email, name: name || email.split('@')[0], whatsapp: whatsapp || null,
           product: productId, reason,
           utm_source, utm_medium, utm_campaign, utm_term, utm_content,
-          ab_variant: ab_variant || null,
         })
       } catch (logErr) {
         console.error('[checkout] falha ao registrar cartão recusado:', logErr)
@@ -173,7 +168,6 @@ export async function POST(request: Request) {
         installment_count: installmentCount && installmentCount > 1 ? installmentCount : null,
         whatsapp: whatsapp || null,
         utm_source, utm_medium, utm_campaign, utm_term, utm_content,
-        ab_variant: ab_variant || null,
         via_recovery: utm_medium === 'recovery',
       },
       { onConflict: 'asaas_payment_id' }
