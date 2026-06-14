@@ -452,7 +452,7 @@ function CheckoutForm() {
 
   if (pixData) {
     return (
-      <div className="bg-white px-6 py-8 flex flex-col gap-5 items-center text-center">
+      <div className="px-6 py-8 flex flex-col gap-5 items-center text-center">
         {downloadUrl ? (
           <div className="w-full rounded-2xl px-6 py-8 text-center" style={{ backgroundColor: '#f0fdf4', border: '2px solid #7DC142' }}>
             <p className="text-3xl mb-3">✓</p>
@@ -469,6 +469,14 @@ function CheckoutForm() {
           </div>
         ) : (
           <>
+            <div className="w-full flex items-center gap-4">
+              <img src="/capa_livro_nobg.png" alt="Capa do ebook" className="w-32 sm:w-24 h-auto flex-shrink-0" />
+              <div className="text-left">
+                <p className="text-sm font-black text-[#141F0C] leading-tight">Ebook Agrofloresta Sintrópica</p>
+                <p className="text-lg font-black mt-1" style={{ color: '#52b788' }}>R$ 87,00</p>
+              </div>
+            </div>
+
             <div>
               <p className="text-lg font-black text-[#141F0C] mb-1">Pague o PIX e seu acesso</p>
               <p className="text-lg font-black mb-3" style={{ color: '#52b788' }}>é liberado na hora, automaticamente.</p>
@@ -922,17 +930,7 @@ function InfographicsCarousel() {
 }
 
 export default function EbookLandingPage() {
-  const searchParamsLanding = useSearchParams()
-  if (process.env.NODE_ENV === 'development' && searchParamsLanding.get('preview') === 'pix') {
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
-        <div className="w-full max-w-sm rounded-2xl overflow-hidden shadow-xl">
-          <CheckoutForm />
-        </div>
-      </div>
-    )
-  }
-
+  const [previewOnly, setPreviewOnly] = useState(false)
   const [lightbox, setLightbox] = useState<number | null>(null)
   const [returning, setReturning] = useState(false)
   const [recentBuyers, setRecentBuyers] = useState<{ firstName: string; region: string | null; time: string }[]>([])
@@ -941,6 +939,12 @@ export default function EbookLandingPage() {
   const closeLightbox = useCallback(() => setLightbox(null), [])
   const prevPage = useCallback(() => setLightbox(i => i !== null ? (i - 1 + PAGES.length) % PAGES.length : null), [])
   const nextPage = useCallback(() => setLightbox(i => i !== null ? (i + 1) % PAGES.length : null), [])
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development' && new URLSearchParams(window.location.search).get('preview') === 'pix') {
+      setPreviewOnly(true)
+    }
+  }, [])
 
   useEffect(() => {
     ;(window as any).fbq?.('track', 'ViewContent', { content_name: 'Guia Agrofloresta Sintrópica', content_type: 'product', value: 87, currency: 'BRL' })
@@ -1003,6 +1007,16 @@ export default function EbookLandingPage() {
       }),
     }).catch(() => {})
   }, [])
+
+  if (previewOnly) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="w-full max-w-sm rounded-2xl overflow-hidden shadow-xl">
+          <CheckoutForm />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-white text-[#141F0C]">
