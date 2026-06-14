@@ -154,52 +154,72 @@ async function callBySource(args: Record<string, string>) {
 
 const BASE = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://ead.opensyntropy.earth'
 
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, Mcp-Session-Id',
+}
+
+function cors(res: NextResponse): NextResponse {
+  Object.entries(CORS).forEach(([k, v]) => res.headers.set(k, v))
+  return res
+}
+
 function unauthorized() {
-  return new NextResponse('Unauthorized', {
+  return cors(new NextResponse('Unauthorized', {
     status: 401,
     headers: { 'WWW-Authenticate': `Bearer realm="${BASE}", error="unauthorized"` },
-  })
+  }))
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS })
+}
+
+export async function DELETE() {
+  // MCP session close — stateless, nada a limpar
+  return new NextResponse(null, { status: 204, headers: CORS })
 }
 
 export async function POST(req: NextRequest) {
   if (!checkAuth(req)) return unauthorized()
 
   let body: JsonRpcRequest
-  try { body = await req.json() } catch { return err(null, -32700, 'Parse error') }
+  try { body = await req.json() } catch { return cors(err(null, -32700, 'Parse error')) }
 
   const { id, method, params = {} } = body
 
   if (method === 'initialize') {
-    return ok(id, { protocolVersion: PROTOCOL, capabilities: { tools: {} }, serverInfo: SERVER_INFO })
+    return cors(ok(id, { protocolVersion: PROTOCOL, capabilities: { tools: {} }, serverInfo: SERVER_INFO }))
   }
 
   if (method === 'notifications/initialized') {
-    return new NextResponse(null, { status: 204 })
+    return new NextResponse(null, { status: 204, headers: CORS })
   }
 
   if (method === 'tools/list') {
-    return ok(id, { tools: TOOLS })
+    return cors(ok(id, { tools: TOOLS }))
   }
 
   if (method === 'tools/call') {
     const { name, arguments: args = {} } = params as { name: string; arguments: Record<string, string> }
     try {
       let data: unknown
-      if (name === 'analytics_funnel')    data = await callFunnel(args)
+      if (name === 'analytics_funnel')         data = await callFunnel(args)
       else if (name === 'analytics_unpaid')    data = await callUnpaid(args)
       else if (name === 'analytics_by_source') data = await callBySource(args)
-      else return err(id, -32602, `Tool desconhecida: ${name}`)
-      return ok(id, { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] })
+      else return cors(err(id, -32602, `Tool desconhecida: ${name}`))
+      return cors(ok(id, { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] }))
     } catch (e) {
-      return err(id, -32603, e instanceof Error ? e.message : 'Erro interno')
+      return cors(err(id, -32603, e instanceof Error ? e.message : 'Erro interno'))
     }
   }
 
-  return err(id, -32601, `Method not found: ${method}`)
+  return cors(err(id, -32601, `Method not found: ${method}`))
 }
 
-// GET: responde 200 com capabilities para health-check / discovery
+// GET: health-check / discovery
 export async function GET(req: NextRequest) {
   if (!checkAuth(req)) return unauthorized()
-  return NextResponse.json({ server: SERVER_INFO, protocol: PROTOCOL, tools: TOOLS.map(t => t.name) })
+  return cors(NextResponse.json({ server: SERVER_INFO, protocol: PROTOCOL, tools: TOOLS.map(t => t.name) }))
 }
