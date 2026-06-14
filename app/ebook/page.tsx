@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
+import { createPortal } from 'react-dom'
 import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 
@@ -451,8 +452,9 @@ function CheckoutForm() {
   }
 
   if (pixData) {
-    return (
-      <div className="px-6 py-8 flex flex-col gap-5 items-center text-center">
+    return createPortal(
+      <div className="fixed inset-0 z-50 bg-white overflow-y-auto">
+      <div className="max-w-sm mx-auto px-6 py-8 flex flex-col gap-5 items-center text-center">
         {downloadUrl ? (
           <div className="w-full rounded-2xl px-6 py-8 text-center" style={{ backgroundColor: '#f0fdf4', border: '2px solid #7DC142' }}>
             <p className="text-3xl mb-3">✓</p>
@@ -516,14 +518,11 @@ function CheckoutForm() {
                   { name: 'PicPay',       scheme: 'picpay://',          domain: 'picpay.com' },
                   { name: 'Mercado Pago', scheme: 'mercadopago://',     domain: 'mercadopago.com.br' },
                 ]).map(bank => (
-                  <button
+                  <a
                     key={bank.name}
-                    type="button"
-                    onClick={async () => {
-                      await copyToClipboard(pixData.payload)
-                      window.location.href = bank.scheme
-                    }}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-700 hover:border-gray-300 transition-all active:scale-95 shadow-sm"
+                    href={bank.scheme}
+                    onClick={() => copyToClipboard(pixData.payload).catch(() => {})}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-white border border-gray-200 text-gray-700 hover:border-gray-300 transition-all active:scale-95 shadow-sm no-underline"
                   >
                     <img
                       src={`https://www.google.com/s2/favicons?domain=${bank.domain}&sz=32`}
@@ -533,7 +532,7 @@ function CheckoutForm() {
                       className="rounded-sm"
                     />
                     {bank.name}
-                  </button>
+                  </a>
                 ))}
               </div>
             </div>
@@ -558,12 +557,15 @@ function CheckoutForm() {
           />
         )}
       </div>
+      </div>,
+      document.body
     )
   }
 
   if (cardSuccess) {
-    return (
-      <div className="bg-white px-8 py-8 w-full flex flex-col gap-6">
+    return createPortal(
+      <div className="fixed inset-0 z-50 bg-white overflow-y-auto">
+      <div className="max-w-sm mx-auto px-8 py-8 flex flex-col gap-6">
         {downloadUrl ? (
           <div className="w-full rounded-2xl px-6 py-8 text-center" style={{ backgroundColor: '#f0fdf4', border: '2px solid #7DC142' }}>
             <p className="text-3xl mb-3">✓</p>
@@ -600,6 +602,8 @@ function CheckoutForm() {
           />
         )}
       </div>
+      </div>,
+      document.body
     )
   }
 
