@@ -37,7 +37,10 @@ function PageLightbox({ index, onClose, onPrev, onNext }: {
       {/* imagem */}
       <div className="relative max-h-[90vh] max-w-2xl w-full flex flex-col items-center gap-3"
         onClick={e => e.stopPropagation()}>
-        <img src={pg.src} alt={pg.title}
+        <Image src={pg.src} alt={pg.title}
+          width={800} height={1100}
+          loading="lazy"
+          sizes="90vw"
           className="max-h-[82vh] w-auto rounded-xl shadow-2xl object-contain" />
         <p className="text-white/70 text-sm">
           <span className="font-bold" style={{ color: '#7DC142' }}>{pg.cap}</span>
@@ -472,7 +475,7 @@ function CheckoutForm() {
         ) : (
           <>
             <div className="w-full flex items-center gap-4">
-              <img src="/capa_livro_nobg.png" alt="Capa do ebook" className="w-32 sm:w-24 h-auto flex-shrink-0" />
+              <Image src="/capa_livro_nobg.png" alt="Capa do ebook" width={128} height={160} loading="lazy" className="w-32 sm:w-24 h-auto flex-shrink-0" />
               <div className="text-left">
                 <p className="text-sm font-black text-[#141F0C] leading-tight">Ebook Agrofloresta Sintrópica</p>
                 <p className="text-lg font-black mt-1" style={{ color: '#52b788' }}>R$ 87,00</p>
@@ -760,7 +763,7 @@ function UpsellBump({
         <p className="font-black text-white text-xs tracking-wide uppercase">Consulte o especialista</p>
       </div>
       <div className="w-full overflow-hidden" style={{ height: '180px' }}>
-        <img src="/michel_upsell.jpg" alt="Michel" className="w-full h-full object-cover object-center" />
+        <Image src="/michel_upsell.jpg" alt="Michel" width={400} height={180} loading="lazy" sizes="400px" className="w-full h-full object-cover object-center" />
       </div>
       <div className="px-6 py-5 flex flex-col gap-4">
       <div className="flex flex-col gap-1">
@@ -881,6 +884,7 @@ function InfographicsCarousel() {
                 opacity: i === active ? 1 : 0.5,
               }}>
               <Image src={info.src} alt={info.cap} width={80} height={56}
+                sizes="80px"
                 className="w-full h-full object-cover" />
             </button>
           ))}
@@ -1020,8 +1024,9 @@ export default function EbookLandingPage() {
         {/* background: hero_capa embaçada e escurecida */}
         <div className="absolute inset-0 overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/hero_capa.jpg" alt="" aria-hidden="true"
-            className="absolute inset-0 w-full h-full object-cover scale-110"
+          <Image src="/hero_capa.jpg" alt="" aria-hidden="true"
+            fill priority sizes="100vw"
+            className="object-cover scale-110"
             style={{ filter: 'brightness(0.75) saturate(0.9)', transformOrigin: 'center' }} />
         </div>
         {/* overlay: transparente no topo, escurece na base para leitura */}
@@ -1032,17 +1037,13 @@ export default function EbookLandingPage() {
 
           {/* 1 — título (mobile: row 1 | desktop: col 1 rows 1-2) */}
           <div className="md:row-start-1 md:row-end-3 md:col-start-1 min-w-0 text-center md:text-left flex flex-col justify-center">
-            <p className="font-sans text-white text-base md:text-lg font-semibold uppercase tracking-[0.2em] mb-3 md:mb-4">
-              O seu guia de introdução à
-            </p>
-            <h1 className="leading-none" style={{ fontFamily: 'var(--font-display)' }}>
-              <span className="block text-white" style={{ fontSize: 'clamp(4rem, 10vw, 8rem)' }}>
-                AGROFLORESTA
-              </span>
-              <span className="block" style={{ fontSize: 'clamp(3.4rem, 8.5vw, 6.8rem)', color: LIME }}>
-                SINTRÓPICA
-              </span>
+            <h1 className="font-serif font-black text-white leading-tight mb-4"
+              style={{ fontSize: 'clamp(1.8rem, 4.5vw, 3.2rem)' }}>
+              Do sonho ao projeto: entenda a lógica da sua agrofloresta antes de plantar a primeira muda.
             </h1>
+            <p className="text-gray-300 text-base md:text-lg leading-relaxed" style={{ color: '#b7e4c7' }}>
+              O primeiro guia de ponta a ponta sobre agrofloresta sintrópica. 207 páginas, 27 capítulos, 25+ infográficos.
+            </p>
           </div>
 
           {/* 2 — capa (mobile: row 2 | desktop: col 2 abrange as 2 rows) */}
