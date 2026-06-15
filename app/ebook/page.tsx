@@ -816,6 +816,30 @@ function UpsellBump({
   )
 }
 
+function Hero() {
+  return (
+    <section className="w-full bg-white py-10 px-6">
+      <div className="relative w-full sm:w-3/4 md:w-1/2 mx-auto rounded-3xl overflow-hidden shadow-2xl"
+        style={{ height: 'clamp(260px, 38vh, 400px)' }}>
+        <Image
+          src="/michel_hero.jpg"
+          alt="Michel Bottan em sua agrofloresta"
+          fill
+          priority
+          sizes="(max-width: 768px) 100vw, 50vw"
+          className="object-cover object-center"
+        />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(13,22,8,0.92) 0%, rgba(13,22,8,0.55) 35%, rgba(13,22,8,0.05) 65%, transparent 100%)' }} />
+        <div className="absolute inset-x-0 bottom-0 px-6 pb-8">
+          <p className="font-serif font-black leading-tight text-white text-center" style={{ fontSize: 'clamp(1.3rem, 3vw, 2rem)' }}>
+            Sou Michel Bottan, agrofloresteiro há 10 anos. Escrevi este livro para quem quer entender a agrofloresta sintrópica. Do sonho ao primeiro projeto, antes de colocar a mão na terra.
+          </p>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function InfographicsCarousel() {
   const [active, setActive] = useState(0)
   const [paused, setPaused] = useState(false)
@@ -831,14 +855,10 @@ function InfographicsCarousel() {
   }, [paused, n])
 
   return (
-    <section className="py-20 px-6 bg-white overflow-hidden">
+    <section className="pt-14 pb-20 px-6 bg-white overflow-hidden">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
-          <h2 className="font-serif font-black leading-tight mb-4" style={{ fontSize: 'clamp(2rem, 4.5vw, 3.2rem)', color: DARK }}>
-            Tudo que você precisa saber antes de plantar sua primeira agrofloresta.
-          </h2>
           <p className="text-lg text-gray-500 max-w-xl mx-auto leading-relaxed">
-            25+ infográficos criados exclusivamente para este guia.
             Visuais que explicam em segundos o que textos levam páginas.
           </p>
         </div>
@@ -1019,69 +1039,14 @@ export default function EbookLandingPage() {
         <PageLightbox index={lightbox} onClose={closeLightbox} onPrev={prevPage} onNext={nextPage} />
       )}
 
-      {/* ── HERO ─────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden px-6 py-8 md:py-16" style={{ backgroundColor: DARK }}>
-        {/* background: hero_capa embaçada e escurecida */}
-        <div className="absolute inset-0 overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <Image src="/hero_capa.jpg" alt="" aria-hidden="true"
-            fill priority sizes="100vw"
-            className="object-cover scale-110"
-            style={{ filter: 'brightness(0.75) saturate(0.9)', transformOrigin: 'center' }} />
-        </div>
-        {/* overlay: transparente no topo, escurece na base para leitura */}
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(10,16,6,0.05) 0%, rgba(10,16,6,0.55) 100%)' }} />
-
-        {/* grid: mobile 1 col (título→capa→corpo), desktop 2 col (esq: título+corpo | dir: capa) */}
-        <div className="relative z-10 max-w-6xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-16 md:items-center">
-
-          {/* 1 — título (mobile: row 1 | desktop: col 1 rows 1-2) */}
-          <div className="md:row-start-1 md:row-end-3 md:col-start-1 min-w-0 text-center md:text-left flex flex-col justify-center">
-            <h1 className="font-serif font-black text-white leading-tight mb-4"
-              style={{ fontSize: 'clamp(1.8rem, 4.5vw, 3.2rem)' }}>
-              Do sonho ao projeto: entenda a lógica da sua agrofloresta antes de plantar a primeira muda.
-            </h1>
-            <p className="text-gray-300 text-base md:text-lg leading-relaxed" style={{ color: '#b7e4c7' }}>
-              O primeiro guia de ponta a ponta sobre agrofloresta sintrópica. 207 páginas, 27 capítulos, 25+ infográficos.
-            </p>
-          </div>
-
-          {/* 2 — capa (mobile: row 2 | desktop: col 2 abrange as 2 rows) */}
-          <div className="md:row-start-1 md:row-end-3 md:col-start-2 flex justify-center md:justify-end md:items-center">
-            <div className="relative w-full max-w-[260px] sm:max-w-[340px] md:max-w-[480px]">
-              <div className="absolute -inset-6 rounded-3xl opacity-20 blur-3xl" style={{ backgroundColor: LIME }} />
-              <Image
-                src="/capa_livro.png"
-                alt="Guia de Introdução à Agrofloresta Sintrópica, Michel Bottan"
-                width={600} height={560}
-                className="relative w-full drop-shadow-2xl"
-                style={{ filter: 'drop-shadow(0 32px 48px rgba(0,0,0,0.6))' }}
-                priority
-              />
-            </div>
-          </div>
-
-          {/* seta scroll — mobile only */}
-          <div className="flex justify-center md:hidden">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="animate-bounce opacity-80">
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ── CARROSSEL DE INFOGRÁFICOS ────────────────────────── */}
-      <InfographicsCarousel />
+      {/* ── HERO ──────────────────────────────────────────────── */}
+      <Hero />
 
       {/* ── PÁGINAS DO GUIA ──────────────────────────────────── */}
       <div style={{ height: 4, backgroundColor: LIME }} />
-      <section style={{ backgroundColor: CREAM }} className="py-28 px-6">
+      <section style={{ backgroundColor: CREAM }} className="pt-10 pb-28 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <p className="uppercase tracking-[0.2em] text-sm font-semibold mb-4" style={{ color: FOREST }}>
-              Veja por dentro
-            </p>
             <h2 className="font-serif font-black leading-tight mb-4" style={{ fontSize: 'clamp(2rem, 4.5vw, 3.2rem)', color: DARK }}>
               Espie por dentro do ebook.
             </h2>
@@ -1121,18 +1086,32 @@ export default function EbookLandingPage() {
         </div>
       </section>
 
+      {/* ── CARROSSEL DE INFOGRÁFICOS ────────────────────────── */}
+      <InfographicsCarousel />
+
       {!returning && <>
       {/* ── CAPÍTULOS ────────────────────────────────────────── */}
-      <section id="dentro" style={{ backgroundColor: CREAM }} className="pt-0 pb-28 px-6">
+      <section id="dentro" style={{ backgroundColor: CREAM }} className="pt-14 pb-28 px-6">
         <div className="max-w-4xl mx-auto">
           <p className="uppercase tracking-[0.2em] text-sm font-semibold mb-4" style={{ color: FOREST }}>
             Conteúdo completo do ebook
           </p>
-          <h2 className="font-serif font-black leading-tight mb-4" style={{ fontSize: 'clamp(2rem, 4.5vw, 3.2rem)', color: DARK }}>
+          <h2 className="font-serif font-black leading-tight mb-10" style={{ fontSize: 'clamp(2rem, 4.5vw, 3.2rem)', color: DARK }}>
             5 partes · 27 capítulos.
           </h2>
-          <p className="text-xl text-gray-500 mb-14 max-w-xl leading-relaxed">
-            Uma progressão sem lacunas: da lógica da floresta ao sistema vivo na sua terra.
+          <div className="relative w-full max-w-[320px] sm:max-w-[420px]">
+            <div className="absolute -inset-6 rounded-3xl opacity-10 blur-3xl" style={{ backgroundColor: LIME }} />
+            <Image
+              src="/capa_livro.png"
+              alt="Guia de Introdução à Agrofloresta Sintrópica, Michel Bottan"
+              width={600} height={560}
+              className="relative w-full drop-shadow-2xl"
+              style={{ filter: 'drop-shadow(0 24px 40px rgba(0,0,0,0.3))' }}
+            />
+          </div>
+          <p className="font-serif font-black leading-tight mt-8 mb-14" style={{ fontSize: 'clamp(1.4rem, 3.5vw, 2.2rem)', color: DARK }}>
+            O primeiro guia de ponta a ponta sobre agrofloresta sintrópica.<br />
+            <span className="font-sans font-semibold text-base" style={{ color: FOREST }}>207 páginas · 27 capítulos · 25+ infográficos</span>
           </p>
 
           <div className="flex flex-col gap-10">
