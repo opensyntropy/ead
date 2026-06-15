@@ -80,7 +80,7 @@ export default async function EnPage() {
           </div>
         </div>
         <div className="flex justify-center">
-          <Image src="/hero_capa.jpg" alt="Ebook cover" width={320} height={420} className="rounded-2xl shadow-2xl" />
+          <Image src="/hero_capa.jpg" alt="Ebook cover" width={320} height={420} priority className="rounded-2xl shadow-2xl" />
         </div>
       </section>
 

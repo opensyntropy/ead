@@ -46,6 +46,7 @@ export default function MarkdownReader({ chapter, markdown, images: _images }: P
                   <img
                     src={src}
                     alt={alt ?? ''}
+                    loading="lazy"
                     className="w-full rounded-xl shadow-md"
                   />
                   {alt && (
