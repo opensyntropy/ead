@@ -816,30 +816,6 @@ function UpsellBump({
   )
 }
 
-function Hero() {
-  return (
-    <section className="w-full bg-white py-10 px-6">
-      <div className="relative w-full sm:w-3/4 md:w-1/2 mx-auto rounded-3xl overflow-hidden shadow-2xl"
-        style={{ height: 'clamp(260px, 38vh, 400px)' }}>
-        <Image
-          src="/michel_hero.jpg"
-          alt="Michel Bottan em sua agrofloresta"
-          fill
-          priority
-          sizes="(max-width: 768px) 100vw, 50vw"
-          className="object-cover object-center"
-        />
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(13,22,8,0.92) 0%, rgba(13,22,8,0.55) 35%, rgba(13,22,8,0.05) 65%, transparent 100%)' }} />
-        <div className="absolute inset-x-0 bottom-0 px-6 pb-8">
-          <p className="font-serif font-black leading-tight text-white text-center" style={{ fontSize: 'clamp(1.3rem, 3vw, 2rem)' }}>
-            Sou Michel Bottan, agrofloresteiro há 10 anos. Escrevi este livro para quem quer entender a agrofloresta sintrópica. Do sonho ao primeiro projeto, antes de colocar a mão na terra.
-          </p>
-        </div>
-      </div>
-    </section>
-  )
-}
-
 function InfographicsCarousel() {
   const [active, setActive] = useState(0)
   const [paused, setPaused] = useState(false)
@@ -1039,19 +1015,32 @@ export default function EbookLandingPage() {
         <PageLightbox index={lightbox} onClose={closeLightbox} onPrev={prevPage} onNext={nextPage} />
       )}
 
-      {/* ── HERO ──────────────────────────────────────────────── */}
-      <Hero />
+      {/* ── FOTO + ESPIE POR DENTRO (unificado) ──────────────── */}
+      <section style={{ backgroundColor: CREAM }} className="pb-28">
+        <div className="relative w-full" style={{ height: 'clamp(320px, 50vh, 520px)' }}>
+          <Image
+            src="/michel_hero.jpg"
+            alt="Michel Bottan em sua agrofloresta"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-center"
+          />
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(13,22,8,0.85) 0%, rgba(13,22,8,0.35) 45%, transparent 100%)' }} />
+          <div className="absolute inset-x-0 bottom-0 px-6 pb-8">
+            <p className="font-serif font-black leading-tight text-white text-center" style={{ fontSize: 'clamp(1.5rem, 4vw, 2.6rem)' }}>
+              Sou Michel Bottan, agrofloresteiro há 10 anos.
+            </p>
+          </div>
+        </div>
 
-      {/* ── PÁGINAS DO GUIA ──────────────────────────────────── */}
-      <div style={{ height: 4, backgroundColor: LIME }} />
-      <section style={{ backgroundColor: CREAM }} className="pt-10 pb-28 px-6">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-6xl mx-auto px-6 pt-12">
           <div className="text-center mb-16">
             <h2 className="font-serif font-black leading-tight mb-4" style={{ fontSize: 'clamp(2rem, 4.5vw, 3.2rem)', color: DARK }}>
               Espie por dentro do ebook.
             </h2>
-            <p className="text-xl text-gray-500 max-w-xl mx-auto leading-relaxed">
-              Texto e infográfico integrados em cada capítulo, do conceito à visualização.
+            <p className="text-xl text-gray-500 max-w-2xl mx-auto leading-relaxed">
+              Escrevi este livro para quem quer entender a agrofloresta sintrópica. Do sonho ao primeiro projeto, antes de colocar a mão na terra. Texto e infográfico integrados em cada capítulo, do conceito à visualização.
             </p>
           </div>
 
