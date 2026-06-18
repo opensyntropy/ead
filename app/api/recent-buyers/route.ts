@@ -48,12 +48,13 @@ function timeLabel(confirmedAt: string): string {
   if (hours < 12) return 'há poucas horas'
   if (hours < 36) return 'hoje'
   if (hours < 60) return 'ontem'
-  return 'há 2 dias'
+  const days = Math.floor(hours / 24)
+  return `há ${days} dias`
 }
 
 export async function GET() {
   const supabase = createServiceClient()
-  const since = new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString()
+  const since = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString()
 
   const { data, error } = await supabase
     .from('pix_charges')
