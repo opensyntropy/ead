@@ -138,6 +138,12 @@ export default async function AdminPage() {
             <span className="text-sm text-gray-500">Acessos ativos (pagos)</span>
             <span className="text-sm font-bold text-[#1b4332]">{paidRows.length}</span>
           </div>
+          <a
+            href="/api/admin/export-buyers"
+            className="flex items-center gap-2 bg-white border border-gray-200 hover:border-[#52b788] hover:text-[#1b4332] rounded-lg px-4 py-2 text-sm text-gray-600 transition-colors"
+          >
+            ↓ Exportar compradores (CSV)
+          </a>
           {pendingPix.length > 0 && (
             <a
               href="/admin/aguardando"
