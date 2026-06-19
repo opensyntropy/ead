@@ -922,7 +922,11 @@ export default function EbookLandingPage() {
   }, [])
 
   useEffect(() => {
+    const pvEventId = crypto.randomUUID()
+    ;(window as any).fbq?.('track', 'PageView', {}, { eventID: pvEventId })
     ;(window as any).fbq?.('track', 'ViewContent', { content_name: 'Guia Agrofloresta Sintrópica', content_type: 'product', value: 87, currency: 'BRL' })
+    // Armazena para o /api/track poder enviar o mesmo eventID via CAPI
+    try { sessionStorage.setItem('pv_event_id', pvEventId) } catch {}
   }, [])
 
   useEffect(() => {
@@ -967,6 +971,12 @@ export default function EbookLandingPage() {
     const utmTerm     = p.get('utm_term')     ?? null
     const utmContent  = p.get('utm_content')  ?? null
     const visitCount = (() => { try { return parseInt(localStorage.getItem('ebook_visits') ?? '0', 10) } catch { return 0 } })()
+    const getCookie = (name: string) => document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith(name + '='))?.split('=').slice(1).join('=') ?? null
+    const pvEventId = (() => { try { return sessionStorage.getItem('pv_event_id') } catch { return null } })()
+    // _fbc é gravado pelo Pixel quando há fbclid na URL; se o Pixel foi bloqueado usamos fbclid direto
+    const fbclid = p.get('fbclid')
+    const fbcCookie = getCookie('_fbc')
+    const fbc = fbcCookie ?? (fbclid ? `fb.1.${Date.now()}.${fbclid}` : null)
     fetch('/api/track', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -979,6 +989,9 @@ export default function EbookLandingPage() {
         utm_content: utmContent,
         referer: document.referrer || null,
         page_version: visitCount >= 3 ? 'returning' : 'normal',
+        event_id: pvEventId,
+        fbc,
+        fbp: getCookie('_fbp'),
       }),
     }).catch(() => {})
   }, [])
