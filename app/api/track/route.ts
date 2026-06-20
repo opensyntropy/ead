@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     if (page === '/ebook' && event_id) {
       const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? req.headers.get('x-real-ip') ?? null
       const userAgent = req.headers.get('user-agent')
-      sendMetaPageView({
+      await sendMetaPageView({
         eventId: event_id,
         fbc: fbc || null,
         fbp: fbp || null,

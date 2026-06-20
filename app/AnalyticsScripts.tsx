@@ -16,7 +16,7 @@ export default function AnalyticsScripts() {
         t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
         document,'script','https://connect.facebook.net/en_US/fbevents.js');
         fbq('init','1292728729653308');
-        fbq('track','PageView');
+        if (window.location.pathname !== '/ebook') { fbq('track','PageView'); }
       `}</Script>
     </>
   )
