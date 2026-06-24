@@ -300,7 +300,7 @@ function CheckoutForm() {
   const [cardCvv, setCardCvv] = useState('')
   const [cardPostalCode, setCardPostalCode] = useState('')
   const [cardAddressNumber, setCardAddressNumber] = useState('')
-  const [installmentCount, setInstallmentCount] = useState(8)
+  const [installmentCount, setInstallmentCount] = useState(10)
 
   // Upsell (sessão pós-compra)
   const [upsellPaymentMethod, setUpsellPaymentMethod] = useState<'pix' | 'card'>('pix')
@@ -592,7 +592,7 @@ function CheckoutForm() {
           R$<span style={{ color: LIME }}>87</span>
         </div>
         <p className="text-gray-400 text-sm mt-1">à vista no PIX</p>
-        <p className="text-lg font-bold mt-1" style={{ color: LIME }}>ou 8x de R$10,88 no cartão s/juros</p>
+        <p className="text-lg font-bold mt-1" style={{ color: LIME }}>ou 10x de R$8,70 no cartão s/juros</p>
       </div>
 
       {/* formulário */}
@@ -623,8 +623,8 @@ function CheckoutForm() {
 
           {paymentMethod === 'card' && (
             <div className="flex flex-col gap-3">
-              <div className="grid grid-cols-4 gap-2">
-                {[1, 2, 4, 8].map(n => {
+              <div className="grid grid-cols-5 gap-2">
+                {[1, 2, 4, 8, 10].map(n => {
                   const val = Math.ceil(8700 / n) / 100
                   const label = n === 1
                     ? `1x R$87,00`
