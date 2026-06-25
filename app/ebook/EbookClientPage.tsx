@@ -385,12 +385,15 @@ function CheckoutForm() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ page: '/ebook/checkout-click', ...utmParams }),
     }).catch(() => {})
+    const getCookie = (name: string) => document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith(name + '='))?.split('=').slice(1).join('=') ?? null
+    const fbc = getCookie('_fbc')
+    const fbp = getCookie('_fbp')
     const res = await fetch('/api/asaas/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         productId: 'ebook', email, name, cpf, whatsapp, paymentMethod,
-        page_version,
+        page_version, fbc, fbp,
         ...utmParams,
         ...(paymentMethod === 'card' ? { cardNumber, cardExpiry, cardCvv, cardPostalCode, cardAddressNumber, installmentCount } : {}),
       }),

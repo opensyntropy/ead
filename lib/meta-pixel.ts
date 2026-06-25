@@ -11,17 +11,25 @@ export async function sendPurchaseEvent({
   value,
   currency = 'BRL',
   eventId,
+  fbc,
+  fbp,
 }: {
   email: string
   value: number
   currency?: string
   eventId?: string
+  fbc?: string | null
+  fbp?: string | null
 }) {
   const token = process.env.META_PIXEL_ACCESS_TOKEN
   if (!token) {
     console.warn('[meta-pixel] META_PIXEL_ACCESS_TOKEN não configurado — CAPI ignorada')
     return
   }
+
+  const user_data: Record<string, unknown> = { em: [hashEmail(email)] }
+  if (fbc) user_data.fbc = fbc
+  if (fbp) user_data.fbp = fbp
 
   const res = await fetch(
     `https://graph.facebook.com/v20.0/${PIXEL_ID}/events?access_token=${token}`,
@@ -34,7 +42,7 @@ export async function sendPurchaseEvent({
           event_time: Math.floor(Date.now() / 1000),
           action_source: 'website',
           event_id: eventId,
-          user_data: { em: [hashEmail(email)] },
+          user_data,
           custom_data: { currency, value },
         }],
       }),

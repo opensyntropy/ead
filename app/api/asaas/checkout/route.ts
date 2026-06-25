@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     cardNumber, cardExpiry, cardCvv, cardPostalCode, cardAddressNumber,
     installmentCount, whatsapp,
     utm_source, utm_medium, utm_campaign, utm_term, utm_content,
-    page_version,
+    page_version, fbc, fbp,
   } = body as {
     productId: string
     email: string
@@ -33,6 +33,8 @@ export async function POST(request: Request) {
     utm_term?: string
     utm_content?: string
     page_version?: string
+    fbc?: string
+    fbp?: string
   }
 
   if (!productId || !email) {
@@ -69,6 +71,7 @@ export async function POST(request: Request) {
             page_version: page_version || null,
             pix_payload: qr.payload || null,
             via_recovery: utm_medium === 'recovery',
+            fbc: fbc || null, fbp: fbp || null,
           },
           { onConflict: 'asaas_payment_id' }
         )
@@ -103,6 +106,7 @@ export async function POST(request: Request) {
             utm_source, utm_medium, utm_campaign, utm_term, utm_content,
             page_version: page_version || null,
             via_recovery: utm_medium === 'recovery',
+            fbc: fbc || null, fbp: fbp || null,
           },
           { onConflict: 'asaas_payment_id' }
         )
@@ -177,6 +181,7 @@ export async function POST(request: Request) {
         utm_source, utm_medium, utm_campaign, utm_term, utm_content,
         page_version: page_version || null,
         via_recovery: utm_medium === 'recovery',
+        fbc: fbc || null, fbp: fbp || null,
       },
       { onConflict: 'asaas_payment_id' }
     )
@@ -185,7 +190,7 @@ export async function POST(request: Request) {
     let downloadUrl: string | null = null
     if (charge.status === 'CONFIRMED') {
       try {
-        await grantAccessAndSendEmail(email, productId as ProductId, charge.id)
+        await grantAccessAndSendEmail(email, productId as ProductId, charge.id, fbc, fbp)
       } catch (postErr) {
         postError = postErr instanceof Error ? postErr.message : String(postErr)
         console.error('Erro pós-pagamento (acesso/email):', postError)
@@ -206,7 +211,7 @@ export async function POST(request: Request) {
   }
 }
 
-async function grantAccessAndSendEmail(email: string, productId: ProductId, paymentId: string) {
+async function grantAccessAndSendEmail(email: string, productId: ProductId, paymentId: string, fbc?: string | null, fbp?: string | null) {
   const supabase = await createServiceClient()
   let userId: string | null = null
 
@@ -236,7 +241,7 @@ async function grantAccessAndSendEmail(email: string, productId: ProductId, paym
   // Mesmo eventId (charge.id) do fbq do navegador para o Meta deduplicar os dois.
   try {
     const value = (PRODUCTS[productId]?.price ?? 6700) / 100
-    await sendPurchaseEvent({ email, value, eventId: paymentId })
+    await sendPurchaseEvent({ email, value, eventId: paymentId, fbc: fbc || null, fbp: fbp || null })
   } catch (err) {
     console.error('Erro CAPI (checkout):', err)
   }

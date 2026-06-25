@@ -82,14 +82,15 @@ export async function POST(request: Request) {
   }
 
   // Marca como confirmado apenas se ainda não estava (guard de idempotência)
-  // Protege contra PAYMENT_RECEIVED + PAYMENT_CONFIRMED chegarem para o mesmo pagamento
+  // Busca fbc/fbp junto para usar no CAPI Purchase
   const { data: updated } = await supabase.from('pix_charges')
     .update({ status: 'confirmed', confirmed_at: new Date().toISOString() })
     .eq('asaas_payment_id', payment.id)
     .is('confirmed_at', null)
-    .select('id')
+    .select('id,fbc,fbp')
 
   const isFirstConfirmation = (updated?.length ?? 0) > 0
+  const chargeRow = updated?.[0] as { id: string; fbc?: string | null; fbp?: string | null } | undefined
 
   if (isFirstConfirmation) {
     // Envia e-mail com link de download para produtos que incluam ebook
@@ -119,7 +120,7 @@ export async function POST(request: Request) {
     // Meta Conversions API — dispara Purchase server-side uma única vez
     try {
       const value = (PRODUCTS[productId as ProductId]?.price ?? 6700) / 100
-      await sendPurchaseEvent({ email, value, eventId: payment.id })
+      await sendPurchaseEvent({ email, value, eventId: payment.id, fbc: chargeRow?.fbc, fbp: chargeRow?.fbp })
     } catch (err) {
       console.error('Webhook: erro CAPI', err)
     }
