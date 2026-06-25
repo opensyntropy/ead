@@ -326,6 +326,12 @@ function CheckoutForm() {
     const fromUrl: Record<string, string> = {}
     UTM_KEYS.forEach(k => { const v = searchParams.get(k); if (v) fromUrl[k] = v })
 
+    // Normaliza abreviações do Meta: {{site_source_name}} retorna 'ig' e 'fb'
+    const SOURCE_NORMALIZE: Record<string, string> = { ig: 'instagram', fb: 'facebook', an: 'audience_network', msg: 'messenger' }
+    if (fromUrl.utm_source) {
+      fromUrl.utm_source = SOURCE_NORMALIZE[fromUrl.utm_source.toLowerCase()] ?? fromUrl.utm_source.toLowerCase()
+    }
+
     // fbclid como fallback de origem quando não há UTMs explícitos
     if (!fromUrl.utm_source && searchParams.has('fbclid')) {
       fromUrl.utm_source = 'facebook'
@@ -960,11 +966,17 @@ export default function EbookLandingPage({ serverEventId }: { serverEventId: str
     const p = new URLSearchParams(window.location.search)
     const hasFbclid = p.has('fbclid')
     const ua = navigator.userAgent
-    // in-app browsers do Meta não enviam referrer mas o UA sempre os trai
-    const isInstagram = /Instagram/.test(ua)
+    // in-app browsers do Meta não enviam referrer mas o UA sempre os trai.
+    // Facebook primeiro (FBAN/FBAV no UA) para evitar falso-positivo de Instagram,
+    // já que o WebView do Facebook às vezes inclui "Instagram" no UA também.
     const isFacebook  = /FBAN|FBAV|FB_IAB/.test(ua)
-    const metaSource  = isInstagram ? 'instagram' : isFacebook ? 'facebook' : null
-    const utmSource   = p.get('utm_source')   ?? (hasFbclid ? 'facebook' : metaSource)
+    const isInstagram = !isFacebook && /\bInstagram\b/.test(ua)
+    const metaSource  = isFacebook ? 'facebook' : isInstagram ? 'instagram' : null
+    // Normaliza abreviações do Meta ({{site_source_name}} → 'ig'/'fb')
+    const SOURCE_NORMALIZE: Record<string, string> = { ig: 'instagram', fb: 'facebook', an: 'audience_network', msg: 'messenger' }
+    const rawSource = p.get('utm_source')
+    const normalizedSource = rawSource ? (SOURCE_NORMALIZE[rawSource.toLowerCase()] ?? rawSource.toLowerCase()) : null
+    const utmSource   = normalizedSource ?? (hasFbclid ? 'facebook' : metaSource)
     const utmMedium   = p.get('utm_medium')   ?? (hasFbclid || metaSource ? 'paid' : null)
     const utmCampaign = p.get('utm_campaign') ?? null
     const utmTerm     = p.get('utm_term')     ?? null

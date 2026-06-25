@@ -34,16 +34,18 @@ function SectionHeader({ title }: { title: string }) {
 
 function OriginBadge({ row }: { row?: { utm_source?: string | null } }) {
   if (!row?.utm_source) return <span className="text-gray-300 text-xs">direto</span>
+  const SOURCE_NORMALIZE: Record<string, string> = { ig: 'instagram', fb: 'facebook', an: 'audience_network', msg: 'messenger' }
+  const src = SOURCE_NORMALIZE[row.utm_source.toLowerCase()] ?? row.utm_source.toLowerCase()
   const srcColors: Record<string, string> = {
     facebook: 'bg-blue-100 text-blue-700',
     instagram: 'bg-pink-100 text-pink-700',
     google: 'bg-yellow-100 text-yellow-700',
     email: 'bg-purple-100 text-purple-700',
   }
-  const cls = srcColors[row.utm_source.toLowerCase()] ?? 'bg-gray-100 text-gray-600'
+  const cls = srcColors[src] ?? 'bg-gray-100 text-gray-600'
   return (
     <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${cls}`}>
-      {row.utm_source}
+      {src}
     </span>
   )
 }
