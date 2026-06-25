@@ -1,0 +1,1440 @@
+'use client'
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
+import { createPortal } from 'react-dom'
+import { useSearchParams } from 'next/navigation'
+import Image from 'next/image'
+
+const PAGES = [
+  { src: '/preview/pagina_17.png', cap: 'Cap. 2', title: 'O Que É Sintropia' },
+  { src: '/preview/pagina_57.png', cap: 'Cap. 4', title: 'A Dinâmica da Sucessão Natural' },
+  { src: '/preview/pagina_77.png', cap: 'Cap. 6', title: 'O Objetivo Central do Consórcio' },
+  { src: '/preview/pagina_87.png', cap: 'Cap. 7', title: 'Poda como Biomimetismo' },
+]
+
+function PageLightbox({ index, onClose, onPrev, onNext }: {
+  index: number; onClose: () => void; onPrev: () => void; onNext: () => void
+}) {
+  const pg = PAGES[index]
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+      if (e.key === 'ArrowLeft') onPrev()
+      if (e.key === 'ArrowRight') onNext()
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [onClose, onPrev, onNext])
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ backgroundColor: 'rgba(0,0,0,0.9)' }}
+      onClick={onClose}>
+      {/* nav anterior */}
+      <button onClick={e => { e.stopPropagation(); onPrev() }}
+        className="absolute left-3 md:left-6 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/25 text-white text-xl flex items-center justify-center transition-colors"
+        aria-label="Anterior">‹</button>
+
+      {/* imagem */}
+      <div className="relative max-h-[90vh] max-w-2xl w-full flex flex-col items-center gap-3"
+        onClick={e => e.stopPropagation()}>
+        <Image src={pg.src} alt={pg.title}
+          width={800} height={1100}
+          loading="lazy"
+          sizes="90vw"
+          className="max-h-[82vh] w-auto rounded-xl shadow-2xl object-contain" />
+        <p className="text-white/70 text-sm">
+          <span className="font-bold" style={{ color: '#7DC142' }}>{pg.cap}</span>
+          {': '}{pg.title}
+          <span className="ml-4 text-white/40 text-xs">ESC para fechar · ← → para navegar</span>
+        </p>
+      </div>
+
+      {/* nav próxima */}
+      <button onClick={e => { e.stopPropagation(); onNext() }}
+        className="absolute right-3 md:right-6 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/10 hover:bg-white/25 text-white text-xl flex items-center justify-center transition-colors"
+        aria-label="Próxima">›</button>
+
+      {/* fechar */}
+      <button onClick={onClose}
+        className="absolute top-4 right-4 w-11 h-11 rounded-full bg-white text-gray-900 text-lg font-bold flex items-center justify-center shadow-lg hover:bg-gray-100 transition-colors"
+        aria-label="Fechar">✕</button>
+    </div>
+  )
+}
+
+// Paleta extraída da capa.png (análise pixel-a-pixel, mai/2026)
+const LIME   = '#7DC142'  // verde lima dos títulos
+const DARK   = '#141F0C'  // fundo floresta escuro
+const FOREST = '#476B18'  // verde floresta médio
+async function copyToClipboard(text: string): Promise<void> {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text)
+      return
+    } catch { /* fall through */ }
+  }
+  // Fallback: funciona em iOS (select() não seleciona tudo; precisa de setSelectionRange)
+  const el = document.createElement('textarea')
+  el.value = text
+  el.setAttribute('readonly', '')
+  el.style.cssText = 'position:fixed;opacity:0;top:0;left:0;pointer-events:none'
+  document.body.appendChild(el)
+  el.focus()
+  el.setSelectionRange(0, text.length)
+  document.execCommand('copy')
+  document.body.removeChild(el)
+}
+
+function nextSundayLabel() {
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }))
+  // Próximo dia 10: neste mês se ainda não passou, senão no mês seguinte.
+  const monthOffset = now.getDate() <= 10 ? 0 : 1
+  const next = new Date(now.getFullYear(), now.getMonth() + monthOffset, 10)
+  return next.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+}
+
+function getOfferDeadline(): Date {
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }))
+  const monthOffset = now.getDate() <= 10 ? 0 : 1
+  return new Date(now.getFullYear(), now.getMonth() + monthOffset, 10, 23, 59, 59)
+}
+const CREAM  = '#F2F0E9'  // creme parchment da barra inferior
+const GOLD   = '#C69B2D'  // dourado âmbar dos acentos
+
+const TRANSFORMATIONS = [
+  { icon: '🌿', text: 'Entende a lógica por trás da floresta, não só as técnicas, mas o porquê de cada uma funcionar.' },
+  { icon: '👁️', text: 'Sabe ler uma paisagem e identificar em que estágio de desenvolvimento ela está.' },
+  { icon: '🌱', text: 'Consegue planejar um consórcio produtivo desde o início.' },
+  { icon: '🧭', text: 'Sente segurança para dar o próximo passo: comprar terra, iniciar um projeto ou aprofundar o estudo.' },
+]
+
+const ALL_PARTS = [
+  {
+    num: 'I', title: 'Fundamentos', subtitle: 'Por que e o quê: a lógica da vida que sustenta o método',
+    chapters: [
+      { n: '01', title: 'O Problema que a Agricultura Convencional Criou' },
+      { n: '02', title: 'O Que É Sintropia' },
+      { n: '03', title: 'Conceitos, Princípios e Práticas da Agricultura Sintrópica' },
+      { n: '04', title: 'Sucessão Natural: O Calendário da Floresta' },
+      { n: '05', title: 'Estratos: A Arquitetura Vertical da Floresta' },
+      { n: '06', title: 'Consórcios na Agrofloresta Sintrópica' },
+      { n: '07', title: 'O Pulso da Poda' },
+      { n: '08', title: 'Densidade e Diversidade' },
+      { n: '09', title: 'Capina Seletiva: A Arte de Escolher o Que Fica' },
+    ],
+  },
+  {
+    num: 'II', title: 'Solo e Fertilidade', subtitle: 'Como o SAF constrói a própria fertilidade',
+    chapters: [
+      { n: '10', title: 'O Solo Como Organismo Vivo' },
+      { n: '11', title: 'Produção de Biomassa' },
+      { n: '12', title: 'Relação C/N: A Química da Sucessão' },
+      { n: '13', title: 'O Papel das Gramíneas no SAF Sintrópico' },
+      { n: '14', title: 'Adubação Verde: Fertilidade Construída por Dentro' },
+    ],
+  },
+  {
+    num: 'III', title: 'Como Planejar', subtitle: 'Do diagnóstico ao design',
+    chapters: [
+      { n: '15', title: 'Leia Sua Terra Antes de Desenhar' },
+      { n: '16', title: 'Defina Seus Objetivos Antes de Escolher Espécies' },
+      { n: '17', title: 'A Caixa de Ferramentas Sintrópica' },
+      { n: '18', title: 'Linhas de Plantio e Arranjo Espacial' },
+    ],
+  },
+  {
+    num: 'IV', title: 'Modelos de SAF', subtitle: 'Diferentes formas de aplicar o método',
+    chapters: [
+      { n: '19', title: 'SAF Base: O Módulo Fundamental' },
+      { n: '20', title: 'SAF + Horta: Uma Integração que Precisa Ser Entendida com Honestidade' },
+      { n: '21', title: 'SAF para Mecanização: Produção em Escala' },
+      { n: '22', title: 'SAF Café: O Modelo Sintrópico para Cafeicultura' },
+      { n: '23', title: 'SAF Biodiverso: Quando a Floresta É o Produto' },
+    ],
+  },
+  {
+    num: 'V', title: 'Como Implantar e Manter', subtitle: 'Da terra vazia ao sistema vivo',
+    chapters: [
+      { n: '24', title: 'Implantação: Os Primeiros 12 Meses' },
+      { n: '25', title: 'Muvuca de Sementes: Implantação com Baixo Custo e Alta Diversidade' },
+      { n: '26', title: 'Lendo o Sistema: Como Saber se Está Funcionando' },
+      { n: '27', title: 'É Difícil. É Verdade. E Vale a Pena.' },
+    ],
+  },
+]
+
+const INFOGRAPHICS = [
+  { src: '/infograficos/cap1.png',  label: 'O Ciclo da Agricultura Convencional',       cap: 'Capítulo 01' },
+  { src: '/infograficos/cap2.png',  label: 'O Que É Sintropia e Por Que Muda Tudo',   cap: 'Capítulo 02' },
+  { src: '/infograficos/cap3.png',  label: 'A Gramática da Agricultura Sintrópica',      cap: 'Capítulo 03' },
+  { src: '/infograficos/cap4.png',  label: 'Sucessão Natural',                           cap: 'Capítulo 04' },
+  { src: '/infograficos/cap5.png',  label: 'A Arquitetura Vertical da Floresta',         cap: 'Capítulo 05' },
+  { src: '/infograficos/cap6.png',  label: 'O Objetivo Central do Consórcio',            cap: 'Capítulo 06' },
+  { src: '/infograficos/cap7.png',  label: 'Poda como Dinâmica de Clareira',             cap: 'Capítulo 07' },
+  { src: '/infograficos/cap10.png', label: 'O Solo Como Organismo Vivo',                 cap: 'Capítulo 10' },
+  { src: '/infograficos/cap15.png', label: 'As Quatro Leituras Essenciais da Terra',     cap: 'Capítulo 15' },
+]
+
+const PAIN_CARDS = [
+  {
+    label: 'Fundamentos',
+    title: 'A lógica antes das técnicas',
+    desc: 'Você entende por que a agricultura convencional degrada, o que é sintropia, como a sucessão natural funciona e qual é a arquitetura vertical da floresta.',
+  },
+  {
+    label: 'Solo e Planejamento',
+    title: 'Do solo ao consórcio',
+    desc: 'Você aprende a construir fertilidade de dentro para fora, a ler a sua terra e a desenhar um consórcio funcional do zero.',
+  },
+  {
+    label: 'Modelos e Implantação',
+    title: 'O modelo certo para a sua realidade',
+    desc: 'SAF base, SAF café, SAF biodiverso, integração com horta, mecanização. Você sabe qual modelo se encaixa nos seus objetivos e como dar o primeiro passo.',
+  },
+]
+
+
+const TESTIMONIALS = [
+  {
+    name: '[Nome Sobrenome]',
+    role: '[Estudante de agronomia, SP]',
+    text: '[Depoimento: o que mudou na forma de ver e entender o campo depois de ler o guia. Como o conteúdo deu clareza ao que antes parecia complexo.]',
+  },
+  {
+    name: '[Nome Sobrenome]',
+    role: '[Em transição para o campo, MG]',
+    text: '[Depoimento: como o guia deu segurança para dar o próximo passo. Sentiu que finalmente entendeu a lógica por trás do sistema.]',
+  },
+  {
+    name: '[Nome Sobrenome]',
+    role: '[Proprietário de sítio, PR]',
+    text: '[Depoimento: como o guia mudou a abordagem no manejo da terra. O que aplicou logo após a leitura e o resultado que observou.]',
+  },
+]
+
+const FAQ_ITEMS = [
+  { q: 'Posso imprimir o guia?', a: 'Sim. O PDF não tem restrição de impressão. Você pode imprimir quantas vezes quiser para uso pessoal.' },
+  { q: 'Preciso ter terra para aproveitar?', a: 'Não. O guia é teórico-prático. Você pode estudar e planejar antes de plantar: a lógica é útil em qualquer escala e em qualquer fase.' },
+  { q: 'O conteúdo funciona para qualquer clima ou região?', a: 'Sim. A lógica sintrópica é universal. O guia ensina os princípios, não um receituário específico de uma região. Você leva para qualquer bioma.' },
+  { q: 'É só teoria ou tem parte prática?', a: 'As 6 práticas operacionais (cap. 03) e o exercício de leitura de paisagem (cap. 04) são completamente aplicáveis desde a primeira leitura.' },
+  { q: 'Como acesso depois de comprar?', a: 'Imediatamente após a confirmação do pagamento você recebe acesso à plataforma por e-mail, com leitura online e download do PDF.' },
+  { q: 'Este guia é baseado no trabalho de Ernst Götsch?', a: 'Sim. O guia é baseado nos princípios desenvolvidos por Götsch ao longo de décadas e aprofundados pela comunidade sintrópica brasileira.' },
+  { q: 'Tem garantia?', a: 'Sim. 7 dias. Se você ler o guia e não achar que valeu cada centavo, devolvemos o pagamento integralmente, sem burocracia.' },
+  { q: 'Como solicito devolução?', a: 'Acesse a página de devolução, informe o e-mail da compra e o motivo (opcional). Retornamos em até 24h.', link: { href: '/reembolso', label: 'Solicitar devolução →' } },
+  { q: 'Perdi o link de acesso. Como baixo novamente?', a: 'Acesse a página de reenvio, informe o e-mail da compra e enviaremos um novo link imediatamente.', link: { href: '/reenviar', label: 'Receber novo link →' } },
+]
+
+function FaqItem({ q, a, link }: { q: string; a: string; link?: { href: string; label: string } }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="border-b-2 border-[#E8E0D4]">
+      <button onClick={() => setOpen(v => !v)} className="w-full text-left py-6 flex items-center justify-between gap-4">
+        <span className="font-bold text-[#141F0C] text-lg leading-snug">{q}</span>
+        <span className="flex-shrink-0 w-8 h-8 rounded-full border-2 border-[#7DC142] text-[#7DC142] font-bold text-xl flex items-center justify-center leading-none">
+          {open ? '−' : '+'}
+        </span>
+      </button>
+      {open && (
+        <div className="pb-6 pr-8">
+          <p className="text-base text-gray-600 leading-relaxed">{a}</p>
+          {link && (
+            <a href={link.href} className="inline-block mt-3 text-sm font-bold hover:underline" style={{ color: '#476B18' }}>
+              {link.label}
+            </a>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function formatWhatsapp(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 11)
+  if (digits.length <= 2) return digits
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
+}
+
+function formatCpf(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 11)
+  return digits
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+}
+
+function formatCardNumber(value: string) {
+  return value.replace(/\D/g, '').slice(0, 16).replace(/(\d{4})(?=\d)/g, '$1 ')
+}
+
+function formatExpiry(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 4)
+  if (digits.length >= 3) return digits.slice(0, 2) + '/' + digits.slice(2)
+  return digits
+}
+
+function formatCep(value: string) {
+  const digits = value.replace(/\D/g, '').slice(0, 8)
+  if (digits.length > 5) return digits.slice(0, 5) + '-' + digits.slice(5)
+  return digits
+}
+
+function CheckoutForm() {
+  const searchParams = useSearchParams()
+  const [email, setEmail] = useState('')
+  const [name, setName] = useState('')
+  const [cpf, setCpf] = useState('')
+  const [whatsapp, setWhatsapp] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState<'pix' | 'card'>('pix')
+  const [pixData, setPixData] = useState<{ qrCode: string; payload: string } | null>(null)
+  const [pixChargeId, setPixChargeId] = useState<string | null>(null)
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+  const [cardSuccess, setCardSuccess] = useState(false)
+  const [utmParams, setUtmParams] = useState<Record<string, string>>({})
+
+  const [cardNumber, setCardNumber] = useState('')
+  const [cardExpiry, setCardExpiry] = useState('')
+  const [cardCvv, setCardCvv] = useState('')
+  const [cardPostalCode, setCardPostalCode] = useState('')
+  const [cardAddressNumber, setCardAddressNumber] = useState('')
+  const [installmentCount, setInstallmentCount] = useState(10)
+
+  // Upsell (sessão pós-compra)
+  const [upsellPaymentMethod, setUpsellPaymentMethod] = useState<'pix' | 'card'>('pix')
+  const [upsellLoading, setUpsellLoading] = useState(false)
+  const [upsellPixData, setUpsellPixData] = useState<{ qrCode: string; payload: string } | null>(null)
+  const [upsellSuccess, setUpsellSuccess] = useState(false)
+  const [upsellCopied, setUpsellCopied] = useState(false)
+  const [upsellError, setUpsellError] = useState('')
+  const [upsellCardNumber, setUpsellCardNumber] = useState('')
+  const [upsellCardExpiry, setUpsellCardExpiry] = useState('')
+  const [upsellCardCvv, setUpsellCardCvv] = useState('')
+  const [upsellCardPostalCode, setUpsellCardPostalCode] = useState('')
+  const [upsellCardAddressNumber, setUpsellCardAddressNumber] = useState('')
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development' && searchParams.get('preview') === 'pix') {
+      setPixData({ qrCode: '', payload: '00020126580014br.gov.bcb.pix0136preview-teste-nao-use-em-producao5204000053039865802BR5913Opensyntropy6009Sao Paulo62070503***6304ABCD' })
+    }
+  }, [searchParams])
+
+  useEffect(() => {
+    const UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content']
+    const fromUrl: Record<string, string> = {}
+    UTM_KEYS.forEach(k => { const v = searchParams.get(k); if (v) fromUrl[k] = v })
+
+    // fbclid como fallback de origem quando não há UTMs explícitos
+    if (!fromUrl.utm_source && searchParams.has('fbclid')) {
+      fromUrl.utm_source = 'facebook'
+      fromUrl.utm_medium = 'paid'
+    }
+
+    if (Object.keys(fromUrl).length > 0) {
+      sessionStorage.setItem('utm', JSON.stringify(fromUrl))
+      setUtmParams(fromUrl)
+    } else {
+      try {
+        const stored = sessionStorage.getItem('utm')
+        if (stored) setUtmParams(JSON.parse(stored))
+      } catch { /* ignore */ }
+    }
+  }, [searchParams])
+
+  useEffect(() => {
+    if (!pixChargeId || downloadUrl) return
+    let stopped = false
+
+    async function poll() {
+      if (stopped) return
+      try {
+        const res = await fetch(`/api/payment-status?paymentId=${pixChargeId}`)
+        const json = await res.json()
+        if (json.confirmed && json.downloadUrl) {
+          setDownloadUrl(json.downloadUrl)
+          ;(window as any).fbq?.('track', 'Purchase', { value: 87, currency: 'BRL' }, { eventID: pixChargeId })
+          return
+        }
+      } catch { /* ignora erros de rede */ }
+      if (!stopped) setTimeout(poll, 5000)
+    }
+
+    poll()
+    return () => { stopped = true }
+  }, [pixChargeId, downloadUrl])
+
+  const inputCls = "border-2 border-gray-200 rounded-xl px-5 py-4 text-base text-gray-800 bg-white focus:outline-none focus:border-[#7DC142] transition-colors"
+
+  async function handleBuy(e: React.FormEvent) {
+    e.preventDefault()
+    ;(window as any).fbq?.('track', 'InitiateCheckout', { value: 87, currency: 'BRL', num_items: 1 })
+    setLoading(true)
+    setError('')
+    const visits = (() => { try { return parseInt(localStorage.getItem('ebook_visits') ?? '0', 10) } catch { return 0 } })()
+    const page_version = visits >= 3 ? 'returning' : 'normal'
+    fetch('/api/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ page: '/ebook/checkout-click', ...utmParams }),
+    }).catch(() => {})
+    const res = await fetch('/api/asaas/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        productId: 'ebook', email, name, cpf, whatsapp, paymentMethod,
+        page_version,
+        ...utmParams,
+        ...(paymentMethod === 'card' ? { cardNumber, cardExpiry, cardCvv, cardPostalCode, cardAddressNumber, installmentCount } : {}),
+      }),
+    })
+    const data = await res.json()
+    setLoading(false)
+    if (data.invoiceUrl) {
+      window.location.href = data.invoiceUrl
+      return
+    }
+    if (data.pixQrCode) {
+      setPixData({ qrCode: data.pixQrCode, payload: data.pixPayload })
+      setPixChargeId(data.pixChargeId ?? null)
+    } else if (data.cardSuccess) {
+      setCardSuccess(true)
+      if (data.downloadUrl) setDownloadUrl(data.downloadUrl)
+      // Só conta conversão quando o cartão é de fato confirmado. Cobranças
+      // pendentes/em análise viram venda só depois — a CAPI no webhook dispara
+      // o Purchase nesse caso (deduplicado pelo mesmo eventID = id da cobrança).
+      if (data.chargeStatus === 'CONFIRMED') {
+        ;(window as any).fbq?.('track', 'Purchase', { value: 87, currency: 'BRL' }, { eventID: data.chargeId })
+      }
+    } else {
+      setError(data.error ?? 'Erro ao processar pagamento. Tente novamente.')
+    }
+  }
+
+  async function handleUpsell(e: React.FormEvent) {
+    e.preventDefault()
+    setUpsellLoading(true)
+    setUpsellError('')
+    const res = await fetch('/api/asaas/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        productId: 'session_upsell', email, name, cpf,
+        paymentMethod: upsellPaymentMethod,
+        ...utmParams,
+        ...(upsellPaymentMethod === 'card' ? {
+          cardNumber: upsellCardNumber,
+          cardExpiry: upsellCardExpiry,
+          cardCvv: upsellCardCvv,
+          cardPostalCode: upsellCardPostalCode,
+          cardAddressNumber: upsellCardAddressNumber,
+        } : {}),
+      }),
+    })
+    const data = await res.json()
+    setUpsellLoading(false)
+    if (data.invoiceUrl) {
+      window.location.href = data.invoiceUrl
+      return
+    }
+    if (data.pixQrCode) {
+      setUpsellPixData({ qrCode: data.pixQrCode, payload: data.pixPayload })
+    } else if (data.cardSuccess) {
+      setUpsellSuccess(true)
+    } else {
+      setUpsellError(data.error ?? 'Erro ao processar. Tente novamente.')
+    }
+  }
+
+  async function handleCopy() {
+    if (!pixData) return
+    await copyToClipboard(pixData.payload)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  if (pixData) {
+    return createPortal(
+      <div className="fixed inset-0 z-50 bg-white overflow-y-auto">
+      <div className="max-w-sm mx-auto px-6 py-8 flex flex-col gap-5 items-center text-center">
+        {downloadUrl ? (
+          <div className="w-full rounded-2xl px-6 py-8 text-center" style={{ backgroundColor: '#f0fdf4', border: '2px solid #7DC142' }}>
+            <p className="text-3xl mb-3">✓</p>
+            <p className="font-bold text-[#141F0C] text-xl mb-1">PIX confirmado!</p>
+            <p className="text-[#476B18] text-sm mb-1">Seu guia está pronto. O link também foi enviado por e-mail.</p>
+            <p className="text-gray-400 text-xs mb-6">Não encontrou? Verifique a caixa de spam ou promoções.</p>
+            <a
+              href={downloadUrl}
+              className="inline-block w-full font-bold text-xl py-6 rounded-xl transition-all hover:brightness-105 shadow-lg"
+              style={{ backgroundColor: LIME, color: DARK }}
+            >
+              Baixar meu Guia →
+            </a>
+          </div>
+        ) : (
+          <>
+            <div className="w-full flex items-center gap-4">
+              <Image src="/capa_livro_nobg.png" alt="Capa do ebook" width={128} height={160} loading="lazy" className="w-32 sm:w-24 h-auto flex-shrink-0" />
+              <div className="text-left">
+                <p className="text-sm font-black text-[#141F0C] leading-tight">Ebook Agrofloresta Sintrópica</p>
+                <p className="text-lg font-black mt-1" style={{ color: '#52b788' }}>R$ 87,00</p>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-lg font-black text-[#141F0C] mb-1">Pague o PIX e seu acesso</p>
+              <p className="text-lg font-black mb-3" style={{ color: '#52b788' }}>é liberado na hora, automaticamente.</p>
+              <p className="text-xs text-gray-400">Cole o código abaixo no app do seu banco.</p>
+            </div>
+
+            <div className="w-full">
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="w-full py-5 rounded-2xl text-base font-black transition-all shadow-md active:scale-95"
+                style={{ backgroundColor: copied ? '#2d6a4f' : LIME, color: DARK }}
+              >
+                {copied ? '✓ Código copiado!' : 'Copiar código PIX'}
+              </button>
+              <input
+                readOnly
+                value={pixData.payload}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-400 bg-gray-50 font-mono mt-3"
+                onClick={e => (e.target as HTMLInputElement).select()}
+                onFocus={e => e.target.select()}
+              />
+            </div>
+
+
+            <div className="flex flex-col items-center gap-2 opacity-70">
+              <p className="text-xs text-gray-400">ou escaneie o QR Code</p>
+              <img src={`data:image/png;base64,${pixData.qrCode}`} alt="QR Code PIX" className="w-40 h-40 rounded-xl border border-gray-200" />
+            </div>
+          </>
+        )}
+        {downloadUrl && (
+          <UpsellBump
+            upsellPaymentMethod={upsellPaymentMethod} setUpsellPaymentMethod={setUpsellPaymentMethod}
+            upsellLoading={upsellLoading} upsellPixData={upsellPixData} upsellSuccess={upsellSuccess}
+            upsellCopied={upsellCopied} setUpsellCopied={setUpsellCopied} upsellError={upsellError}
+            upsellCardNumber={upsellCardNumber} setUpsellCardNumber={setUpsellCardNumber}
+            upsellCardExpiry={upsellCardExpiry} setUpsellCardExpiry={setUpsellCardExpiry}
+            upsellCardCvv={upsellCardCvv} setUpsellCardCvv={setUpsellCardCvv}
+            upsellCardPostalCode={upsellCardPostalCode} setUpsellCardPostalCode={setUpsellCardPostalCode}
+            upsellCardAddressNumber={upsellCardAddressNumber} setUpsellCardAddressNumber={setUpsellCardAddressNumber}
+            handleUpsell={handleUpsell}
+          />
+        )}
+      </div>
+      </div>,
+      document.body
+    )
+  }
+
+  if (cardSuccess) {
+    return createPortal(
+      <div className="fixed inset-0 z-50 bg-white overflow-y-auto">
+      <div className="max-w-sm mx-auto px-8 py-8 flex flex-col gap-6">
+        {downloadUrl ? (
+          <div className="w-full rounded-2xl px-6 py-8 text-center" style={{ backgroundColor: '#f0fdf4', border: '2px solid #7DC142' }}>
+            <p className="text-3xl mb-3">✓</p>
+            <p className="font-bold text-[#141F0C] text-xl mb-1">Pagamento confirmado!</p>
+            <p className="text-[#476B18] text-sm mb-1">Seu guia está pronto. O link também foi enviado por e-mail.</p>
+            <p className="text-gray-400 text-xs mb-6">Não encontrou? Verifique a caixa de spam ou promoções.</p>
+            <a
+              href={downloadUrl}
+              className="inline-block w-full font-bold text-xl py-6 rounded-xl transition-all hover:brightness-105 shadow-lg"
+              style={{ backgroundColor: LIME, color: DARK }}
+            >
+              Baixar meu Guia →
+            </a>
+          </div>
+        ) : (
+          <div className="text-center flex flex-col gap-3">
+            <p className="text-3xl">✓</p>
+            <p className="font-bold text-[#141F0C] text-lg">Pagamento confirmado!</p>
+            <p className="text-[#476B18] text-sm leading-relaxed">Você receberá o link de download do ebook por e-mail em instantes.</p>
+            <p className="text-gray-400 text-xs">Não encontrou? Verifique a caixa de spam ou promoções.</p>
+          </div>
+        )}
+        {downloadUrl && (
+          <UpsellBump
+            upsellPaymentMethod={upsellPaymentMethod} setUpsellPaymentMethod={setUpsellPaymentMethod}
+            upsellLoading={upsellLoading} upsellPixData={upsellPixData} upsellSuccess={upsellSuccess}
+            upsellCopied={upsellCopied} setUpsellCopied={setUpsellCopied} upsellError={upsellError}
+            upsellCardNumber={upsellCardNumber} setUpsellCardNumber={setUpsellCardNumber}
+            upsellCardExpiry={upsellCardExpiry} setUpsellCardExpiry={setUpsellCardExpiry}
+            upsellCardCvv={upsellCardCvv} setUpsellCardCvv={setUpsellCardCvv}
+            upsellCardPostalCode={upsellCardPostalCode} setUpsellCardPostalCode={setUpsellCardPostalCode}
+            upsellCardAddressNumber={upsellCardAddressNumber} setUpsellCardAddressNumber={setUpsellCardAddressNumber}
+            handleUpsell={handleUpsell}
+          />
+        )}
+      </div>
+      </div>,
+      document.body
+    )
+  }
+
+  return (
+    <>
+      {/* cabeçalho escuro com preço */}
+      <div className="px-8 py-7 text-center" style={{ backgroundColor: '#0D1608' }}>
+        <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Ebook Digital — PDF · +200 páginas</p>
+        <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Leia onde quiser ou imprima</p>
+        <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: LIME }}>Acesso permanente · entrega imediata</p>
+        <div className="flex items-center justify-center gap-4 mb-1">
+          <span className="text-gray-500 text-3xl line-through">R$ 127</span>
+          <span className="text-xs font-black px-2.5 py-1 rounded-full" style={{ backgroundColor: LIME + '22', color: LIME }}>31% OFF</span>
+        </div>
+        <div className="font-black text-white leading-none" style={{ fontSize: 'clamp(3.5rem, 14vw, 6rem)' }}>
+          R$<span style={{ color: LIME }}>87</span>
+        </div>
+        <p className="text-gray-400 text-sm mt-1">à vista no PIX</p>
+        <p className="text-lg font-bold mt-1" style={{ color: LIME }}>ou 10x de R$8,70 no cartão s/juros</p>
+      </div>
+
+      {/* formulário */}
+      <div className="bg-white px-8 pt-7 pb-8">
+        <form onSubmit={handleBuy} className="flex flex-col gap-4 w-full">
+          <div className="flex rounded-xl overflow-hidden border-2 border-gray-200">
+            <button type="button" onClick={() => setPaymentMethod('pix')}
+              className="flex-1 py-3.5 text-base font-bold transition-colors"
+              style={paymentMethod === 'pix' ? { backgroundColor: LIME, color: '#fff' } : { backgroundColor: '#fff', color: FOREST }}>
+              PIX
+            </button>
+            <button type="button" onClick={() => setPaymentMethod('card')}
+              className="flex-1 py-3.5 text-base font-bold transition-colors border-l-2 border-gray-200"
+              style={paymentMethod === 'card' ? { backgroundColor: LIME, color: '#fff' } : { backgroundColor: '#fff', color: FOREST }}>
+              Cartão de crédito
+            </button>
+          </div>
+
+          <input type="text" required name="name" autoComplete="name" placeholder="Seu nome completo" value={name} onChange={e => setName(e.target.value)} className={inputCls} />
+          <input type="email" required name="email" autoComplete="email" placeholder="Seu melhor e-mail" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
+          <input type="text" required inputMode="numeric" placeholder="CPF (somente números)" value={cpf}
+            onChange={e => setCpf(formatCpf(e.target.value))} className={inputCls} />
+          <input type="text" inputMode="numeric"
+            placeholder={paymentMethod === 'card' ? 'Celular com DDD (obrigatório para cartão)' : 'WhatsApp'}
+            required={paymentMethod === 'card'}
+            value={whatsapp}
+            onChange={e => setWhatsapp(formatWhatsapp(e.target.value))} className={inputCls} />
+
+          {paymentMethod === 'card' && (
+            <div className="flex flex-col gap-3">
+              <div className="grid grid-cols-5 gap-2">
+                {[1, 2, 4, 8, 10].map(n => {
+                  const val = Math.ceil(8700 / n) / 100
+                  const label = n === 1
+                    ? `1x R$87,00`
+                    : `${n}x R$${val.toFixed(2).replace('.', ',')} s/juros`
+                  return (
+                    <button key={n} type="button" onClick={() => setInstallmentCount(n)}
+                      className={`flex-1 py-3 rounded-xl text-xs font-bold border-2 transition-colors ${
+                        installmentCount === n
+                          ? 'border-[#7DC142] bg-[#7DC142]/10 text-[#141F0C]'
+                          : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                      }`}>
+                      {label}
+                    </button>
+                  )
+                })}
+              </div>
+              <input type="text" required inputMode="numeric" name="cc-number" autoComplete="cc-number" placeholder="Número do cartão" value={cardNumber}
+                onChange={e => setCardNumber(formatCardNumber(e.target.value))} className={inputCls} />
+              <input type="text" required inputMode="numeric" name="cc-exp" autoComplete="cc-exp" placeholder="Validade (MM/AA)" value={cardExpiry}
+                onChange={e => setCardExpiry(formatExpiry(e.target.value))} className={inputCls} />
+              <input type="text" required inputMode="numeric" name="cc-csc" autoComplete="cc-csc" placeholder="CVV" value={cardCvv}
+                onChange={e => setCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))} className={inputCls} />
+              <input type="text" required inputMode="numeric" name="postal-code" autoComplete="billing postal-code" placeholder="CEP" value={cardPostalCode}
+                onChange={e => setCardPostalCode(formatCep(e.target.value))} className={inputCls} />
+              <input type="text" required name="address-line2" autoComplete="billing address-line2" placeholder="Número do endereço" value={cardAddressNumber}
+                onChange={e => setCardAddressNumber(e.target.value)} className={inputCls} />
+            </div>
+          )}
+
+          {error && <p className="text-red-500 text-sm font-medium">{error}</p>}
+          <button type="submit" disabled={loading}
+            className="py-5 px-8 rounded-xl font-bold text-lg text-white transition-all disabled:opacity-60 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-100"
+            style={{ backgroundColor: LIME, color: DARK }}>
+            {loading ? 'Aguarde...' : paymentMethod === 'pix' ? 'Pagar com PIX →' : 'Pagar com cartão →'}
+          </button>
+
+          <p className="text-xs text-gray-400 text-center leading-relaxed -mt-1">
+            Após a confirmação, você receberá o link de download do ebook por e-mail.
+          </p>
+
+          {paymentMethod === 'card' && (
+            <div className="flex items-center justify-center gap-2 text-xs text-gray-400 bg-gray-50 rounded-xl py-3 px-4">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-green-500 flex-shrink-0">
+                <path fillRule="evenodd" d="M12 1.5a5.25 5.25 0 0 0-5.25 5.25v3a3 3 0 0 0-3 3v6.75a3 3 0 0 0 3 3h10.5a3 3 0 0 0 3-3v-6.75a3 3 0 0 0-3-3v-3c0-2.9-2.35-5.25-5.25-5.25Zm3.75 8.25v-3a3.75 3.75 0 1 0-7.5 0v3h7.5Z" clipRule="evenodd" />
+              </svg>
+              <span>Pagamento 100% seguro · criptografia SSL · processado pela Asaas</span>
+            </div>
+          )}
+        </form>
+
+        <div className="mt-6 flex items-center justify-center gap-2 text-xs text-gray-400">
+          <span style={{ color: LIME }}>★★★★★</span>
+          <span>Garantia de 7 dias · sem perguntas · sem burocracia</span>
+        </div>
+      </div>
+    </>
+  )
+}
+
+interface UpsellBumpProps {
+  upsellPaymentMethod: 'pix' | 'card'
+  setUpsellPaymentMethod: (v: 'pix' | 'card') => void
+  upsellLoading: boolean
+  upsellPixData: { qrCode: string; payload: string } | null
+  upsellSuccess: boolean
+  upsellCopied: boolean
+  setUpsellCopied: (v: boolean) => void
+  upsellError: string
+  upsellCardNumber: string; setUpsellCardNumber: (v: string) => void
+  upsellCardExpiry: string; setUpsellCardExpiry: (v: string) => void
+  upsellCardCvv: string; setUpsellCardCvv: (v: string) => void
+  upsellCardPostalCode: string; setUpsellCardPostalCode: (v: string) => void
+  upsellCardAddressNumber: string; setUpsellCardAddressNumber: (v: string) => void
+  handleUpsell: (e: React.FormEvent) => void
+}
+
+function UpsellBump({
+  upsellPaymentMethod, setUpsellPaymentMethod,
+  upsellLoading, upsellPixData, upsellSuccess,
+  upsellCopied, setUpsellCopied, upsellError,
+  upsellCardNumber, setUpsellCardNumber,
+  upsellCardExpiry, setUpsellCardExpiry,
+  upsellCardCvv, setUpsellCardCvv,
+  upsellCardPostalCode, setUpsellCardPostalCode,
+  upsellCardAddressNumber, setUpsellCardAddressNumber,
+  handleUpsell,
+}: UpsellBumpProps) {
+  const inputCls = "border-2 border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 bg-white focus:outline-none focus:border-[#7DC142] transition-colors"
+
+  async function handleCopyUpsell() {
+    if (!upsellPixData) return
+    await copyToClipboard(upsellPixData.payload)
+    setUpsellCopied(true)
+    setTimeout(() => setUpsellCopied(false), 2000)
+  }
+
+  if (upsellSuccess) {
+    return (
+      <div className="w-full rounded-2xl px-6 py-5 text-center" style={{ backgroundColor: '#f0fdf4', border: '2px solid #d8f3dc' }}>
+        <p className="text-2xl mb-2">✓</p>
+        <p className="font-bold text-[#141F0C] text-base">Sessão adicionada!</p>
+        <p className="text-[#476B18] text-sm mt-1">Você receberá o link de agendamento por e-mail em instantes.</p>
+        <p className="text-gray-400 text-xs mt-2">Não encontrou? Verifique a caixa de spam ou promoções.</p>
+      </div>
+    )
+  }
+
+  if (upsellPixData) {
+    return (
+      <div className="w-full rounded-2xl px-6 py-5 flex flex-col gap-4" style={{ border: '2px dashed #7DC142', backgroundColor: '#f0fdf4' }}>
+        <p className="font-bold text-[#141F0C] text-sm text-center">PIX da sessão — escaneie para concluir</p>
+        <div className="flex justify-center">
+          <img src={`data:image/png;base64,${upsellPixData.qrCode}`} alt="QR Code PIX Sessão" className="w-44 h-44 rounded-xl border-2 border-[#7DC142]" />
+        </div>
+        <div className="flex flex-col gap-2">
+          <input
+            readOnly
+            value={upsellPixData.payload}
+            className="w-full border-2 border-gray-200 rounded-xl px-3 py-2.5 text-xs text-gray-600 bg-white font-mono"
+            onClick={e => (e.target as HTMLInputElement).select()}
+            onFocus={e => e.target.select()}
+          />
+          <button type="button" onClick={handleCopyUpsell} className="w-full py-2.5 text-white rounded-xl text-xs font-bold" style={{ backgroundColor: LIME }}>
+            {upsellCopied ? '✓ Código copiado!' : 'Copiar código PIX'}
+          </button>
+        </div>
+        <p className="text-xs text-[#476B18] text-center">Você receberá o link de agendamento assim que o PIX for confirmado.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="w-full rounded-2xl overflow-hidden flex flex-col" style={{ border: '3px solid #7DC142', backgroundColor: '#f9fff5', boxShadow: '0 4px 24px 0 rgba(125,193,66,0.18)' }}>
+      <div className="w-full px-5 py-2.5 flex items-center gap-2" style={{ backgroundColor: LIME }}>
+        <span className="text-white text-xs">⚡</span>
+        <p className="font-black text-white text-xs tracking-wide uppercase">Consulte o especialista</p>
+      </div>
+      <div className="w-full overflow-hidden" style={{ height: '180px' }}>
+        <Image src="/michel_upsell.jpg" alt="Michel" width={400} height={180} loading="lazy" sizes="400px" className="w-full h-full object-cover object-center" />
+      </div>
+      <div className="px-6 py-5 flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+          <p className="font-black text-[#141F0C] text-lg leading-tight">Consultoria individual de agrofloresta sintrópica</p>
+          <p className="text-[#476B18] text-sm leading-relaxed">
+            <strong>1 hora 1:1</strong> para desbloquear o que está impedindo você de avançar com o seu projeto — tire suas dúvidas numa consulta.
+          </p>
+      </div>
+      <div className="flex items-center gap-3">
+        <span className="text-gray-400 text-sm line-through">R$180</span>
+        <span className="font-black text-[#141F0C] text-2xl">R$120</span>
+        <span className="text-xs font-black px-2.5 py-1 rounded-full text-white" style={{ backgroundColor: LIME }}>economia de R$60</span>
+      </div>
+      <form onSubmit={handleUpsell} className="flex flex-col gap-3">
+        <div className="flex rounded-xl overflow-hidden border-2 border-gray-200">
+          <button type="button" onClick={() => setUpsellPaymentMethod('pix')}
+            className="flex-1 py-3 text-sm font-bold transition-colors"
+            style={upsellPaymentMethod === 'pix' ? { backgroundColor: LIME, color: '#fff' } : { backgroundColor: '#fff', color: FOREST }}>
+            PIX
+          </button>
+          <button type="button" onClick={() => setUpsellPaymentMethod('card')}
+            className="flex-1 py-3 text-sm font-bold transition-colors border-l-2 border-gray-200"
+            style={upsellPaymentMethod === 'card' ? { backgroundColor: LIME, color: '#fff' } : { backgroundColor: '#fff', color: FOREST }}>
+            Cartão
+          </button>
+        </div>
+        {upsellPaymentMethod === 'card' && (
+          <div className="flex flex-col gap-2">
+            <input type="text" required inputMode="numeric" name="cc-number" autoComplete="cc-number" placeholder="Número do cartão" value={upsellCardNumber}
+              onChange={e => setUpsellCardNumber(formatCardNumber(e.target.value))} className={inputCls} />
+            <input type="text" required inputMode="numeric" name="cc-exp" autoComplete="cc-exp" placeholder="Validade (MM/AA)" value={upsellCardExpiry}
+              onChange={e => setUpsellCardExpiry(formatExpiry(e.target.value))} className={inputCls} />
+            <input type="text" required inputMode="numeric" name="cc-csc" autoComplete="cc-csc" placeholder="CVV" value={upsellCardCvv}
+              onChange={e => setUpsellCardCvv(e.target.value.replace(/\D/g, '').slice(0, 4))} className={inputCls} />
+            <input type="text" required inputMode="numeric" name="postal-code" autoComplete="billing postal-code" placeholder="CEP" value={upsellCardPostalCode}
+              onChange={e => setUpsellCardPostalCode(formatCep(e.target.value))} className={inputCls} />
+            <input type="text" required name="address-line2" autoComplete="billing address-line2" placeholder="Número do endereço" value={upsellCardAddressNumber}
+              onChange={e => setUpsellCardAddressNumber(e.target.value)} className={inputCls} />
+          </div>
+        )}
+        {upsellError && <p className="text-red-500 text-xs font-medium">{upsellError}</p>}
+        <button type="submit" disabled={upsellLoading}
+          className="py-4 rounded-xl font-bold text-base transition-all disabled:opacity-60 shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-100"
+          style={{ backgroundColor: LIME, color: DARK }}>
+          {upsellLoading ? 'Aguarde...' : 'Adicionar sessão por R$120 →'}
+        </button>
+      </form>
+      </div>
+    </div>
+  )
+}
+
+function InfographicsCarousel() {
+  const [active, setActive] = useState(0)
+  const [paused, setPaused] = useState(false)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const n = INFOGRAPHICS.length
+
+  const go = useCallback((i: number) => setActive((i + n) % n), [n])
+
+  useEffect(() => {
+    if (paused) return
+    timerRef.current = setInterval(() => setActive(a => (a + 1) % n), 4000)
+    return () => { if (timerRef.current) clearInterval(timerRef.current) }
+  }, [paused, n])
+
+  return (
+    <section className="py-20 px-6 bg-white overflow-hidden">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-12">
+          <h2 className="font-serif font-black leading-tight mb-4" style={{ fontSize: 'clamp(2rem, 4.5vw, 3.2rem)', color: DARK }}>
+            Tudo que você precisa saber antes de plantar sua primeira agrofloresta.
+          </h2>
+          <p className="text-lg text-gray-500 max-w-xl mx-auto leading-relaxed">
+            25+ infográficos criados exclusivamente para este guia.
+            Visuais que explicam em segundos o que textos levam páginas.
+          </p>
+        </div>
+
+        {/* imagem principal */}
+        <div className="relative rounded-3xl overflow-hidden shadow-2xl mb-6 bg-gray-50"
+          onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
+          <Image
+            key={active}
+            src={INFOGRAPHICS[active].src}
+            alt={INFOGRAPHICS[active].label}
+            width={1200} height={675}
+            className="w-full h-auto object-contain"
+            priority
+          />
+          {/* legenda */}
+          <div className="absolute bottom-0 inset-x-0 px-6 py-5"
+            style={{ background: 'linear-gradient(to top, rgba(20,31,12,0.92) 0%, transparent 100%)' }}>
+            <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: LIME }}>
+              {INFOGRAPHICS[active].cap}
+            </p>
+            <p className="text-white font-black text-lg leading-snug">
+              {INFOGRAPHICS[active].label}
+            </p>
+          </div>
+          {/* nav lateral */}
+          <button onClick={() => go(active - 1)}
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/30 hover:bg-black/50 text-white text-xl flex items-center justify-center transition-colors"
+            aria-label="Anterior">‹</button>
+          <button onClick={() => go(active + 1)}
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/30 hover:bg-black/50 text-white text-xl flex items-center justify-center transition-colors"
+            aria-label="Próximo">›</button>
+        </div>
+
+        {/* thumbnails */}
+        <div className="flex gap-2 overflow-x-auto pb-2 justify-center">
+          {INFOGRAPHICS.map((info, i) => (
+            <button key={info.src} onClick={() => { setPaused(true); go(i) }}
+              className="flex-shrink-0 rounded-xl overflow-hidden transition-all duration-200"
+              style={{
+                width: 80, height: 56,
+                outline: i === active ? `3px solid ${LIME}` : '3px solid transparent',
+                opacity: i === active ? 1 : 0.5,
+              }}>
+              <Image src={info.src} alt={info.cap} width={80} height={56}
+                sizes="80px"
+                className="w-full h-full object-cover" />
+            </button>
+          ))}
+        </div>
+
+        {/* dots */}
+        <div className="flex justify-center gap-2 mt-5">
+          {INFOGRAPHICS.map((_, i) => (
+            <button key={i} onClick={() => { setPaused(true); go(i) }}
+              className="w-2 h-2 rounded-full transition-all duration-300"
+              style={{ backgroundColor: i === active ? LIME : '#d1d5db', transform: i === active ? 'scale(1.4)' : 'scale(1)' }}
+              aria-label={`Ir para ${i + 1}`} />
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+export default function EbookLandingPage({ serverEventId }: { serverEventId: string }) {
+  const [previewOnly, setPreviewOnly] = useState(false)
+  const [lightbox, setLightbox] = useState<number | null>(null)
+  const [returning, setReturning] = useState(false)
+  const [recentBuyers, setRecentBuyers] = useState<{ firstName: string; region: string | null; time: string }[]>([])
+  const [tickerIdx, setTickerIdx] = useState(0)
+  const [tickerVisible, setTickerVisible] = useState(true)
+  const closeLightbox = useCallback(() => setLightbox(null), [])
+  const prevPage = useCallback(() => setLightbox(i => i !== null ? (i - 1 + PAGES.length) % PAGES.length : null), [])
+  const nextPage = useCallback(() => setLightbox(i => i !== null ? (i + 1) % PAGES.length : null), [])
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development' && new URLSearchParams(window.location.search).get('preview') === 'pix') {
+      setPreviewOnly(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    // serverEventId é gerado no servidor e o CAPI já foi disparado lá.
+    // O pixel do browser usa o mesmo id para o Meta deduplicar os dois.
+    ;(window as any).fbq?.('track', 'PageView', {}, { eventID: serverEventId })
+    ;(window as any).fbq?.('track', 'ViewContent', { content_name: 'Guia Agrofloresta Sintrópica', content_type: 'product', value: 87, currency: 'BRL' })
+  }, [])
+
+  useEffect(() => {
+    try {
+      const count = parseInt(localStorage.getItem('ebook_visits') ?? '0', 10) + 1
+      localStorage.setItem('ebook_visits', String(count))
+      if (count >= 3) setReturning(true)
+    } catch { /* localStorage bloqueado (modo privado restrito) */ }
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/recent-buyers')
+      .then(r => r.json())
+      .then(data => setRecentBuyers(data))
+      .catch(() => {})
+  }, [])
+
+  useEffect(() => {
+    if (recentBuyers.length === 0) return
+    const cycle = setInterval(() => {
+      setTickerVisible(false)
+      setTimeout(() => {
+        setTickerIdx(i => (i + 1) % recentBuyers.length)
+        setTickerVisible(true)
+      }, 400)
+    }, 3600)
+    return () => clearInterval(cycle)
+  }, [recentBuyers])
+
+  useEffect(() => {
+    if (document.cookie.split(';').some(c => c.trim() === 'admin_flag=1')) return
+    const p = new URLSearchParams(window.location.search)
+    const hasFbclid = p.has('fbclid')
+    const ua = navigator.userAgent
+    // in-app browsers do Meta não enviam referrer mas o UA sempre os trai
+    const isInstagram = /Instagram/.test(ua)
+    const isFacebook  = /FBAN|FBAV|FB_IAB/.test(ua)
+    const metaSource  = isInstagram ? 'instagram' : isFacebook ? 'facebook' : null
+    const utmSource   = p.get('utm_source')   ?? (hasFbclid ? 'facebook' : metaSource)
+    const utmMedium   = p.get('utm_medium')   ?? (hasFbclid || metaSource ? 'paid' : null)
+    const utmCampaign = p.get('utm_campaign') ?? null
+    const utmTerm     = p.get('utm_term')     ?? null
+    const utmContent  = p.get('utm_content')  ?? null
+    const visitCount = (() => { try { return parseInt(localStorage.getItem('ebook_visits') ?? '0', 10) } catch { return 0 } })()
+    const getCookie = (name: string) => document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith(name + '='))?.split('=').slice(1).join('=') ?? null
+    // CAPI já foi disparado no servidor com serverEventId — este fetch só grava page_visits
+    fetch('/api/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        page: '/ebook',
+        utm_source: utmSource,
+        utm_medium: utmMedium,
+        utm_campaign: utmCampaign,
+        utm_term: utmTerm,
+        utm_content: utmContent,
+        referer: document.referrer || null,
+        page_version: visitCount >= 3 ? 'returning' : 'normal',
+      }),
+    }).catch(() => {})
+  }, [])
+
+  if (previewOnly) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="w-full max-w-sm rounded-2xl overflow-hidden shadow-xl">
+          <CheckoutForm />
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-white text-[#141F0C]">
+
+      {/* ── BANNER URGÊNCIA ──────────────────────────────── */}
+      {recentBuyers.length > 0 && (
+        <div className="w-full py-2.5 px-4 text-center text-sm font-bold overflow-hidden" style={{ backgroundColor: LIME, color: DARK }}>
+          <span
+            style={{
+              display: 'inline-block',
+              transition: 'opacity 0.4s ease, transform 0.4s ease',
+              opacity: tickerVisible ? 1 : 0,
+              transform: tickerVisible ? 'translateY(0)' : 'translateY(-6px)',
+            }}
+          >
+            {(() => {
+              const b = recentBuyers[tickerIdx]
+              return b ? `● ${b.firstName}${b.region ? `, de ${b.region},` : ''} comprou ${b.time}` : ''
+            })()}
+          </span>
+        </div>
+      )}
+
+      {lightbox !== null && (
+        <PageLightbox index={lightbox} onClose={closeLightbox} onPrev={prevPage} onNext={nextPage} />
+      )}
+
+      {/* ── HERO ─────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden px-6 py-8 md:py-16" style={{ backgroundColor: DARK }}>
+        {/* background: hero_capa embaçada e escurecida */}
+        <div className="absolute inset-0 overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <Image src="/hero_capa.jpg" alt="" aria-hidden="true"
+            fill priority sizes="100vw"
+            className="object-cover scale-110"
+            style={{ filter: 'brightness(0.75) saturate(0.9)', transformOrigin: 'center' }} />
+        </div>
+        {/* overlay: transparente no topo, escurece na base para leitura */}
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(10,16,6,0.05) 0%, rgba(10,16,6,0.55) 100%)' }} />
+
+        {/* grid: mobile 1 col (título→capa→corpo), desktop 2 col (esq: título+corpo | dir: capa) */}
+        <div className="relative z-10 max-w-6xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-16 md:items-center">
+
+          {/* 1 — título (mobile: row 1 | desktop: col 1 rows 1-2) */}
+          <div className="md:row-start-1 md:row-end-3 md:col-start-1 min-w-0 text-center md:text-left flex flex-col justify-center">
+            <h1 className="font-serif font-black text-white leading-tight mb-4"
+              style={{ fontSize: 'clamp(1.8rem, 4.5vw, 3.2rem)' }}>
+              Do sonho ao projeto: entenda a lógica da sua agrofloresta antes de plantar a primeira muda.
+            </h1>
+            <p className="text-gray-300 text-base md:text-lg leading-relaxed" style={{ color: '#b7e4c7' }}>
+              O primeiro guia de ponta a ponta sobre agrofloresta sintrópica. 207 páginas, 27 capítulos, 25+ infográficos.
+            </p>
+          </div>
+
+          {/* 2 — capa (mobile: row 2 | desktop: col 2 abrange as 2 rows) */}
+          <div className="md:row-start-1 md:row-end-3 md:col-start-2 flex justify-center md:justify-end md:items-center">
+            <div className="relative w-full max-w-[260px] sm:max-w-[340px] md:max-w-[480px]">
+              <div className="absolute -inset-6 rounded-3xl opacity-20 blur-3xl" style={{ backgroundColor: LIME }} />
+              <Image
+                src="/capa_livro.png"
+                alt="Guia de Introdução à Agrofloresta Sintrópica, Michel Bottan"
+                width={600} height={560}
+                className="relative w-full drop-shadow-2xl"
+                style={{ filter: 'drop-shadow(0 32px 48px rgba(0,0,0,0.6))' }}
+                priority
+              />
+            </div>
+          </div>
+
+          {/* seta scroll — mobile only */}
+          <div className="flex justify-center md:hidden">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="animate-bounce opacity-80">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ── CARROSSEL DE INFOGRÁFICOS ────────────────────────── */}
+      <InfographicsCarousel />
+
+      {/* ── PÁGINAS DO GUIA ──────────────────────────────────── */}
+      <div style={{ height: 4, backgroundColor: LIME }} />
+      <section style={{ backgroundColor: CREAM }} className="py-28 px-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <p className="uppercase tracking-[0.2em] text-sm font-semibold mb-4" style={{ color: FOREST }}>
+              Veja por dentro
+            </p>
+            <h2 className="font-serif font-black leading-tight mb-4" style={{ fontSize: 'clamp(2rem, 4.5vw, 3.2rem)', color: DARK }}>
+              Espie por dentro do ebook.
+            </h2>
+            <p className="text-xl text-gray-500 max-w-xl mx-auto leading-relaxed">
+              Texto e infográfico integrados em cada capítulo, do conceito à visualização.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {PAGES.map((pg, i) => (
+              <button key={pg.src} onClick={() => setLightbox(i)}
+                className="group flex flex-col text-left focus:outline-none focus-visible:ring-2 rounded-xl"
+                style={{ ['--ring-color' as string]: LIME }}>
+                <div className="relative overflow-hidden rounded-xl shadow-xl ring-1 ring-black/10
+                  group-hover:-translate-y-2 group-hover:shadow-2xl transition-all duration-300 w-full"
+                  style={{ transform: `rotate(${i % 2 === 0 ? '-0.6' : '0.6'}deg)` }}>
+                  <Image
+                    src={pg.src}
+                    alt={pg.title}
+                    width={744} height={1052}
+                    className="w-full h-auto"
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-center justify-center">
+                    <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-white/90 text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-full"
+                      style={{ color: DARK }}>
+                      Ver página
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-4 px-1">
+                  <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: GOLD }}>{pg.cap}</p>
+                  <p className="text-sm font-semibold leading-snug" style={{ color: DARK }}>{pg.title}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {!returning && <>
+      {/* ── CAPÍTULOS ────────────────────────────────────────── */}
+      <section id="dentro" style={{ backgroundColor: CREAM }} className="pt-0 pb-28 px-6">
+        <div className="max-w-4xl mx-auto">
+          <p className="uppercase tracking-[0.2em] text-sm font-semibold mb-4" style={{ color: FOREST }}>
+            Conteúdo completo do ebook
+          </p>
+          <h2 className="font-serif font-black leading-tight mb-4" style={{ fontSize: 'clamp(2rem, 4.5vw, 3.2rem)', color: DARK }}>
+            5 partes · 27 capítulos.
+          </h2>
+          <p className="text-xl text-gray-500 mb-14 max-w-xl leading-relaxed">
+            Uma progressão sem lacunas: da lógica da floresta ao sistema vivo na sua terra.
+          </p>
+
+          <div className="flex flex-col gap-10">
+            {ALL_PARTS.map(part => (
+              <div key={part.num}>
+                {/* cabeçalho da parte */}
+                <div className="flex items-baseline gap-4 mb-5 pb-4 border-b-2" style={{ borderColor: LIME }}>
+                  <span className="font-serif font-black leading-none" style={{ fontSize: '2.8rem', color: LIME, minWidth: '2.4rem' }}>
+                    {part.num}
+                  </span>
+                  <div>
+                    <p className="font-black text-lg leading-tight" style={{ color: DARK }}>{part.title}</p>
+                    <p className="text-sm italic leading-snug mt-0.5" style={{ color: FOREST }}>{part.subtitle}</p>
+                  </div>
+                </div>
+                {/* grid de capítulos */}
+                <div className="grid sm:grid-cols-2 gap-1">
+                  {part.chapters.map(ch => (
+                    <div key={ch.n} className="flex items-start gap-3 py-2.5 px-3 rounded-lg hover:bg-white/70 transition-colors">
+                      <span className="font-serif font-black text-base flex-shrink-0 mt-px" style={{ color: GOLD, minWidth: '1.8rem' }}>
+                        {ch.n}
+                      </span>
+                      <span className="text-sm font-medium leading-snug" style={{ color: DARK }}>{ch.title}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+        </div>
+      </section>
+
+      </>}
+
+      {!returning && <>
+      {/* ── STRIP DE CREDIBILIDADE ───────────────────────────── */}
+      <div style={{ backgroundColor: LIME, color: DARK }} className="py-5 px-6">
+        <div className="max-w-5xl mx-auto flex flex-wrap justify-center gap-8 text-sm font-black uppercase tracking-widest">
+          <span>207 páginas</span>
+          <span>·</span>
+          <span>27 capítulos</span>
+          <span>·</span>
+          <span>25+ infográficos</span>
+        </div>
+      </div>
+      </>}
+
+      {/* ── DEPOIMENTO ────────────────────────────────────────── */}
+      <section style={{ backgroundColor: CREAM }} className="py-16 px-6">
+        <div className="max-w-xl mx-auto">
+          <p className="text-xs font-bold uppercase tracking-widest text-center mb-6" style={{ color: FOREST }}>O que dizem os leitores</p>
+          <Image
+            src="/testemunho_01.png"
+            alt="Depoimento de leitor"
+            width={600}
+            height={400}
+            className="w-full rounded-2xl shadow-lg"
+          />
+        </div>
+      </section>
+
+      {!returning && <>
+      {/* ── AGITAÇÃO ─────────────────────────────────────────── */}
+      <section style={{ backgroundColor: CREAM }} className="py-24 px-6">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="font-serif font-black text-center mb-16 leading-tight" style={{ fontSize: 'clamp(1.8rem, 4vw, 3rem)', color: DARK }}>
+            A maioria começa errado. E só descobre depois.
+          </h2>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                title: 'Plantar diferente de como a natureza planta é ir contra ela.',
+                body: 'A natureza tem uma lógica própria e ela sempre prevalece.',
+              },
+              {
+                title: 'Começar sem entender a lógica por trás é um gasto de energia.',
+                body: 'Sem o fundamento, esforço não vira uma floresta produtiva.',
+              },
+              {
+                title: 'Cada ano parado é um ano perdido.',
+                body: 'Agrofloresta é construção de tempo. O ano que passa sem um sistema não volta.',
+              },
+            ].map(card => (
+              <div key={card.title} className="flex flex-col gap-3">
+                <div className="w-8 h-px" style={{ backgroundColor: FOREST, opacity: 0.5 }} />
+                <h3 className="font-serif font-black text-xl leading-snug" style={{ color: DARK }}>{card.title}</h3>
+                <p className="text-base leading-relaxed" style={{ color: '#4a5240' }}>{card.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── QUALIFICAÇÃO — "Este guia é para você se..." ────── */}
+      <section style={{ backgroundColor: CREAM }} className="pb-24 px-6">
+        <div className="max-w-2xl mx-auto">
+          <p className="font-sans text-sm md:text-base uppercase tracking-widest mb-8 font-bold text-center" style={{ color: FOREST }}>
+            Este guia é para você. Especialmente se:
+          </p>
+          <div className="flex flex-col gap-4">
+            {[
+              'Quero começar, mas tenho medo de tomar as decisões erradas logo no início.',
+              'Preciso entender a lógica antes de plantar qualquer coisa.',
+              'Minha terra está parada sem produzir nada e não sei por onde começar.',
+              'Ainda não tenho terra, mas quero ir me preparando.',
+              'Quero comprar uma terra e preciso de mais conhecimento para saber como escolher.',
+            ].map((line, i) => (
+              <div key={i} className="flex items-start gap-4 rounded-2xl px-6 py-5 bg-white shadow-sm">
+                <span className="mt-[6px] w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: LIME }} />
+                <p className="font-sans text-gray-800 text-lg leading-snug font-semibold">{line}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA INTERMEDIÁRIO ────────────────────────────────── */}
+      <section style={{ backgroundColor: CREAM }} className="pb-16 px-6">
+        <div className="max-w-sm mx-auto text-center">
+          <a href="#comprar"
+            className="block w-full py-5 rounded-2xl font-black text-lg transition-opacity hover:opacity-90"
+            style={{ backgroundColor: LIME, color: DARK }}>
+            Quero começar agora →
+          </a>
+          <p className="text-xs text-gray-400 mt-3">R$87 · acesso imediato · 7 dias de garantia</p>
+        </div>
+      </section>
+
+      {/* ── PRIMEIRO GUIA PONTA A PONTA ──────────────────────── */}
+      <section style={{ backgroundColor: DARK }} className="py-28 px-6">
+        <div className="max-w-5xl mx-auto">
+          <p className="text-center font-semibold uppercase tracking-[0.2em] text-sm mb-5" style={{ color: LIME }}>
+            O que faltava
+          </p>
+          <h2 className="font-serif font-black text-center mb-6 leading-tight text-white" style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)' }}>
+            O primeiro guia de ponta a ponta<br />sobre agrofloresta sintrópica.
+          </h2>
+          <p className="text-center text-gray-400 text-xl mb-16 max-w-2xl mx-auto leading-relaxed">
+            Ao final, você entende a lógica da floresta, sabe ler a sua terra e consegue planejar um sistema produtivo. Você sai com o mapa antes de entrar na floresta.
+          </p>
+
+          <div className="grid md:grid-cols-3 gap-6 mb-16">
+            {PAIN_CARDS.map((card, i) => (
+              <div key={card.title} className="rounded-2xl p-8 flex flex-col gap-4" style={{ backgroundColor: '#1A3410', border: '1px solid #2D5420' }}>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold uppercase tracking-widest" style={{ color: LIME }}>{card.label}</p>
+                  <span className="text-xs font-bold tracking-widest" style={{ color: LIME, opacity: 0.4 }}>0{i + 1}</span>
+                </div>
+                <div className="w-8 h-px" style={{ backgroundColor: LIME, opacity: 0.4 }} />
+                <h3 className="font-black text-lg leading-snug text-white">{card.title}</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">{card.desc}</p>
+              </div>
+            ))}
+          </div>
+
+        </div>
+      </section>
+
+      {/* ── PIVOT — GÖTSCH ───────────────────────────────────── */}
+      <section className="py-28 px-6 bg-white">
+        <div className="max-w-3xl mx-auto">
+
+          {/* texto */}
+          <p className="uppercase tracking-[0.2em] text-sm font-semibold mb-6" style={{ color: FOREST }}>
+            A virada de perspectiva
+          </p>
+          <blockquote className="font-serif font-black italic leading-tight mb-10" style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', color: DARK }}>
+            "E se criássemos o ambiente certo para as plantas, em vez de adaptar as plantas ao ambiente que não é o ideal para elas?"
+          </blockquote>
+
+          {/* foto + atribuição */}
+          <div className="flex items-center gap-5 mb-10">
+            <Image
+              src="/ernst.png"
+              alt="Ernst Götsch"
+              width={1536} height={1024}
+              className="rounded-xl object-cover flex-shrink-0"
+              style={{ width: 220, height: 160 }}
+            />
+            <p className="text-base font-bold uppercase tracking-widest" style={{ color: FOREST }}>Ernst Götsch</p>
+          </div>
+
+          <p className="text-gray-600 text-lg leading-relaxed">
+            Götsch desenvolveu, ao longo de décadas numa fazenda no sul da Bahia, um sistema onde o oposto da degradação acontece.
+            Não adapta as plantas ao solo. Constrói o ambiente certo para a vida florescer.
+            Este guia traduz essa lógica do zero, em português, com infográficos, sem pular etapas.
+          </p>
+
+        </div>
+      </section>
+
+      <div style={{ height: 4, backgroundColor: LIME }} />
+
+      {/* ── DEPOIMENTOS (oculto temporariamente) ──────────────── */}
+
+      {/* ── AUTOR ─────────────────────────────────────────────── */}
+      <section style={{ backgroundColor: CREAM }} className="py-28 px-6">
+        <div className="max-w-4xl mx-auto flex flex-col md:flex-row gap-10 items-start">
+          {/* foto */}
+          <div className="w-full md:w-64 flex-shrink-0">
+            <Image src="/michel.jpg" alt="Michel Bottan" width={400} height={400} className="w-full rounded-2xl shadow-xl object-cover" />
+            <p className="font-black text-lg mt-4 text-center" style={{ color: DARK }}>Michel Bottan</p>
+            <p className="text-sm text-center mt-1" style={{ color: FOREST }}>Agrofloresteiro, Permacultor · Fundador do Desperto e OpenSyntropy</p>
+          </div>
+          {/* texto */}
+          <div className="min-w-0">
+            <p className="uppercase tracking-[0.2em] text-sm font-semibold mb-6" style={{ color: FOREST }}>Sobre o autor</p>
+            <p className="text-gray-700 text-lg leading-relaxed mb-4">
+              Michel Bottan deixou uma carreira executiva em tecnologia para se dedicar integralmente à agrofloresta.
+              Há 10 anos trabalha com sistemas agroflorestais sintrópicos: em 2016 passou três meses numa formação intensiva
+              com Ernst Götsch, comprou um sítio em Caçapava (SP) e construiu o <strong>Desperto</strong> (desperto.earth),
+              uma propriedade que se tornou escola e laboratório.
+            </p>
+            <p className="text-gray-700 text-lg leading-relaxed">
+              Formado em Design em Restauração de Ecossistemas e Biorregionalização pela <strong>Gaia Education</strong>,
+              participou de imersões com agricultores e educadores sintrópicos por todo o Brasil e atualmente cursa o PDC
+              com <strong>David Holmgren</strong>, cocriador da permacultura.
+            </p>
+          </div>
+        </div>
+      </section>
+      </>}
+
+      {/* ── GARANTIA ─────────────────────────────────────────── */}
+      <section className="py-20 px-6 bg-white">
+        <div className="max-w-2xl mx-auto">
+          <div className="rounded-3xl p-10 flex flex-col md:flex-row gap-8 items-start shadow-lg border-2" style={{ borderColor: LIME }}>
+            <span className="text-6xl flex-shrink-0">🛡️</span>
+            <div>
+              <h3 className="font-black text-2xl mb-3" style={{ color: DARK }}>Garantia de 7 dias, sem burocracia</h3>
+              <p className="text-gray-600 text-lg leading-relaxed">
+                Se você ler o guia e não achar que valeu cada centavo, devolvemos o pagamento integralmente.
+                Sem perguntas, sem processo complicado.
+                <strong className="text-[#141F0C]"> Você tem 7 dias a partir da compra.</strong>
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── COMPRAR ───────────────────────────────────────────── */}
+      <section id="comprar" style={{ backgroundColor: DARK }} className="py-20 md:py-28 px-6">
+        <div className="max-w-xl mx-auto">
+
+          {/* cabeçalho da seção */}
+          <div className="text-center mb-10">
+            <div className="inline-flex items-center gap-2 text-sm font-black uppercase tracking-widest px-5 py-2.5 rounded-full mb-6"
+              style={{ backgroundColor: LIME, color: DARK }}>
+              ⚡ Preço de lançamento · encerra em {nextSundayLabel()}
+            </div>
+            <h2 className="font-serif font-black text-white leading-tight mb-3"
+              style={{ fontSize: 'clamp(1.8rem, 5vw, 2.8rem)' }}>
+              Dê o primeiro passo com segurança.
+            </h2>
+          </div>
+
+          {/* card de compra */}
+          <div className="rounded-3xl overflow-hidden shadow-2xl" style={{ border: `2px solid ${LIME}30` }}>
+            <Suspense>
+              <CheckoutForm />
+            </Suspense>
+          </div>
+
+          {/* nota de urgência abaixo do card */}
+          <p className="text-center text-xs text-gray-500 mt-5 leading-relaxed">
+            Após o período de lançamento o preço volta a <strong className="text-gray-400">R$ 127</strong>.
+            Compre agora e garanta o valor atual para sempre.
+          </p>
+        </div>
+      </section>
+
+      {/* ── FAQ ──────────────────────────────────────────────── */}
+      <section style={{ backgroundColor: CREAM }} className="py-28 px-6">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="font-serif font-black text-center mb-14" style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', color: DARK }}>
+            Dúvidas frequentes
+          </h2>
+          {FAQ_ITEMS.map(item => <FaqItem key={item.q} q={item.q} a={item.a} link={item.link} />)}
+        </div>
+      </section>
+
+      {/* ── FOOTER ───────────────────────────────────────────── */}
+      <footer style={{ backgroundColor: DARK, borderTop: `3px solid ${LIME}` }} className="py-10 px-6">
+        <div className="max-w-4xl mx-auto flex flex-col items-center gap-6">
+          <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-400">
+            <a href="/reenviar" className="hover:text-white transition-colors">Já comprei</a>
+            <a href="/reembolso" className="hover:text-white transition-colors">Pedir devolução</a>
+          </div>
+          <div className="flex items-center gap-3">
+            <Image src="/opensyntropy.jpg" alt="OpenSyntropy" width={28} height={28} className="rounded-full opacity-70" />
+            <p className="text-gray-500 text-xs tracking-widest uppercase">© {new Date().getFullYear()} OpenSyntropy</p>
+          </div>
+        </div>
+      </footer>
+
+    </div>
+  )
+}
