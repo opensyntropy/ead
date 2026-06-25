@@ -93,6 +93,13 @@ export async function POST(request: Request) {
   const chargeRow = updated?.[0] as { id: string; fbc?: string | null; fbp?: string | null } | undefined
 
   if (isFirstConfirmation) {
+    // Remove o email da lista de recuperação: marca todos os PIX pendentes
+    // do mesmo email como 'converted' para não aparecerem mais no painel.
+    void supabase.from('pix_charges')
+      .update({ status: 'converted' })
+      .eq('email', email)
+      .eq('status', 'pending')
+      .neq('asaas_payment_id', payment.id)
     // Envia e-mail com link de download para produtos que incluam ebook
     if (productId === 'ebook' || productId === 'bundle') {
       try {
