@@ -59,7 +59,7 @@ export default async function RelatoriosPage() {
 
   const [visitsMonthRes, visitsRawRes, visitsTotalRes, pixRes] = await Promise.all([
     service.from('page_visits').select('id', { count: 'exact', head: true }).eq('page', '/ebook').gte('created_at', monthISO),
-    service.from('page_visits').select('created_at,utm_source,utm_content,referer').eq('page', '/ebook').gte('created_at', monthISO),
+    service.from('page_visits').select('created_at,utm_source,utm_content,referer').eq('page', '/ebook').gte('created_at', monthISO).order('created_at', { ascending: false }).limit(20000),
     service.from('page_visits').select('id', { count: 'exact', head: true }),
     service.from('pix_charges').select('*').order('created_at', { ascending: false }),
   ])
