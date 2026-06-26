@@ -2,6 +2,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import TrafficChart, { type RawEvent } from '../TrafficChart'
+import AdPerformanceChart, { type RawConversion } from '../AdPerformanceChart'
 import AdminHeader from '../AdminHeader'
 
 export const dynamic = 'force-dynamic'
@@ -82,6 +83,10 @@ export default async function RelatoriosPage() {
     .filter(r => (r.confirmed_at ?? r.created_at) >= monthISO)
     .map(r => ({ date: r.confirmed_at ?? r.created_at, utm: r.utm_source }))
 
+  const adConversionsRaw: RawConversion[] = (pixRes.data ?? [])
+    .filter(r => r.status === 'confirmed' && (r.utm_term || r.utm_content))
+    .map(r => ({ date: r.confirmed_at ?? r.created_at, adset: r.utm_term ?? null, ad: r.utm_content ?? null }))
+
   // UTM breakdown
   const utmCounts: Record<string, number> = {}
   for (const e of visitsRaw) {
@@ -142,6 +147,14 @@ export default async function RelatoriosPage() {
           <SectionHeader title="Tendência — /ebook" />
           <TrafficChart visits={visitsRaw} checkouts={checkoutsRaw} conversions={conversionsRaw} />
         </div>
+
+        {/* Conversões por adset · ad */}
+        {adConversionsRaw.length > 0 && (
+          <div>
+            <SectionHeader title="Conversões por adset · anúncio" />
+            <AdPerformanceChart conversions={adConversionsRaw} />
+          </div>
+        )}
 
         {/* Origens & Anúncios */}
         {(utmBreakdown.length > 0 || adBreakdown.length > 0) && (
