@@ -62,6 +62,69 @@ function PageLightbox({ index, onClose, onPrev, onNext }: {
   )
 }
 
+function VslPlayer() {
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const [playing, setPlaying] = useState(false)
+  const [progress, setProgress] = useState(0) // 0–1
+
+  // Curva x^0.55: 10% real → 28% visual, 50% real → 73% visual.
+  // Começa em ritmo moderado e desacelera progressivamente.
+  const visualProgress = Math.pow(progress, 0.55) * 100
+
+  function toggle() {
+    const v = videoRef.current
+    if (!v) return
+    if (v.paused) { v.play().catch(() => {}); setPlaying(true) }
+    else { v.pause(); setPlaying(false) }
+  }
+
+  function onTimeUpdate() {
+    const v = videoRef.current
+    if (!v || !v.duration) return
+    setProgress(v.currentTime / v.duration)
+  }
+
+  return (
+    <div className="relative w-full rounded-2xl overflow-hidden" style={{ border: '2px solid rgba(125,193,66,0.3)', backgroundColor: '#0a1006' }}>
+      <div className="relative w-full" style={{ aspectRatio: '9/16' }}>
+        <video
+          ref={videoRef}
+          src="https://0d0p6hmsyztnfgyv.public.blob.vercel-storage.com/vsl.mp4"
+          poster="/vsl_poster.jpg"
+          playsInline
+          onTimeUpdate={onTimeUpdate}
+          onEnded={() => setPlaying(false)}
+          onClick={toggle}
+          className="absolute inset-0 w-full h-full object-cover cursor-pointer"
+        />
+        {/* play overlay */}
+        {!playing && (
+          <button
+            onClick={toggle}
+            className="absolute inset-0 flex items-center justify-center"
+            style={{ background: 'rgba(0,0,0,0.35)' }}
+            aria-label="Reproduzir"
+          >
+            <div className="w-20 h-20 rounded-full flex items-center justify-center shadow-2xl transition-transform hover:scale-105"
+              style={{ backgroundColor: '#7DC142' }}>
+              <svg viewBox="0 0 24 24" fill="white" className="w-9 h-9" style={{ marginLeft: 4 }}>
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          </button>
+        )}
+      </div>
+      {/* barra de progresso com curva ilusória */}
+      <div className="h-1.5" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}>
+        <div
+          className="h-full"
+          style={{ width: `${visualProgress}%`, backgroundColor: '#7DC142', transition: 'width 0.8s linear' }}
+        />
+      </div>
+    </div>
+  )
+}
+
 // Paleta extraída da capa.png (análise pixel-a-pixel, mai/2026)
 const LIME   = '#7DC142'  // verde lima dos títulos
 const DARK   = '#141F0C'  // fundo floresta escuro
@@ -1061,9 +1124,15 @@ export default function EbookLandingPage({ serverEventId }: { serverEventId: str
               style={{ fontSize: 'clamp(1.8rem, 4.5vw, 3.2rem)' }}>
               Do sonho ao projeto: entenda a lógica da sua agrofloresta antes de plantar a primeira muda.
             </h1>
-            <p className="text-gray-300 text-base md:text-lg leading-relaxed" style={{ color: '#b7e4c7' }}>
+            <p className="text-gray-300 text-base md:text-lg leading-relaxed mb-5" style={{ color: '#b7e4c7' }}>
               O primeiro guia de ponta a ponta sobre agrofloresta sintrópica. 207 páginas, 27 capítulos, 25+ infográficos.
             </p>
+            {/* VSL — 9:16 vertical, limitado para não ficar enorme em desktop */}
+            <div className="w-full flex justify-center">
+              <div className="w-full" style={{ maxWidth: 340 }}>
+                <VslPlayer />
+              </div>
+            </div>
           </div>
 
           {/* 2 — capa (mobile: row 2 | desktop: col 2 abrange as 2 rows) */}
