@@ -65,10 +65,18 @@ function PageLightbox({ index, onClose, onPrev, onNext }: {
 function VslPlayer() {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [playing, setPlaying] = useState(false)
+  const [muted, setMuted] = useState(true)
   const [progress, setProgress] = useState(0) // 0–1
 
+  // Autoplay muted assim que o componente monta
+  useEffect(() => {
+    const v = videoRef.current
+    if (!v) return
+    v.muted = true
+    v.play().then(() => setPlaying(true)).catch(() => {})
+  }, [])
+
   // Curva x^0.55: 10% real → 28% visual, 50% real → 73% visual.
-  // Começa em ritmo moderado e desacelera progressivamente.
   const visualProgress = Math.pow(progress, 0.55) * 100
 
   function toggle() {
@@ -76,6 +84,13 @@ function VslPlayer() {
     if (!v) return
     if (v.paused) { v.play().catch(() => {}); setPlaying(true) }
     else { v.pause(); setPlaying(false) }
+  }
+
+  function toggleMute() {
+    const v = videoRef.current
+    if (!v) return
+    v.muted = !v.muted
+    setMuted(v.muted)
   }
 
   function onTimeUpdate() {
@@ -92,12 +107,44 @@ function VslPlayer() {
           src="https://0d0p6hmsyztnfgyv.public.blob.vercel-storage.com/vsl.mp4"
           poster="/vsl_poster.jpg"
           playsInline
+          muted
           onTimeUpdate={onTimeUpdate}
           onEnded={() => setPlaying(false)}
           onClick={toggle}
           className="absolute inset-0 w-full h-full object-cover cursor-pointer"
         />
-        {/* play overlay */}
+
+        {/* botão de ativar som — sempre visível enquanto mudo */}
+        {muted && (
+          <button
+            onClick={toggleMute}
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold shadow-lg transition-transform hover:scale-105 active:scale-95"
+            style={{ backgroundColor: 'rgba(0,0,0,0.7)', color: 'white', border: '1.5px solid rgba(255,255,255,0.3)', backdropFilter: 'blur(6px)' }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
+              <line x1="1" y1="1" x2="23" y2="23" />
+              <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" />
+              <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23" />
+            </svg>
+            Toque para ativar o som
+          </button>
+        )}
+
+        {/* botão mudo quando com som — canto superior */}
+        {!muted && (
+          <button
+            onClick={toggleMute}
+            className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center transition-opacity hover:opacity-80"
+            style={{ backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }}
+            aria-label="Mutar"
+          >
+            <svg viewBox="0 0 24 24" fill="white" className="w-4 h-4">
+              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
+            </svg>
+          </button>
+        )}
+
+        {/* play overlay — só quando pausado */}
         {!playing && (
           <button
             onClick={toggle}
