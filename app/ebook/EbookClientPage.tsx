@@ -1124,15 +1124,15 @@ export default function EbookLandingPage({ serverEventId }: { serverEventId: str
               style={{ fontSize: 'clamp(1.8rem, 4.5vw, 3.2rem)' }}>
               Do sonho ao projeto: entenda a lógica da sua agrofloresta antes de plantar a primeira muda.
             </h1>
-            <p className="text-gray-300 text-base md:text-lg leading-relaxed mb-5" style={{ color: '#b7e4c7' }}>
-              O primeiro guia de ponta a ponta sobre agrofloresta sintrópica. 207 páginas, 27 capítulos, 25+ infográficos.
-            </p>
             {/* VSL — 9:16 vertical, limitado para não ficar enorme em desktop */}
             <div className="w-full flex justify-center">
               <div className="w-full" style={{ maxWidth: 340 }}>
                 <VslPlayer />
               </div>
             </div>
+            <p className="text-white text-base md:text-lg leading-relaxed mt-4">
+              O primeiro guia de ponta a ponta sobre agrofloresta sintrópica. 207 páginas, 27 capítulos, 25+ infográficos.
+            </p>
           </div>
 
           {/* 2 — capa (mobile: row 2 | desktop: col 2 abrange as 2 rows) */}
