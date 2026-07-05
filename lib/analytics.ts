@@ -34,6 +34,13 @@ export function toSpDay(iso: string): string {
   return new Date(iso).toLocaleDateString('sv', { timeZone: 'America/Sao_Paulo' })
 }
 
+// 'YYYY-MM-DD HH:00' no fuso de São Paulo
+export function toSpHour(iso: string): string {
+  const parts = new Date(iso).toLocaleString('sv', { timeZone: 'America/Sao_Paulo', hour12: false })
+  // toLocaleString 'sv' → 'YYYY-MM-DD HH:MM:SS'
+  return parts.slice(0, 13) + ':00'
+}
+
 export function pct(num: number, den: number): number {
   return den === 0 ? 0 : Math.round((num / den) * 1000) / 10
 }
@@ -53,7 +60,7 @@ export async function fetchFunnelData(from: string, to: string) {
       .eq('page', '/ebook/checkout-click')
       .gte('created_at', fromUTC).lte('created_at', toUTC),
     sb.from('pix_charges')
-      .select('created_at,confirmed_at,status,payment_method,product,page_version,value')
+      .select('created_at,confirmed_at,status,payment_method,product,page_version,value,visit_count')
       .gte('created_at', fromUTC).lte('created_at', toUTC),
   ])
 

@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     cardNumber, cardExpiry, cardCvv, cardPostalCode, cardAddressNumber,
     installmentCount, whatsapp,
     utm_source, utm_medium, utm_campaign, utm_term, utm_content,
-    page_version, fbc, fbp,
+    page_version, visit_count, fbc, fbp,
   } = body as {
     productId: string
     email: string
@@ -33,9 +33,12 @@ export async function POST(request: Request) {
     utm_term?: string
     utm_content?: string
     page_version?: string
+    visit_count?: number
     fbc?: string
     fbp?: string
   }
+
+  const visitCount = Number.isFinite(visit_count) ? Math.trunc(visit_count as number) : null
 
   if (!productId || !email) {
     return NextResponse.json({ error: 'productId e email são obrigatórios' }, { status: 400 })
@@ -69,6 +72,7 @@ export async function POST(request: Request) {
             whatsapp: whatsapp || null,
             utm_source, utm_medium, utm_campaign, utm_term, utm_content,
             page_version: page_version || null,
+            visit_count: visitCount,
             pix_payload: qr.payload || null,
             via_recovery: utm_medium === 'recovery',
             fbc: fbc || null, fbp: fbp || null,
@@ -105,6 +109,7 @@ export async function POST(request: Request) {
             whatsapp: whatsapp || null,
             utm_source, utm_medium, utm_campaign, utm_term, utm_content,
             page_version: page_version || null,
+            visit_count: visitCount,
             via_recovery: utm_medium === 'recovery',
             fbc: fbc || null, fbp: fbp || null,
           },
@@ -180,6 +185,7 @@ export async function POST(request: Request) {
         whatsapp: whatsapp || null,
         utm_source, utm_medium, utm_campaign, utm_term, utm_content,
         page_version: page_version || null,
+        visit_count: visitCount,
         via_recovery: utm_medium === 'recovery',
         fbc: fbc || null, fbp: fbp || null,
       },

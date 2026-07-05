@@ -503,7 +503,7 @@ function CheckoutForm() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         productId: 'ebook', email, name, cpf, whatsapp, paymentMethod,
-        page_version, fbc, fbp,
+        page_version, visit_count: visits, fbc, fbp,
         ...utmParams,
         ...(paymentMethod === 'card' ? { cardNumber, cardExpiry, cardCvv, cardPostalCode, cardAddressNumber, installmentCount } : {}),
       }),

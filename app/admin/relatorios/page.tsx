@@ -115,6 +115,24 @@ export default async function RelatoriosPage() {
     )
   ).sort((a, b) => b[1].conversions - a[1].conversions || b[1].visits - a[1].visits)
 
+  // Acessos até a conversão (visit_count gravado no checkout)
+  const visitCountsRaw = confirmedRows
+    .map(r => (r as { visit_count?: number | null }).visit_count)
+    .filter((v): v is number => v != null && v > 0)
+  const missingVisitData = confirmedRows.length - visitCountsRaw.length
+  const visitBuckets: { label: string; conversions: number }[] = (() => {
+    const b: Record<string, number> = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6+': 0 }
+    for (const v of visitCountsRaw) b[v >= 6 ? '6+' : String(v)]++
+    return Object.entries(b).map(([label, conversions]) => ({ label, conversions }))
+  })()
+  const visitSorted = [...visitCountsRaw].sort((a, b) => a - b)
+  const avgVisits = visitSorted.length ? visitSorted.reduce((a, b) => a + b, 0) / visitSorted.length : 0
+  const medianVisits = visitSorted.length
+    ? (visitSorted.length % 2 ? visitSorted[(visitSorted.length - 1) / 2] : (visitSorted[visitSorted.length / 2 - 1] + visitSorted[visitSorted.length / 2]) / 2)
+    : 0
+  const firstVisitConv = visitBuckets.find(b => b.label === '1')?.conversions ?? 0
+  const maxBucket = Math.max(1, ...visitBuckets.map(b => b.conversions))
+
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       <AdminHeader />
@@ -214,6 +232,60 @@ export default async function RelatoriosPage() {
             </div>
           </div>
         )}
+
+        {/* Acessos até a conversão */}
+        <div>
+          <SectionHeader title="Acessos até a conversão" />
+          {visitCountsRaw.length === 0 ? (
+            <div className="bg-white rounded-xl border border-gray-200 px-5 py-4 text-sm text-gray-500">
+              Ainda sem dados de acessos por compra. A partir de agora cada compra registra quantos acessos o comprador teve até converter.
+              {missingVisitData > 0 && ` (${missingVisitData} compras anteriores à instrumentação não têm o dado.)`}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <div className="lg:col-span-1 grid grid-cols-2 gap-4 content-start">
+                {[
+                  { label: 'Média de acessos', value: Math.round(avgVisits * 10) / 10 },
+                  { label: 'Mediana', value: medianVisits },
+                  { label: 'Converteram na 1ª visita', value: `${firstVisitConv} (${Math.round((firstVisitConv / visitCountsRaw.length) * 100)}%)` },
+                  { label: 'Sem dado (histórico)', value: missingVisitData },
+                ].map(({ label, value }) => (
+                  <div key={label} className="bg-white rounded-xl border border-gray-200 px-4 py-3">
+                    <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{label}</p>
+                    <p className="text-xl font-black text-gray-800">{value}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <table className="w-full text-base">
+                  <thead className="bg-gray-50 text-gray-500 text-sm uppercase tracking-wide font-semibold">
+                    <tr>
+                      <th className="text-left px-4 py-3">Acessos até comprar</th>
+                      <th className="text-left px-4 py-3 w-1/2">Conversões</th>
+                      <th className="text-right px-4 py-3 text-gray-400">%</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {visitBuckets.map(({ label, conversions }) => (
+                      <tr key={label} className="hover:bg-gray-50/60">
+                        <td className="px-4 py-3 font-semibold text-gray-700">{label === '6+' ? '6 ou mais' : label}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2.5 rounded-full bg-[#52b788]" style={{ width: `${Math.max(4, (conversions / maxBucket) * 100)}%` }} />
+                            <span className="text-sm font-bold text-gray-800">{conversions}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-right text-gray-400 text-sm">
+                          {Math.round((conversions / visitCountsRaw.length) * 100)}%
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
 
       </div>
     </div>

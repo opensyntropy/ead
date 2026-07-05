@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { checkAuth, fetchFunnelData, fetchUnpaidData, fetchBySourceData, toSpDay, pct, PRODUCT_PRICE, rowValue } from '@/lib/analytics'
+import { checkAuth, fetchFunnelData, fetchUnpaidData, fetchBySourceData, toSpDay, toSpHour, pct, PRODUCT_PRICE, rowValue } from '@/lib/analytics'
 
 // MCP server via Streamable HTTP (protocol 2025-03-26)
 // Stateless — cada POST é uma chamada independente, sem sessão SSE
@@ -23,6 +23,30 @@ const TOOLS = [
   {
     name: 'analytics_unpaid',
     description: 'Retorna cobranças geradas e não concluídas no período, separadas por método: PIX (pendentes, expirados, tempo médio até confirmação) e cartão (confirmados, recusados com motivo).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        from: { type: 'string', description: 'Data inicial YYYY-MM-DD' },
+        to:   { type: 'string', description: 'Data final YYYY-MM-DD (inclusivo)' },
+      },
+      required: ['from', 'to'],
+    },
+  },
+  {
+    name: 'analytics_hourly',
+    description: 'Retorna o funil de conversão agregado hora a hora (fuso São Paulo): pageviews, cliques no checkout, cobranças geradas, pagamentos confirmados, faturamento e taxa de conversão por hora. Útil para identificar os horários de maior conversão.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        from: { type: 'string', description: 'Data inicial YYYY-MM-DD (fuso horário São Paulo)' },
+        to:   { type: 'string', description: 'Data final YYYY-MM-DD (fuso horário São Paulo, inclusivo)' },
+      },
+      required: ['from', 'to'],
+    },
+  },
+  {
+    name: 'analytics_conversions_by_visits',
+    description: 'Retorna a distribuição de quantos acessos à página do ebook cada comprador teve até converter (contador ebook_visits gravado no momento do checkout). Inclui histograma por nº de acessos, média/mediana e quantas compras não têm o dado (cobranças anteriores à instrumentação).',
     inputSchema: {
       type: 'object',
       properties: {
@@ -103,6 +127,81 @@ async function callFunnel(args: Record<string, string>) {
     revenue: Math.round((a.revenue + d.revenue) * 100) / 100,
   }), { pageviews: 0, checkout_clicks: 0, charges_total: 0, confirmed_total: 0, revenue: 0 })
   return { period: { from, to }, summary: { ...totals, rate_overall: pct(totals.confirmed_total, totals.pageviews) }, days: result }
+}
+
+async function callHourly(args: Record<string, string>) {
+  const { from, to } = args
+  const { visits, clicks, charges } = await fetchFunnelData(from, to)
+  const hours = new Set<string>()
+  visits.forEach(r => hours.add(toSpHour(r.created_at)))
+  clicks.forEach(r => hours.add(toSpHour(r.created_at)))
+  charges.forEach(r => hours.add(toSpHour(r.created_at)))
+
+  const result = Array.from(hours).sort().map(hour => {
+    const pageviews       = visits.filter(r => toSpHour(r.created_at) === hour).length
+    const checkout_clicks = clicks.filter(r => toSpHour(r.created_at) === hour).length
+    const hc = charges.filter(r => toSpHour(r.created_at) === hour)
+    const cf = hc.filter(r => r.status === 'confirmed')
+    const revenue = cf.reduce((s, r) => s + rowValue(r), 0)
+    return {
+      hour,
+      pageviews, checkout_clicks,
+      charges_total: hc.length,
+      confirmed_total: cf.length,
+      revenue: Math.round(revenue * 100) / 100,
+      rate_view_to_confirm: pct(cf.length, pageviews),
+    }
+  })
+
+  // Perfil por hora-do-dia (0-23), agregando todos os dias do período
+  const byHourOfDay: Record<number, { pageviews: number; confirmed: number; revenue: number }> = {}
+  for (let h = 0; h < 24; h++) byHourOfDay[h] = { pageviews: 0, confirmed: 0, revenue: 0 }
+  for (const r of visits) byHourOfDay[Number(toSpHour(r.created_at).slice(11, 13))].pageviews++
+  for (const r of charges) if (r.status === 'confirmed') {
+    const h = Number(toSpHour(r.created_at).slice(11, 13))
+    byHourOfDay[h].confirmed++
+    byHourOfDay[h].revenue += rowValue(r)
+  }
+  const hour_of_day_profile = Object.entries(byHourOfDay).map(([h, v]) => ({
+    hour: Number(h),
+    pageviews: v.pageviews,
+    confirmed: v.confirmed,
+    revenue: Math.round(v.revenue * 100) / 100,
+    conversion_rate: pct(v.confirmed, v.pageviews),
+  }))
+
+  return { period: { from, to }, hours: result, hour_of_day_profile }
+}
+
+async function callConversionsByVisits(args: Record<string, string>) {
+  const { from, to } = args
+  const { charges } = await fetchFunnelData(from, to)
+  const confirmed = charges.filter(r => r.status === 'confirmed')
+  const withData = confirmed.filter(r => r.visit_count != null).map(r => r.visit_count as number)
+  const missing  = confirmed.length - withData.length
+
+  const histogram: Record<number, number> = {}
+  for (const v of withData) histogram[v] = (histogram[v] ?? 0) + 1
+  const distribution = Object.entries(histogram)
+    .map(([visits, count]) => ({ visits: Number(visits), conversions: count }))
+    .sort((a, b) => a.visits - b.visits)
+
+  const sorted = [...withData].sort((a, b) => a - b)
+  const avg = sorted.length ? sorted.reduce((a, b) => a + b, 0) / sorted.length : null
+  const median = sorted.length ? (sorted.length % 2 ? sorted[(sorted.length - 1) / 2] : (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2) : null
+
+  return {
+    period: { from, to },
+    summary: {
+      confirmed_total: confirmed.length,
+      with_visit_data: withData.length,
+      missing_visit_data: missing,
+      avg_visits_to_convert: avg != null ? Math.round(avg * 10) / 10 : null,
+      median_visits_to_convert: median,
+      converted_on_first_visit: histogram[1] ?? 0,
+    },
+    distribution,
+  }
 }
 
 async function callUnpaid(args: Record<string, string>) {
@@ -205,9 +304,11 @@ export async function POST(req: NextRequest) {
     const { name, arguments: args = {} } = params as { name: string; arguments: Record<string, string> }
     try {
       let data: unknown
-      if (name === 'analytics_funnel')         data = await callFunnel(args)
-      else if (name === 'analytics_unpaid')    data = await callUnpaid(args)
-      else if (name === 'analytics_by_source') data = await callBySource(args)
+      if (name === 'analytics_funnel')                    data = await callFunnel(args)
+      else if (name === 'analytics_hourly')               data = await callHourly(args)
+      else if (name === 'analytics_conversions_by_visits') data = await callConversionsByVisits(args)
+      else if (name === 'analytics_unpaid')               data = await callUnpaid(args)
+      else if (name === 'analytics_by_source')            data = await callBySource(args)
       else return cors(err(id, -32602, `Tool desconhecida: ${name}`))
       return cors(ok(id, { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] }))
     } catch (e) {
