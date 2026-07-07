@@ -7,7 +7,7 @@ import AdminHeader from '../AdminHeader'
 import PeriodSelector from '../PeriodSelector'
 import { RANGES, ALLOWED_RANGES, DEFAULT_RANGE } from '../periods'
 import { rowValue } from '@/lib/analytics'
-import { fetchEbookAdSpend } from '@/lib/meta-ads'
+import { fetchEbookAdInsights } from '@/lib/meta-ads'
 
 export const dynamic = 'force-dynamic'
 
@@ -38,6 +38,9 @@ function SectionHeader({ title }: { title: string }) {
 }
 
 const brl = (n: number) => `R$ ${Math.round(n).toLocaleString('pt-BR')}`
+const intFmt = (n: number) => Math.round(n).toLocaleString('pt-BR')
+const pctFmt = (n: number) => `${Math.round(n * 100) / 100}%`
+const roasFmt = (n: number) => `${Math.round(n * 100) / 100}x`
 
 function Delta({ cur, prev, invert = false }: { cur: number; prev: number; invert?: boolean }) {
   if (prev === 0) {
@@ -142,25 +145,52 @@ export default async function RelatoriosPage({ searchParams }: { searchParams: P
   // O período anterior termina 1 dia antes do limite para não dividir o gasto
   // do dia-fronteira entre os dois períodos (spend de ads é diário).
   const prevAdEndISO = new Date(now - rangeDays * 86400000 - 86400000).toISOString()
-  const [curAdSpend, prevAdSpend] = await Promise.all([
-    fetchEbookAdSpend(monthISO, nowISO),
-    fetchEbookAdSpend(prevMonthISO, prevAdEndISO),
+  const [curAds, prevAds] = await Promise.all([
+    fetchEbookAdInsights(monthISO, nowISO),
+    fetchEbookAdInsights(prevMonthISO, prevAdEndISO),
   ])
-  const adsConfigured = curAdSpend != null || prevAdSpend != null
+  const adsConfigured = curAds != null || prevAds != null
 
   const grossProfit = (rows: typeof confirmedRows) => sumRev(rows) - FEE_PER_SALE * rows.length
-  const cur = {
-    views: curViews, conv: curConf.length, rev: sumRev(curConf),
-    rate: curViews > 0 ? (curConf.length / curViews) * 100 : 0,
-    profit: grossProfit(curConf), ads: curAdSpend ?? 0,
-    net: grossProfit(curConf) - (curAdSpend ?? 0),
+  const metrics = (rows: typeof confirmedRows, views: number, ads: typeof curAds) => {
+    const rev = sumRev(rows)
+    const conv = rows.length
+    const spend = ads?.spend ?? 0
+    return {
+      views, conv, rev,
+      rate: views > 0 ? (conv / views) * 100 : 0,
+      profit: grossProfit(rows),
+      impressions: ads?.impressions ?? 0,
+      clicks: ads?.clicks ?? 0,
+      ads: spend,
+      net: grossProfit(rows) - spend,
+      ctr: ads && ads.impressions > 0 ? (ads.clicks / ads.impressions) * 100 : 0,
+      cpa: conv > 0 ? spend / conv : 0,
+      roas: spend > 0 ? rev / spend : 0,
+    }
   }
-  const prev = {
-    views: prevViews, conv: prevConf.length, rev: sumRev(prevConf),
-    rate: prevViews > 0 ? (prevConf.length / prevViews) * 100 : 0,
-    profit: grossProfit(prevConf), ads: prevAdSpend ?? 0,
-    net: grossProfit(prevConf) - (prevAdSpend ?? 0),
-  }
+  const cur = metrics(curConf, curViews, curAds)
+  const prev = metrics(prevConf, prevViews, prevAds)
+
+  const chargesInWindow = (start: string, end: string) =>
+    (pixRes.data ?? []).filter(c => c.created_at >= start && c.created_at < end).length
+  const curCharges = chargesInWindow(monthISO, nowISO)
+  const prevCharges = chargesInWindow(prevMonthISO, monthISO)
+
+  // Resumo do funil, de cima para baixo (impressão → clique → visita → venda → economia)
+  const funnelRows = [
+    { label: 'Impressões', cur: cur.impressions, prev: prev.impressions, fmt: intFmt, adDep: true },
+    { label: 'Cliques no anúncio', cur: cur.clicks, prev: prev.clicks, fmt: intFmt, adDep: true },
+    { label: 'CTR', cur: cur.ctr, prev: prev.ctr, fmt: pctFmt, adDep: true },
+    { label: 'Visitas /ebook', cur: cur.views, prev: prev.views, fmt: intFmt },
+    { label: 'Cobranças geradas', cur: curCharges, prev: prevCharges, fmt: intFmt },
+    { label: 'Conversões (vendas)', cur: cur.conv, prev: prev.conv, fmt: intFmt },
+    { label: 'Investimento em ads', cur: cur.ads, prev: prev.ads, fmt: brl, invert: true, adDep: true },
+    { label: 'Faturamento', cur: cur.rev, prev: prev.rev, fmt: brl },
+    { label: 'CPA (custo por venda)', cur: cur.cpa, prev: prev.cpa, fmt: brl, invert: true, adDep: true },
+    { label: 'ROAS', cur: cur.roas, prev: prev.roas, fmt: roasFmt, adDep: true },
+    { label: 'Lucro líquido (após ads)', cur: cur.net, prev: prev.net, fmt: brl, highlight: true },
+  ]
   const conversionsRaw: RawEvent[] = confirmedRows
     .filter(r => (r.confirmed_at ?? r.created_at) >= monthISO)
     .map(r => ({ date: r.confirmed_at ?? r.created_at, utm: r.utm_source }))
@@ -269,6 +299,43 @@ export default async function RelatoriosPage({ searchParams }: { searchParams: P
           {!adsConfigured && (
             <p className="text-xs text-gray-400 mt-3">
               💡 Gasto de ads não configurado. Defina <code className="bg-gray-100 px-1 rounded">META_AD_ACCOUNT_ID</code> e <code className="bg-gray-100 px-1 rounded">META_ADS_ACCESS_TOKEN</code> (com permissão <code className="bg-gray-100 px-1 rounded">ads_read</code>) para ver o lucro líquido descontando anúncios.
+            </p>
+          )}
+        </div>
+
+        {/* Resumo do funil */}
+        <div>
+          <SectionHeader title={`Resumo do funil — ${periodLabel}`} />
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <table className="w-full text-base">
+              <thead className="bg-gray-50 text-gray-500 text-sm uppercase tracking-wide font-semibold">
+                <tr>
+                  <th className="text-left px-5 py-3">Etapa</th>
+                  <th className="text-right px-5 py-3">{periodLabel}</th>
+                  <th className="text-right px-5 py-3">vs. anterior</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {funnelRows.map(row => {
+                  const na = row.adDep && !adsConfigured
+                  return (
+                    <tr key={row.label} className={row.highlight ? 'bg-[#f0f7f0]' : 'hover:bg-gray-50/60'}>
+                      <td className={`px-5 py-3 ${row.highlight ? 'font-bold text-[#1b4332]' : 'font-medium text-gray-700'}`}>{row.label}</td>
+                      <td className={`px-5 py-3 text-right font-black ${row.highlight ? 'text-[#1b4332]' : 'text-gray-800'}`}>
+                        {na ? <span className="text-gray-300">—</span> : row.fmt(row.cur)}
+                      </td>
+                      <td className="px-5 py-3 text-right">
+                        {na ? <span className="text-gray-300 text-xs">—</span> : <Delta cur={row.cur} prev={row.prev} invert={row.invert} />}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+          {!adsConfigured && (
+            <p className="text-xs text-gray-400 mt-3">
+              CTR, CPA e ROAS aparecem após configurar a integração de ads (<code className="bg-gray-100 px-1 rounded">META_AD_ACCOUNT_ID</code> + <code className="bg-gray-100 px-1 rounded">META_ADS_ACCESS_TOKEN</code>).
             </p>
           )}
         </div>

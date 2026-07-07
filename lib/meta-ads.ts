@@ -8,15 +8,17 @@ const FILTER = (process.env.META_ADS_CAMPAIGN_FILTER ?? 'ebook').toLowerCase()
 
 // Cache em memória por janela (since|until) — evita bater na API a cada load.
 const TTL_MS = 30 * 60 * 1000
-const cache = new Map<string, { spend: number; at: number }>()
+const cache = new Map<string, { data: AdInsights; at: number }>()
 
-type InsightRow = { campaign_name?: string; spend?: string }
+type InsightRow = { campaign_name?: string; spend?: string; impressions?: string; clicks?: string }
+
+export type AdInsights = { spend: number; impressions: number; clicks: number }
 
 /**
- * Soma o gasto (BRL) das campanhas do ebook no intervalo [fromISO, toISO).
- * Retorna null se a integração não estiver configurada ou a API falhar.
+ * Soma gasto (BRL), impressões e cliques das campanhas do ebook no intervalo
+ * [fromISO, toISO). Retorna null se não configurado ou a API falhar.
  */
-export async function fetchEbookAdSpend(fromISO: string, toISO: string): Promise<number | null> {
+export async function fetchEbookAdInsights(fromISO: string, toISO: string): Promise<AdInsights | null> {
   const token = process.env.META_ADS_ACCESS_TOKEN || process.env.META_PIXEL_ACCESS_TOKEN
   const account = process.env.META_AD_ACCOUNT_ID
   if (!token || !account) return null
@@ -25,16 +27,16 @@ export async function fetchEbookAdSpend(fromISO: string, toISO: string): Promise
   const until = toSpDay(toISO)
   const key = `${account}|${since}|${until}|${FILTER}`
   const hit = cache.get(key)
-  if (hit && Date.now() - hit.at < TTL_MS) return hit.spend
+  if (hit && Date.now() - hit.at < TTL_MS) return hit.data
 
   try {
     let url: string | null =
       `${GRAPH}/act_${account}/insights?level=campaign` +
-      `&fields=campaign_name,spend` +
+      `&fields=campaign_name,spend,impressions,clicks` +
       `&time_range=${encodeURIComponent(JSON.stringify({ since, until }))}` +
       `&limit=500&access_token=${token}`
 
-    let total = 0
+    let spend = 0, impressions = 0, clicks = 0
     let pages = 0
     while (url && pages < 10) {
       const res: Response = await fetch(url, { cache: 'no-store' })
@@ -45,16 +47,18 @@ export async function fetchEbookAdSpend(fromISO: string, toISO: string): Promise
       }
       for (const row of json.data ?? []) {
         if ((row.campaign_name ?? '').toLowerCase().includes(FILTER)) {
-          total += parseFloat(row.spend ?? '0') || 0
+          spend += parseFloat(row.spend ?? '0') || 0
+          impressions += parseInt(row.impressions ?? '0', 10) || 0
+          clicks += parseInt(row.clicks ?? '0', 10) || 0
         }
       }
       url = json.paging?.next ?? null
       pages++
     }
 
-    const spend = Math.round(total * 100) / 100
-    cache.set(key, { spend, at: Date.now() })
-    return spend
+    const data: AdInsights = { spend: Math.round(spend * 100) / 100, impressions, clicks }
+    cache.set(key, { data, at: Date.now() })
+    return data
   } catch (e) {
     console.error('[meta-ads] fetch falhou:', e instanceof Error ? e.message : e)
     return null
