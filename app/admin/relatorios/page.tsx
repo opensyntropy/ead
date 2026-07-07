@@ -7,6 +7,7 @@ import AdminHeader from '../AdminHeader'
 import PeriodSelector from '../PeriodSelector'
 import { RANGES, ALLOWED_RANGES, DEFAULT_RANGE } from '../periods'
 import { rowValue } from '@/lib/analytics'
+import { fetchEbookAdSpend } from '@/lib/meta-ads'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,14 +37,19 @@ function SectionHeader({ title }: { title: string }) {
   )
 }
 
-function Delta({ cur, prev }: { cur: number; prev: number }) {
+const brl = (n: number) => `R$ ${Math.round(n).toLocaleString('pt-BR')}`
+
+function Delta({ cur, prev, invert = false }: { cur: number; prev: number; invert?: boolean }) {
   if (prev === 0) {
     return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold text-gray-400 bg-gray-100">sem base</span>
   }
   const change = Math.round(((cur - prev) / prev) * 1000) / 10
   const up = change > 0
   const down = change < 0
-  const cls = up ? 'text-green-700 bg-green-50' : down ? 'text-red-700 bg-red-50' : 'text-gray-500 bg-gray-100'
+  // invert=true → subir é ruim (ex.: gasto de ads)
+  const good = invert ? down : up
+  const bad = invert ? up : down
+  const cls = good ? 'text-green-700 bg-green-50' : bad ? 'text-red-700 bg-red-50' : 'text-gray-500 bg-gray-100'
   const arrow = up ? '▲' : down ? '▼' : '▬'
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold ${cls}`} title={`${cur} vs ${prev} no período anterior`}>
@@ -52,16 +58,16 @@ function Delta({ cur, prev }: { cur: number; prev: number }) {
   )
 }
 
-function CompareCard({ label, cur, prev, format }: { label: string; cur: number; prev: number; format?: (n: number) => string }) {
+function CompareCard({ label, cur, prev, format, invert, highlight }: { label: string; cur: number; prev: number; format?: (n: number) => string; invert?: boolean; highlight?: boolean }) {
   const fmt = format ?? ((n: number) => String(n))
   return (
-    <div className="bg-white rounded-xl border border-gray-200 px-5 py-4 flex-1 min-w-[180px]">
+    <div className={`rounded-xl border px-5 py-4 flex-1 min-w-[180px] ${highlight ? 'bg-[#f0f7f0] border-[#52b788]' : 'bg-white border-gray-200'}`}>
       <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{label}</p>
       <div className="flex items-baseline gap-2 flex-wrap">
         <p className="text-2xl font-black text-gray-800">{fmt(cur)}</p>
-        <Delta cur={cur} prev={prev} />
+        <Delta cur={cur} prev={prev} invert={invert} />
       </div>
-      <p className="text-xs text-gray-400 mt-1">30 dias anteriores: {fmt(prev)}</p>
+      <p className="text-xs text-gray-400 mt-1">período anterior: {fmt(prev)}</p>
     </div>
   )
 }
@@ -131,8 +137,30 @@ export default async function RelatoriosPage({ searchParams }: { searchParams: P
   const curViews = visitsMonthRes.count ?? 0
   const prevViews = visitsPrevRes.count ?? 0
   const FEE_PER_SALE = 2 // taxa de venda (R$) descontada por cobrança confirmada
-  const cur = { views: curViews, conv: curConf.length, rev: sumRev(curConf), rate: curViews > 0 ? (curConf.length / curViews) * 100 : 0, profit: sumRev(curConf) - FEE_PER_SALE * curConf.length }
-  const prev = { views: prevViews, conv: prevConf.length, rev: sumRev(prevConf), rate: prevViews > 0 ? (prevConf.length / prevViews) * 100 : 0, profit: sumRev(prevConf) - FEE_PER_SALE * prevConf.length }
+
+  // Gasto de ads (Meta) por período — null se integração não configurada.
+  // O período anterior termina 1 dia antes do limite para não dividir o gasto
+  // do dia-fronteira entre os dois períodos (spend de ads é diário).
+  const prevAdEndISO = new Date(now - rangeDays * 86400000 - 86400000).toISOString()
+  const [curAdSpend, prevAdSpend] = await Promise.all([
+    fetchEbookAdSpend(monthISO, nowISO),
+    fetchEbookAdSpend(prevMonthISO, prevAdEndISO),
+  ])
+  const adsConfigured = curAdSpend != null || prevAdSpend != null
+
+  const grossProfit = (rows: typeof confirmedRows) => sumRev(rows) - FEE_PER_SALE * rows.length
+  const cur = {
+    views: curViews, conv: curConf.length, rev: sumRev(curConf),
+    rate: curViews > 0 ? (curConf.length / curViews) * 100 : 0,
+    profit: grossProfit(curConf), ads: curAdSpend ?? 0,
+    net: grossProfit(curConf) - (curAdSpend ?? 0),
+  }
+  const prev = {
+    views: prevViews, conv: prevConf.length, rev: sumRev(prevConf),
+    rate: prevViews > 0 ? (prevConf.length / prevViews) * 100 : 0,
+    profit: grossProfit(prevConf), ads: prevAdSpend ?? 0,
+    net: grossProfit(prevConf) - (prevAdSpend ?? 0),
+  }
   const conversionsRaw: RawEvent[] = confirmedRows
     .filter(r => (r.confirmed_at ?? r.created_at) >= monthISO)
     .map(r => ({ date: r.confirmed_at ?? r.created_at, utm: r.utm_source }))
@@ -229,9 +257,20 @@ export default async function RelatoriosPage({ searchParams }: { searchParams: P
             <CompareCard label="Visitas /ebook" cur={cur.views} prev={prev.views} />
             <CompareCard label="Conversões" cur={cur.conv} prev={prev.conv} />
             <CompareCard label="Taxa de conversão" cur={cur.rate} prev={prev.rate} format={n => `${Math.round(n * 100) / 100}%`} />
-            <CompareCard label="Faturamento" cur={cur.rev} prev={prev.rev} format={n => `R$ ${Math.round(n).toLocaleString('pt-BR')}`} />
-            <CompareCard label="Lucro líquido (−R$2/venda)" cur={cur.profit} prev={prev.profit} format={n => `R$ ${Math.round(n).toLocaleString('pt-BR')}`} />
+            <CompareCard label="Faturamento" cur={cur.rev} prev={prev.rev} format={brl} />
+            <CompareCard label="Lucro bruto (−R$2/venda)" cur={cur.profit} prev={prev.profit} format={brl} />
+            {adsConfigured && (
+              <>
+                <CompareCard label="Gasto em ads" cur={cur.ads} prev={prev.ads} format={brl} invert />
+                <CompareCard label="Lucro líquido (após ads)" cur={cur.net} prev={prev.net} format={brl} highlight />
+              </>
+            )}
           </div>
+          {!adsConfigured && (
+            <p className="text-xs text-gray-400 mt-3">
+              💡 Gasto de ads não configurado. Defina <code className="bg-gray-100 px-1 rounded">META_AD_ACCOUNT_ID</code> e <code className="bg-gray-100 px-1 rounded">META_ADS_ACCESS_TOKEN</code> (com permissão <code className="bg-gray-100 px-1 rounded">ads_read</code>) para ver o lucro líquido descontando anúncios.
+            </p>
+          )}
         </div>
 
         {/* Gráficos de tendência */}
