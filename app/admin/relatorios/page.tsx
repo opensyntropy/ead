@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import TrafficChart, { type RawEvent } from '../TrafficChart'
 import AdPerformanceChart, { type RawConversion } from '../AdPerformanceChart'
 import AdminHeader from '../AdminHeader'
+import { rowValue } from '@/lib/analytics'
 
 export const dynamic = 'force-dynamic'
 
@@ -33,6 +34,36 @@ function SectionHeader({ title }: { title: string }) {
   )
 }
 
+function Delta({ cur, prev }: { cur: number; prev: number }) {
+  if (prev === 0) {
+    return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold text-gray-400 bg-gray-100">sem base</span>
+  }
+  const change = Math.round(((cur - prev) / prev) * 1000) / 10
+  const up = change > 0
+  const down = change < 0
+  const cls = up ? 'text-green-700 bg-green-50' : down ? 'text-red-700 bg-red-50' : 'text-gray-500 bg-gray-100'
+  const arrow = up ? '▲' : down ? '▼' : '▬'
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold ${cls}`} title={`${cur} vs ${prev} no período anterior`}>
+      {arrow} {Math.abs(change)}%
+    </span>
+  )
+}
+
+function CompareCard({ label, cur, prev, format }: { label: string; cur: number; prev: number; format?: (n: number) => string }) {
+  const fmt = format ?? ((n: number) => String(n))
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 px-5 py-4 flex-1 min-w-[180px]">
+      <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{label}</p>
+      <div className="flex items-baseline gap-2 flex-wrap">
+        <p className="text-2xl font-black text-gray-800">{fmt(cur)}</p>
+        <Delta cur={cur} prev={prev} />
+      </div>
+      <p className="text-xs text-gray-400 mt-1">30 dias anteriores: {fmt(prev)}</p>
+    </div>
+  )
+}
+
 function OriginBadge({ row }: { row?: { utm_source?: string | null } }) {
   if (!row?.utm_source) return <span className="text-gray-300 text-xs">direto</span>
   const SOURCE_NORMALIZE: Record<string, string> = { ig: 'instagram', fb: 'facebook', an: 'audience_network', msg: 'messenger' }
@@ -56,10 +87,14 @@ export default async function RelatoriosPage() {
   if (jar.get('admin_session')?.value !== '1') redirect('/admin/login')
 
   const service = await createServiceClient()
-  const monthISO = new Date(Date.now() - 30 * 86400000).toISOString()
+  const now = Date.now()
+  const nowISO = new Date(now).toISOString()
+  const monthISO = new Date(now - 30 * 86400000).toISOString()
+  const prevMonthISO = new Date(now - 60 * 86400000).toISOString()
 
-  const [visitsMonthRes, visitsRawRes, visitsTotalRes, pixRes] = await Promise.all([
+  const [visitsMonthRes, visitsPrevRes, visitsRawRes, visitsTotalRes, pixRes] = await Promise.all([
     service.from('page_visits').select('id', { count: 'exact', head: true }).eq('page', '/ebook').gte('created_at', monthISO),
+    service.from('page_visits').select('id', { count: 'exact', head: true }).eq('page', '/ebook').gte('created_at', prevMonthISO).lt('created_at', monthISO),
     service.from('page_visits').select('created_at,utm_source,utm_content,referer').eq('page', '/ebook').gte('created_at', monthISO).order('created_at', { ascending: false }).limit(20000),
     service.from('page_visits').select('id', { count: 'exact', head: true }),
     service.from('pix_charges').select('*').order('created_at', { ascending: false }),
@@ -79,6 +114,17 @@ export default async function RelatoriosPage() {
     .filter(r => toDay(r.created_at) >= toDay(monthISO))
     .map(r => ({ date: r.created_at, utm: r.utm_source }))
   const confirmedRows = (pixRes.data ?? []).filter(p => p.status === 'confirmed')
+
+  // Comparação: últimos 30 dias vs. 30 dias anteriores
+  const confInWindow = (start: string, end: string) =>
+    confirmedRows.filter(c => c.created_at >= start && c.created_at < end)
+  const sumRev = (rows: typeof confirmedRows) => rows.reduce((s, c) => s + rowValue(c), 0)
+  const curConf = confInWindow(monthISO, nowISO)
+  const prevConf = confInWindow(prevMonthISO, monthISO)
+  const curViews = visitsMonthRes.count ?? 0
+  const prevViews = visitsPrevRes.count ?? 0
+  const cur = { views: curViews, conv: curConf.length, rev: sumRev(curConf), rate: curViews > 0 ? (curConf.length / curViews) * 100 : 0 }
+  const prev = { views: prevViews, conv: prevConf.length, rev: sumRev(prevConf), rate: prevViews > 0 ? (prevConf.length / prevViews) * 100 : 0 }
   const conversionsRaw: RawEvent[] = confirmedRows
     .filter(r => (r.confirmed_at ?? r.created_at) >= monthISO)
     .map(r => ({ date: r.confirmed_at ?? r.created_at, utm: r.utm_source }))
@@ -158,6 +204,17 @@ export default async function RelatoriosPage() {
               <p className="text-2xl font-black text-gray-800">{value}</p>
             </div>
           ))}
+        </div>
+
+        {/* Comparação de período */}
+        <div>
+          <SectionHeader title="Últimos 30 dias vs. 30 dias anteriores" />
+          <div className="flex gap-4 flex-wrap">
+            <CompareCard label="Visitas /ebook" cur={cur.views} prev={prev.views} />
+            <CompareCard label="Conversões" cur={cur.conv} prev={prev.conv} />
+            <CompareCard label="Taxa de conversão" cur={cur.rate} prev={prev.rate} format={n => `${Math.round(n * 100) / 100}%`} />
+            <CompareCard label="Faturamento" cur={cur.rev} prev={prev.rev} format={n => `R$ ${Math.round(n).toLocaleString('pt-BR')}`} />
+          </div>
         </div>
 
         {/* Gráficos de tendência */}
