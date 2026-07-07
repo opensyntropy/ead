@@ -1,18 +1,7 @@
 'use client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useTransition } from 'react'
-
-export const RANGES = [
-  { label: '7 dias', days: 7 },
-  { label: '14 dias', days: 14 },
-  { label: '30 dias', days: 30 },
-  { label: '90 dias', days: 90 },
-  { label: '6 meses', days: 180 },
-  { label: '12 meses', days: 365 },
-] as const
-
-export const DEFAULT_RANGE = 30
-export const ALLOWED_RANGES = RANGES.map(r => r.days) as readonly number[]
+import { RANGES, DEFAULT_RANGE, ALLOWED_RANGES } from './periods'
 
 export default function PeriodSelector() {
   const router = useRouter()
