@@ -130,8 +130,9 @@ export default async function RelatoriosPage({ searchParams }: { searchParams: P
   const prevConf = confInWindow(prevMonthISO, monthISO)
   const curViews = visitsMonthRes.count ?? 0
   const prevViews = visitsPrevRes.count ?? 0
-  const cur = { views: curViews, conv: curConf.length, rev: sumRev(curConf), rate: curViews > 0 ? (curConf.length / curViews) * 100 : 0 }
-  const prev = { views: prevViews, conv: prevConf.length, rev: sumRev(prevConf), rate: prevViews > 0 ? (prevConf.length / prevViews) * 100 : 0 }
+  const FEE_PER_SALE = 2 // taxa de venda (R$) descontada por cobrança confirmada
+  const cur = { views: curViews, conv: curConf.length, rev: sumRev(curConf), rate: curViews > 0 ? (curConf.length / curViews) * 100 : 0, profit: sumRev(curConf) - FEE_PER_SALE * curConf.length }
+  const prev = { views: prevViews, conv: prevConf.length, rev: sumRev(prevConf), rate: prevViews > 0 ? (prevConf.length / prevViews) * 100 : 0, profit: sumRev(prevConf) - FEE_PER_SALE * prevConf.length }
   const conversionsRaw: RawEvent[] = confirmedRows
     .filter(r => (r.confirmed_at ?? r.created_at) >= monthISO)
     .map(r => ({ date: r.confirmed_at ?? r.created_at, utm: r.utm_source }))
@@ -229,6 +230,7 @@ export default async function RelatoriosPage({ searchParams }: { searchParams: P
             <CompareCard label="Conversões" cur={cur.conv} prev={prev.conv} />
             <CompareCard label="Taxa de conversão" cur={cur.rate} prev={prev.rate} format={n => `${Math.round(n * 100) / 100}%`} />
             <CompareCard label="Faturamento" cur={cur.rev} prev={prev.rev} format={n => `R$ ${Math.round(n).toLocaleString('pt-BR')}`} />
+            <CompareCard label="Lucro líquido (−R$2/venda)" cur={cur.profit} prev={prev.profit} format={n => `R$ ${Math.round(n).toLocaleString('pt-BR')}`} />
           </div>
         </div>
 
