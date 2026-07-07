@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import TrafficChart, { type RawEvent } from '../TrafficChart'
 import AdPerformanceChart, { type RawConversion } from '../AdPerformanceChart'
 import AdminHeader from '../AdminHeader'
+import PeriodSelector, { RANGES, ALLOWED_RANGES, DEFAULT_RANGE } from '../PeriodSelector'
 import { rowValue } from '@/lib/analytics'
 
 export const dynamic = 'force-dynamic'
@@ -82,20 +83,25 @@ function OriginBadge({ row }: { row?: { utm_source?: string | null } }) {
   )
 }
 
-export default async function RelatoriosPage() {
+export default async function RelatoriosPage({ searchParams }: { searchParams: Promise<{ range?: string }> }) {
   const jar = await cookies()
   if (jar.get('admin_session')?.value !== '1') redirect('/admin/login')
+
+  const sp = await searchParams
+  const rawRange = Number(sp.range)
+  const rangeDays = ALLOWED_RANGES.includes(rawRange) ? rawRange : DEFAULT_RANGE
+  const periodLabel = RANGES.find(r => r.days === rangeDays)?.label ?? `${rangeDays} dias`
 
   const service = await createServiceClient()
   const now = Date.now()
   const nowISO = new Date(now).toISOString()
-  const monthISO = new Date(now - 30 * 86400000).toISOString()
-  const prevMonthISO = new Date(now - 60 * 86400000).toISOString()
+  const monthISO = new Date(now - rangeDays * 86400000).toISOString()
+  const prevMonthISO = new Date(now - 2 * rangeDays * 86400000).toISOString()
 
   const [visitsMonthRes, visitsPrevRes, visitsRawRes, visitsTotalRes, pixRes] = await Promise.all([
     service.from('page_visits').select('id', { count: 'exact', head: true }).eq('page', '/ebook').gte('created_at', monthISO),
     service.from('page_visits').select('id', { count: 'exact', head: true }).eq('page', '/ebook').gte('created_at', prevMonthISO).lt('created_at', monthISO),
-    service.from('page_visits').select('created_at,utm_source,utm_content,referer').eq('page', '/ebook').gte('created_at', monthISO).order('created_at', { ascending: false }).limit(20000),
+    service.from('page_visits').select('created_at,utm_source,utm_content,referer').eq('page', '/ebook').gte('created_at', monthISO).order('created_at', { ascending: false }).limit(60000),
     service.from('page_visits').select('id', { count: 'exact', head: true }),
     service.from('pix_charges').select('*').order('created_at', { ascending: false }),
   ])
@@ -161,11 +167,11 @@ export default async function RelatoriosPage() {
     )
   ).sort((a, b) => b[1].conversions - a[1].conversions || b[1].visits - a[1].visits)
 
-  // Acessos até a conversão (visit_count gravado no checkout)
-  const visitCountsRaw = confirmedRows
+  // Acessos até a conversão (visit_count gravado no checkout) — filtrado pelo período
+  const visitCountsRaw = curConf
     .map(r => (r as { visit_count?: number | null }).visit_count)
     .filter((v): v is number => v != null && v > 0)
-  const missingVisitData = confirmedRows.length - visitCountsRaw.length
+  const missingVisitData = curConf.length - visitCountsRaw.length
   const visitBuckets: { label: string; conversions: number }[] = (() => {
     const b: Record<string, number> = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6+': 0 }
     for (const v of visitCountsRaw) b[v >= 6 ? '6+' : String(v)]++
@@ -182,6 +188,14 @@ export default async function RelatoriosPage() {
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       <AdminHeader />
+
+      {/* Seletor de período — filtra toda a página */}
+      <div className="sticky top-0 z-20 bg-white/90 backdrop-blur border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-6 py-3">
+          <PeriodSelector />
+        </div>
+      </div>
+
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
 
         {dbErrors.length > 0 && (
@@ -194,7 +208,7 @@ export default async function RelatoriosPage() {
         {/* Resumo */}
         <div className="flex gap-4 flex-wrap">
           {[
-            { label: 'Visitas /ebook (30d)', value: visitsMonth },
+            { label: `Visitas /ebook (${periodLabel})`, value: visitsMonth },
             { label: 'Visitas totais (histórico)', value: visitsTotalRes.count ?? 0 },
             { label: 'Cobranças geradas (total)', value: pixRes.data?.length ?? 0 },
             { label: 'Confirmadas (total)', value: confirmedRows.length },
@@ -208,7 +222,7 @@ export default async function RelatoriosPage() {
 
         {/* Comparação de período */}
         <div>
-          <SectionHeader title="Últimos 30 dias vs. 30 dias anteriores" />
+          <SectionHeader title={`${periodLabel} vs. ${periodLabel} anteriores`} />
           <div className="flex gap-4 flex-wrap">
             <CompareCard label="Visitas /ebook" cur={cur.views} prev={prev.views} />
             <CompareCard label="Conversões" cur={cur.conv} prev={prev.conv} />
@@ -220,21 +234,21 @@ export default async function RelatoriosPage() {
         {/* Gráficos de tendência */}
         <div>
           <SectionHeader title="Tendência — /ebook" />
-          <TrafficChart visits={visitsRaw} checkouts={checkoutsRaw} conversions={conversionsRaw} />
+          <TrafficChart visits={visitsRaw} checkouts={checkoutsRaw} conversions={conversionsRaw} days={rangeDays} />
         </div>
 
         {/* Conversões por adset · ad */}
         {adConversionsRaw.length > 0 && (
           <div>
             <SectionHeader title="Conversões por adset · anúncio" />
-            <AdPerformanceChart conversions={adConversionsRaw} />
+            <AdPerformanceChart conversions={adConversionsRaw} days={rangeDays} />
           </div>
         )}
 
         {/* Origens & Anúncios */}
         {(utmBreakdown.length > 0 || adBreakdown.length > 0) && (
           <div>
-            <SectionHeader title="Origens & anúncios — 30 dias" />
+            <SectionHeader title={`Origens & anúncios — ${periodLabel}`} />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {utmBreakdown.length > 0 && (
                 <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">

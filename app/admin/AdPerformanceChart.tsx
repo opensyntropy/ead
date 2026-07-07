@@ -16,12 +16,6 @@ const PALETTE = [
   '#8B5CF6', '#EF4444', '#06B6D4', '#F97316', '#10B981',
 ]
 
-const INTERVALS = [
-  { label: '7d', days: 7 },
-  { label: '14d', days: 14 },
-  { label: '30d', days: 30 },
-]
-
 function toDay(iso: string) {
   return new Date(iso).toLocaleDateString('sv', { timeZone: 'America/Sao_Paulo' })
 }
@@ -76,8 +70,7 @@ function buildData(
   return { rows, topKeys, totalByKey }
 }
 
-export default function AdPerformanceChart({ conversions }: { conversions: RawConversion[] }) {
-  const [days, setDays] = useState(30)
+export default function AdPerformanceChart({ conversions, days }: { conversions: RawConversion[]; days: number }) {
   const [hidden, setHidden] = useState<Set<string>>(new Set())
 
   const filtered = useMemo(() => {
@@ -106,19 +99,7 @@ export default function AdPerformanceChart({ conversions }: { conversions: RawCo
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 px-6 py-5">
-      {/* Interval selector */}
       <div className="flex items-center gap-2 mb-5">
-        {INTERVALS.map(({ label, days: d }) => (
-          <button
-            key={label}
-            onClick={() => setDays(d)}
-            className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
-              days === d ? 'bg-[#1b4332] text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
         <span className="ml-auto text-xs text-gray-400">Top 10 por conversões · clique na legenda para ocultar</span>
       </div>
 
@@ -131,7 +112,7 @@ export default function AdPerformanceChart({ conversions }: { conversions: RawCo
             tick={{ fontSize: 11, fill: '#9ca3af' }}
             tickLine={false}
             axisLine={false}
-            interval={days === 7 ? 0 : days === 14 ? 1 : 3}
+            interval={Math.max(0, Math.ceil(days / 10) - 1)}
           />
           <YAxis
             allowDecimals={false}
