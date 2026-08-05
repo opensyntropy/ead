@@ -496,7 +496,11 @@ function CheckoutForm() {
       body: JSON.stringify({ page: '/ebook/checkout-click', ...utmParams }),
     }).catch(() => {})
     const getCookie = (name: string) => document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith(name + '='))?.split('=').slice(1).join('=') ?? null
-    const fbc = getCookie('_fbc')
+    // Cookie do Pixel pode ainda não existir se a compra for rápida demais (Script
+    // carrega com afterInteractive); usa o mesmo fallback via fbclid que o servidor
+    // usa no PageView (app/ebook/page.tsx), senão a Purchase perde a atribuição.
+    const fbclidParam = searchParams.get('fbclid')
+    const fbc = getCookie('_fbc') ?? (fbclidParam ? `fb.1.${Date.now()}.${fbclidParam}` : null)
     const fbp = getCookie('_fbp')
     const res = await fetch('/api/asaas/checkout', {
       method: 'POST',
