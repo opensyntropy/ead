@@ -1,6 +1,7 @@
 'use client'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import dynamic from 'next/dynamic'
+import { buildEmailHtml, isFullHtmlDocument } from '@/lib/broadcast-template'
 
 const EmailEditor = dynamic(() => import('./EmailEditor'), { ssr: false })
 
@@ -9,6 +10,7 @@ interface Props {
 }
 
 type RecipientFilter = 'all' | 'product'
+type ContentMode = 'editor' | 'html'
 
 const PRODUCTS_OPTIONS = [
   { value: 'ebook', label: 'Ebook — Guia de Introdução' },
@@ -25,22 +27,58 @@ export default function EmailBroadcastForm({ buyerCount }: Props) {
   const [sending, setSending] = useState(false)
   const [result, setResult] = useState<{ ok: boolean; message: string; sent?: number } | null>(null)
   const [showPreview, setShowPreview] = useState(false)
-  const [previewHtml, setPreviewHtml] = useState('')
+  const [mode, setMode] = useState<ContentMode>('editor')
+  const [htmlSource, setHtmlSource] = useState('')
+  const [useTemplate, setUseTemplate] = useState(true)
+  const [testEmail, setTestEmail] = useState('')
+  const [testing, setTesting] = useState(false)
+  const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null)
 
-  const handlePreview = useCallback(async () => {
-    const res = await fetch('/api/admin/send-broadcast', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subject, body, filter: recipientFilter, product: selectedProduct, preview: true }),
-    })
-    const data = await res.json()
-    setPreviewHtml(data.html ?? '')
-    setShowPreview(true)
-  }, [subject, body, recipientFilter, selectedProduct])
+  const content = mode === 'editor' ? body : htmlSource
+  const wrap = mode === 'editor' || useTemplate
+  const isEmpty = mode === 'editor' ? (!body || body === INITIAL_CONTENT) : !htmlSource.trim()
+
+  const previewHtml = useMemo(
+    () => (wrap ? buildEmailHtml(subject || '(sem assunto)', content) : content),
+    [wrap, subject, content],
+  )
+
+  const switchMode = useCallback((next: ContentMode) => {
+    if (next === 'html' && !htmlSource.trim() && body !== INITIAL_CONTENT) setHtmlSource(body)
+    setMode(next)
+  }, [htmlSource, body])
+
+  const handleHtmlChange = useCallback((value: string) => {
+    // Pasted a complete document: it already has its own layout, so don't wrap it
+    if (!htmlSource.trim() && isFullHtmlDocument(value)) setUseTemplate(false)
+    setHtmlSource(value)
+  }, [htmlSource])
+
+  const handleTestSend = useCallback(async () => {
+    if (!subject.trim()) { alert('Informe o assunto do email.'); return }
+    if (isEmpty) { alert('Escreva o conteúdo do email.'); return }
+    if (!testEmail.trim()) { alert('Informe o email de teste.'); return }
+
+    setTesting(true)
+    setTestResult(null)
+    try {
+      const res = await fetch('/api/admin/send-broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subject, body: content, useTemplate: wrap, testTo: testEmail }),
+      })
+      const data = await res.json()
+      setTestResult({ ok: res.ok, message: data.message ?? (res.ok ? 'Teste enviado!' : 'Erro ao enviar teste.') })
+    } catch {
+      setTestResult({ ok: false, message: 'Erro de rede ao enviar teste.' })
+    } finally {
+      setTesting(false)
+    }
+  }, [subject, content, wrap, testEmail, isEmpty])
 
   const handleSend = useCallback(async () => {
     if (!subject.trim()) { alert('Informe o assunto do email.'); return }
-    if (!body || body === INITIAL_CONTENT) { alert('Escreva o conteúdo do email.'); return }
+    if (isEmpty) { alert('Escreva o conteúdo do email.'); return }
     const confirmed = window.confirm(
       `Enviar este email para ${recipientFilter === 'all' ? `todos os ${buyerCount} compradores` : `compradores do produto selecionado`}?\n\nAssunto: ${subject}`
     )
@@ -52,7 +90,7 @@ export default function EmailBroadcastForm({ buyerCount }: Props) {
       const res = await fetch('/api/admin/send-broadcast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subject, body, filter: recipientFilter, product: selectedProduct }),
+        body: JSON.stringify({ subject, body: content, useTemplate: wrap, filter: recipientFilter, product: selectedProduct }),
       })
       const data = await res.json()
       setResult({ ok: res.ok, message: data.message ?? (res.ok ? 'Enviado com sucesso!' : 'Erro ao enviar.'), sent: data.sent })
@@ -61,7 +99,7 @@ export default function EmailBroadcastForm({ buyerCount }: Props) {
     } finally {
       setSending(false)
     }
-  }, [subject, body, recipientFilter, selectedProduct, buyerCount])
+  }, [subject, content, wrap, isEmpty, recipientFilter, selectedProduct, buyerCount])
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -119,21 +157,102 @@ export default function EmailBroadcastForm({ buyerCount }: Props) {
 
       {/* Body */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-base font-bold text-gray-700 flex items-center gap-2">
+            <span className="w-1 h-5 rounded-full bg-[#52b788] inline-block" />
+            Conteúdo do email
+          </h2>
+          <div className="flex rounded-lg border border-gray-200 p-0.5 text-xs font-semibold">
+            {(['editor', 'html'] as const).map(m => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => switchMode(m)}
+                className={`px-3 py-1.5 rounded-md transition-colors ${mode === m ? 'bg-[#1b4332] text-white' : 'text-gray-600 hover:bg-gray-50'}`}
+              >
+                {m === 'editor' ? 'Editor visual' : 'Colar HTML'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {mode === 'editor' ? (
+          <>
+            <p className="text-xs text-gray-400">
+              O texto será inserido no template padrão OpenSyntropy. Use negrito, links e imagens à vontade.
+            </p>
+            <EmailEditor content={body} onChange={setBody} />
+          </>
+        ) : (
+          <>
+            <label className="flex items-center gap-2 text-xs text-gray-600">
+              <input
+                type="checkbox"
+                checked={useTemplate}
+                onChange={e => setUseTemplate(e.target.checked)}
+                className="accent-[#1b4332]"
+              />
+              Inserir no template padrão OpenSyntropy (desmarque se o HTML já é um email completo)
+            </label>
+            <textarea
+              value={htmlSource}
+              onChange={e => handleHtmlChange(e.target.value)}
+              placeholder="Cole aqui o HTML do email..."
+              spellCheck={false}
+              className="w-full h-72 border border-gray-200 rounded-lg px-3 py-2 font-mono text-xs leading-relaxed focus:outline-none focus:border-[#52b788] resize-y"
+            />
+            <div>
+              <div className="text-xs font-semibold text-gray-500 mb-1.5">Pré-visualização ao vivo</div>
+              <iframe
+                srcDoc={previewHtml}
+                sandbox=""
+                className="w-full rounded-lg border border-gray-200 bg-white"
+                style={{ height: 600 }}
+                title="Pré-visualização do HTML"
+              />
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Test send */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-3">
         <h2 className="text-base font-bold text-gray-700 flex items-center gap-2">
           <span className="w-1 h-5 rounded-full bg-[#52b788] inline-block" />
-          Conteúdo do email
+          Enviar teste
         </h2>
         <p className="text-xs text-gray-400">
-          O texto será inserido no template padrão OpenSyntropy. Use negrito, links e imagens à vontade.
+          Envia só para o endereço abaixo, com o assunto prefixado por [TESTE].
         </p>
-        <EmailEditor content={INITIAL_CONTENT} onChange={setBody} />
+        <div className="flex gap-2">
+          <input
+            type="email"
+            value={testEmail}
+            onChange={e => setTestEmail(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleTestSend()}
+            placeholder="seu@email.com"
+            className="flex-1 border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#52b788] transition-colors"
+          />
+          <button
+            type="button"
+            onClick={handleTestSend}
+            disabled={testing || !subject || !testEmail}
+            className="px-5 py-2.5 text-sm font-semibold border border-[#1b4332] text-[#1b4332] rounded-lg hover:bg-[#f0fdf4] transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            {testing && <span className="w-4 h-4 border-2 border-[#1b4332]/30 border-t-[#1b4332] rounded-full animate-spin" />}
+            {testing ? 'Enviando...' : 'Enviar teste'}
+          </button>
+        </div>
+        {testResult && (
+          <div className={`text-sm ${testResult.ok ? 'text-[#1b4332]' : 'text-red-700'}`}>{testResult.message}</div>
+        )}
       </div>
 
       {/* Actions */}
       <div className="flex items-center gap-3">
         <button
           type="button"
-          onClick={handlePreview}
+          onClick={() => setShowPreview(true)}
           disabled={!subject || sending}
           className="px-5 py-2.5 text-sm font-semibold border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
@@ -184,6 +303,7 @@ export default function EmailBroadcastForm({ buyerCount }: Props) {
               <div className="text-xs text-gray-400 mb-2 px-2">Assunto: <span className="text-gray-700 font-medium">{subject}</span></div>
               <iframe
                 srcDoc={previewHtml}
+                sandbox=""
                 className="w-full rounded-lg border border-gray-100"
                 style={{ height: 600 }}
                 title="Email preview"
