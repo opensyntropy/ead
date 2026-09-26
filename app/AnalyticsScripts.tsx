@@ -6,8 +6,11 @@ export default function AnalyticsScripts() {
   const pathname = usePathname()
   if (pathname.startsWith('/admin')) return null
 
+  const cybereco = process.env.NEXT_PUBLIC_CYBERECO_URL
+
   return (
     <>
+      {cybereco && <Script src={`${cybereco}/t.js`} data-site="ead" strategy="afterInteractive" />}
       <Script src="/clarity-init.js" strategy="afterInteractive" />
       <Script id="meta-pixel" strategy="afterInteractive">{`
         !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?

@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { createPortal } from 'react-dom'
 import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
+import { track } from '@/lib/cybereco'
 
 const PAGES = [
   { src: '/preview/pagina_17.png', cap: 'Cap. 2', title: 'O Que É Sintropia' },
@@ -471,6 +472,7 @@ function CheckoutForm() {
         if (json.confirmed && json.downloadUrl) {
           setDownloadUrl(json.downloadUrl)
           ;(window as any).fbq?.('track', 'Purchase', { value: 87, currency: 'BRL' }, { eventID: pixChargeId })
+          track('purchase', { produto: 'ebook', metodo: 'pix' }, 8700)
           return
         }
       } catch { /* ignora erros de rede */ }
@@ -486,6 +488,7 @@ function CheckoutForm() {
   async function handleBuy(e: React.FormEvent) {
     e.preventDefault()
     ;(window as any).fbq?.('track', 'InitiateCheckout', { value: 87, currency: 'BRL', num_items: 1 })
+    track('checkout_start', { produto: 'ebook', metodo: paymentMethod })
     setLoading(true)
     setError('')
     const visits = (() => { try { return parseInt(localStorage.getItem('ebook_visits') ?? '0', 10) } catch { return 0 } })()
@@ -514,6 +517,9 @@ function CheckoutForm() {
     })
     const data = await res.json()
     setLoading(false)
+    if (data.invoiceUrl || data.pixQrCode || data.cardSuccess) {
+      track('payment_created', { produto: 'ebook', metodo: paymentMethod })
+    }
     if (data.invoiceUrl) {
       window.location.href = data.invoiceUrl
       return
@@ -529,6 +535,7 @@ function CheckoutForm() {
       // o Purchase nesse caso (deduplicado pelo mesmo eventID = id da cobrança).
       if (data.chargeStatus === 'CONFIRMED') {
         ;(window as any).fbq?.('track', 'Purchase', { value: 87, currency: 'BRL' }, { eventID: data.chargeId })
+        track('purchase', { produto: 'ebook', metodo: 'card' }, 8700)
       }
     } else {
       setError(data.error ?? 'Erro ao processar pagamento. Tente novamente.')
@@ -565,6 +572,7 @@ function CheckoutForm() {
       setUpsellPixData({ qrCode: data.pixQrCode, payload: data.pixPayload })
     } else if (data.cardSuccess) {
       setUpsellSuccess(true)
+      track('upsell_purchase', { produto: 'session_upsell', metodo: 'card' }, 12000)
     } else {
       setUpsellError(data.error ?? 'Erro ao processar. Tente novamente.')
     }

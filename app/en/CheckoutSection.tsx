@@ -3,6 +3,7 @@ import { useState } from 'react'
 import type { PriceTier, StripeCurrency } from '@/lib/geo'
 import type { StripeProductId } from '@/config/products'
 import { STRIPE_PRODUCTS } from '@/config/products'
+import { track } from '@/lib/cybereco'
 
 interface Props {
   defaultTier: PriceTier
@@ -49,6 +50,7 @@ export default function CheckoutSection({ defaultTier, locale, currency }: Props
   const price = STRIPE_PRODUCTS[product][tier][currency].label
 
   async function handleBuy() {
+    track('checkout_start', { produto: product, locale, currency })
     setLoading(true)
     setError('')
     const res = await fetch('/api/stripe/checkout', {
@@ -58,6 +60,7 @@ export default function CheckoutSection({ defaultTier, locale, currency }: Props
     })
     const data = await res.json()
     if (data.url) {
+      track('payment_created', { produto: product, locale, currency })
       window.location.href = data.url
     } else {
       setError(data.error ?? 'Error. Please try again.')
