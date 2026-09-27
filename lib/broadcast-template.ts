@@ -53,3 +53,33 @@ export function buildEmailHtml(subject: string, bodyHtml: string): string {
 export function isFullHtmlDocument(html: string): boolean {
   return /^\s*(<!doctype|<html)/i.test(html)
 }
+
+// "Maria da Silva" → "Maria"; bad/missing names yield ''.
+export function firstName(fullName: string | null | undefined): string {
+  const first = (fullName ?? '').trim().split(/\s+/)[0] ?? ''
+  if (!first || first.includes('@')) return ''
+  return first.charAt(0).toLocaleUpperCase('pt-BR') + first.slice(1).toLocaleLowerCase('pt-BR')
+}
+
+// Replaces {{nome}} (any case/spacing). Without a name, the placeholder and the
+// space before it are dropped, so "Olá {{nome}}," becomes "Olá,".
+export function personalize(text: string, name: string, escapeHtml = true): string {
+  const safe = escapeHtml ? name.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : name
+  return text.replace(/(\s*)\{\{\s*nome\s*\}\}/gi, (_, space: string) => (safe ? space + safe : ''))
+}
+
+// Plain-text alternative: HTML-only emails score worse with spam filters.
+export function htmlToText(html: string): string {
+  return html
+    .replace(/<(style|head|script)[\s\S]*?<\/\1>/gi, '')
+    .replace(/<a\s[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi, (_, href: string, label: string) => `${label.replace(/<[^>]+>/g, '')} (${href})`)
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|h[1-6]|li|tr|blockquote)>/gi, '\n\n')
+    .replace(/<li[^>]*>/gi, '• ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/ *\n */g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}

@@ -1,7 +1,7 @@
 'use client'
 import { useState, useCallback, useMemo } from 'react'
 import dynamic from 'next/dynamic'
-import { buildEmailHtml, isFullHtmlDocument } from '@/lib/broadcast-template'
+import { buildEmailHtml, isFullHtmlDocument, personalize } from '@/lib/broadcast-template'
 
 const EmailEditor = dynamic(() => import('./EmailEditor'), { ssr: false })
 
@@ -17,7 +17,7 @@ const PRODUCTS_OPTIONS = [
   { value: 'ebook_session', label: 'Ebook + Sessão Individual' },
 ]
 
-const INITIAL_CONTENT = '<p>Olá,</p><p></p><p></p>'
+const INITIAL_CONTENT = '<p>Olá {{nome}},</p><p></p><p></p>'
 
 export default function EmailBroadcastForm({ buyerCount }: Props) {
   const [subject, setSubject] = useState('')
@@ -39,7 +39,7 @@ export default function EmailBroadcastForm({ buyerCount }: Props) {
   const isEmpty = mode === 'editor' ? (!body || body === INITIAL_CONTENT) : !htmlSource.trim()
 
   const previewHtml = useMemo(
-    () => (wrap ? buildEmailHtml(subject || '(sem assunto)', content) : content),
+    () => personalize(wrap ? buildEmailHtml(personalize(subject || '(sem assunto)', 'Maria', false), content) : content, 'Maria'),
     [wrap, subject, content],
   )
 
@@ -180,6 +180,9 @@ export default function EmailBroadcastForm({ buyerCount }: Props) {
           <>
             <p className="text-xs text-gray-400">
               O texto será inserido no template padrão OpenSyntropy. Use negrito, links e imagens à vontade.
+            </p>
+            <p className="text-xs text-gray-400">
+              Escreva <code className="bg-gray-100 px-1 rounded">{'{{nome}}'}</code> para inserir o primeiro nome do comprador (no assunto também). Sem nome cadastrado, o marcador é removido.
             </p>
             <EmailEditor content={body} onChange={setBody} />
           </>
