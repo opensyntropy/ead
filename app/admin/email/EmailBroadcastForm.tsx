@@ -33,6 +33,7 @@ export default function EmailBroadcastForm({ buyerCount }: Props) {
   const [testEmail, setTestEmail] = useState('')
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null)
+  const [excludeSubject, setExcludeSubject] = useState('')
 
   const content = mode === 'editor' ? body : htmlSource
   const wrap = useTemplate
@@ -83,7 +84,7 @@ export default function EmailBroadcastForm({ buyerCount }: Props) {
     if (!subject.trim()) { alert('Informe o assunto do email.'); return }
     if (isEmpty) { alert('Escreva o conteúdo do email.'); return }
     const confirmed = window.confirm(
-      `Enviar este email para ${recipientFilter === 'all' ? `todos os ${buyerCount} compradores` : `compradores do produto selecionado`}?\n\nAssunto: ${subject}`
+      `Enviar este email para ${recipientFilter === 'all' ? `todos os ${buyerCount} compradores` : `compradores do produto selecionado`}${excludeSubject.trim() ? `, exceto quem já recebeu "${excludeSubject.trim()}"` : ''}?\n\nAssunto: ${subject}`
     )
     if (!confirmed) return
 
@@ -93,7 +94,7 @@ export default function EmailBroadcastForm({ buyerCount }: Props) {
       const res = await fetch('/api/admin/send-broadcast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subject, body: content, useTemplate: wrap, filter: recipientFilter, product: selectedProduct }),
+        body: JSON.stringify({ subject, body: content, useTemplate: wrap, filter: recipientFilter, product: selectedProduct, excludeSubject }),
       })
       const data = await res.json()
       setResult({ ok: res.ok, message: data.message ?? (res.ok ? 'Enviado com sucesso!' : 'Erro ao enviar.'), sent: data.sent })
@@ -102,7 +103,7 @@ export default function EmailBroadcastForm({ buyerCount }: Props) {
     } finally {
       setSending(false)
     }
-  }, [subject, content, wrap, isEmpty, recipientFilter, selectedProduct, buyerCount])
+  }, [subject, content, wrap, isEmpty, recipientFilter, selectedProduct, buyerCount, excludeSubject])
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -141,6 +142,22 @@ export default function EmailBroadcastForm({ buyerCount }: Props) {
             ))}
           </select>
         )}
+        <div className="space-y-1.5">
+          <label className="text-xs font-semibold text-gray-600" htmlFor="exclude-subject">
+            Não enviar para quem já recebeu o email com o assunto (opcional)
+          </label>
+          <input
+            id="exclude-subject"
+            type="text"
+            value={excludeSubject}
+            onChange={e => setExcludeSubject(e.target.value)}
+            placeholder="Cole o assunto exato do envio anterior"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#52b788]"
+          />
+          <p className="text-xs text-gray-400">
+            Útil para completar um envio que falhou pela metade. Quem se descadastrou nunca recebe.
+          </p>
+        </div>
       </div>
 
       {/* Subject */}

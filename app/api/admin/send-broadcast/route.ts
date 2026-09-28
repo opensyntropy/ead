@@ -33,6 +33,31 @@ function buildMessage(subject: string, html: string, name: string, to: string) {
   }
 }
 
+// Recipients Resend already accepted an email with this exact subject, so a
+// resend after a partial failure doesn't hit the same people twice. Built
+// up front from the account's send log, 100 emails per request, paced well
+// under the 10 req/s limit.
+async function alreadySentTo(subject: string): Promise<Set<string>> {
+  const sent = new Set<string>()
+  let after: string | undefined
+  for (let page = 0; page < 100; page++) {
+    let res = await resend.emails.list({ limit: 100, ...(after && { after }) })
+    for (let attempt = 1; res.error?.name === 'rate_limit_exceeded' && attempt < 5; attempt++) {
+      await new Promise(r => setTimeout(r, 1000 * attempt))
+      res = await resend.emails.list({ limit: 100, ...(after && { after }) })
+    }
+    const { data, error } = res
+    if (error) throw new Error(`Resend: ${error.message}`)
+    for (const e of data.data) {
+      if (e.subject?.trim() === subject) for (const to of e.to) sent.add(to.toLowerCase().trim())
+    }
+    if (!data.has_more || data.data.length === 0) break
+    after = data.data[data.data.length - 1].id
+    await new Promise(r => setTimeout(r, 250))
+  }
+  return sent
+}
+
 export async function POST(req: NextRequest) {
   const jar = await cookies()
   if (jar.get('admin_session')?.value !== '1') {
@@ -47,9 +72,10 @@ export async function POST(req: NextRequest) {
     preview?: boolean
     useTemplate?: boolean
     testTo?: string
+    excludeSubject?: string
   }
 
-  const { subject, body: bodyHtml, filter, product, preview, useTemplate = true, testTo } = body
+  const { subject, body: bodyHtml, filter, product, preview, useTemplate = true, testTo, excludeSubject } = body
 
   if (!subject?.trim()) return NextResponse.json({ message: 'Assunto obrigatório.' }, { status: 400 })
   if (!bodyHtml?.trim()) return NextResponse.json({ message: 'Conteúdo obrigatório.' }, { status: 400 })
@@ -102,7 +128,19 @@ export async function POST(req: NextRequest) {
   }
   const { data: unsubRows } = await service.from('email_unsubscribes').select('email')
   const unsubscribed = new Set((unsubRows ?? []).map(r => r.email))
-  const emails = [...names.keys()].filter(e => !unsubscribed.has(e))
+  let alreadySent = new Set<string>()
+  if (excludeSubject?.trim()) {
+    try {
+      alreadySent = await alreadySentTo(excludeSubject.trim())
+    } catch (e) {
+      return NextResponse.json({ message: `Não foi possível consultar os envios anteriores: ${(e as Error).message}` }, { status: 502 })
+    }
+    if (alreadySent.size === 0) {
+      return NextResponse.json({ message: `Nenhum envio anterior encontrado com o assunto "${excludeSubject.trim()}". Confira o texto exato.` }, { status: 400 })
+    }
+  }
+  const emails = [...names.keys()].filter(e => !unsubscribed.has(e) && !alreadySent.has(e))
+  const skipped = names.size - emails.length
 
   if (emails.length === 0) {
     return NextResponse.json({ message: 'Nenhum destinatário encontrado.', sent: 0 })
@@ -152,6 +190,7 @@ export async function POST(req: NextRequest) {
   const message = errors.length > 0
     ? `Enviado para ${sent} destinatário(s). ${errors.length} falha(s) — ex.: ${errors[0]}`
     : `Email enviado com sucesso para ${sent} destinatário(s)!`
+  const skippedNote = skipped > 0 ? ` ${skipped} ignorado(s) (já receberam ou se descadastraram).` : ''
 
-  return NextResponse.json({ message, sent })
+  return NextResponse.json({ message: message + skippedNote, sent })
 }
