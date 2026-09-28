@@ -1,7 +1,7 @@
 'use client'
 import { useState, useCallback, useMemo } from 'react'
 import dynamic from 'next/dynamic'
-import { buildEmailHtml, buildPlainEmailHtml, isFullHtmlDocument, personalize } from '@/lib/broadcast-template'
+import { buildEmailHtml, buildPlainEmailHtml, fillUnsubscribeLink, isFullHtmlDocument, personalize, withUnsubscribeLink } from '@/lib/broadcast-template'
 
 const EmailEditor = dynamic(() => import('./EmailEditor'), { ssr: false })
 
@@ -39,7 +39,10 @@ export default function EmailBroadcastForm({ buyerCount }: Props) {
   const isEmpty = mode === 'editor' ? (!body || body === INITIAL_CONTENT) : !htmlSource.trim()
 
   const previewHtml = useMemo(
-    () => personalize(wrap ? buildEmailHtml(personalize(subject || '(sem assunto)', 'Maria', false), content) : buildPlainEmailHtml(content), 'Maria'),
+    () => {
+      const html = wrap ? buildEmailHtml(personalize(subject || '(sem assunto)', 'Maria', false), content) : buildPlainEmailHtml(content)
+      return fillUnsubscribeLink(personalize(withUnsubscribeLink(html), 'Maria'), '#')
+    },
     [wrap, subject, content],
   )
 

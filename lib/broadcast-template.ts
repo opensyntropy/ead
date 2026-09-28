@@ -38,7 +38,8 @@ export function buildEmailHtml(subject: string, bodyHtml: string): string {
           <td style="background:#f4f3ee;padding:20px 40px;text-align:center">
             <p style="margin:0;color:#aaa;font-size:12px;font-family:Arial,sans-serif;line-height:1.6">
               Michel Bottan · OpenSyntropy<br>
-              Você recebeu este e-mail porque realizou uma compra em opensyntropy.earth
+              Você recebeu este e-mail porque realizou uma compra em opensyntropy.earth<br>
+              <a href="{{descadastro}}" style="color:#aaa">Não quero mais receber estes emails</a>
             </p>
           </td>
         </tr>
@@ -73,6 +74,23 @@ export function buildPlainEmailHtml(bodyHtml: string): string {
 </html>`
 }
 
+// Every broadcast needs a visible opt-out. Emails that don't place
+// {{descadastro}} themselves get a small footer line before </body>.
+// Also matches the URL-encoded form, in case an editor escaped the href.
+const UNSUBSCRIBE_TAG = /(?:\{\{|%7B%7B)\s*descadastro\s*(?:\}\}|%7D%7D)/gi
+
+export function fillUnsubscribeLink(html: string, url: string): string {
+  return html.replace(UNSUBSCRIBE_TAG, url)
+}
+
+export function withUnsubscribeLink(html: string): string {
+  if (html.search(UNSUBSCRIBE_TAG) !== -1) return html
+  const footer = `<p style="margin:24px 0;text-align:center;font-family:Arial,sans-serif;font-size:12px;color:#999">
+  <a href="{{descadastro}}" style="color:#999">Não quero mais receber estes emails</a>
+</p>`
+  return /<\/body>/i.test(html) ? html.replace(/<\/body>/i, `${footer}\n</body>`) : html + footer
+}
+
 export function isFullHtmlDocument(html: string): boolean {
   return /^\s*(<!doctype|<html)/i.test(html)
 }
@@ -100,7 +118,11 @@ export function htmlToText(html: string): string {
     .replace(/<\/(p|div|h[1-6]|li|tr|blockquote)>/gi, '\n\n')
     .replace(/<li[^>]*>/gi, '• ')
     .replace(/<[^>]+>/g, '')
-    .replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, '&')
+    .replace(/&#(\d+);/g, (_, n: string) => String.fromCodePoint(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, n: string) => String.fromCodePoint(parseInt(n, 16)))
+    .replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&zwnj;|&zwj;|&shy;/g, '').replace(/&amp;/g, '&')
+    // Invisible preheader filler (combining grapheme joiner, zero-width chars, soft hyphen)
+    .replace(/[\u034F\u00AD\u200B-\u200D\u2060\uFEFF]/g, '')
     .replace(/[ \t]+/g, ' ')
     .replace(/ *\n */g, '\n')
     .replace(/\n{3,}/g, '\n\n')

@@ -2,30 +2,34 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createServiceClient } from '@/lib/supabase/server'
 import { Resend } from 'resend'
-import { buildEmailHtml, buildPlainEmailHtml, firstName, personalize, htmlToText } from '@/lib/broadcast-template'
+import { buildEmailHtml, buildPlainEmailHtml, firstName, personalize, htmlToText, withUnsubscribeLink, fillUnsubscribeLink } from '@/lib/broadcast-template'
+import { unsubscribePageUrl, unsubscribeOneClickUrl } from '@/lib/unsubscribe'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
+// A personal sender (not "nao-responda@") invites replies, which mailbox
+// providers read as a sign the email is wanted.
 const FROM = process.env.NODE_ENV === 'production'
-  ? 'Michel Bottan <nao-responda@opensyntropy.earth>'
+  ? process.env.BROADCAST_FROM?.trim() || 'Michel Bottan <michel@opensyntropy.earth>'
   : 'Michel Bottan <onboarding@resend.dev>'
 
-// A monitored address improves deliverability: replies land somewhere and the
-// List-Unsubscribe header gives Gmail/Outlook a one-click opt-out.
 const REPLY_TO = process.env.BROADCAST_REPLY_TO?.trim() || undefined
 
 const SAMPLE_NAME = 'Maria'
 
-function buildMessage(subject: string, html: string, name: string) {
-  const personalHtml = personalize(html, name)
+function buildMessage(subject: string, html: string, name: string, to: string) {
+  const personalHtml = fillUnsubscribeLink(personalize(html, name), unsubscribePageUrl(to))
   return {
     subject: personalize(subject, name, false),
     html: personalHtml,
     text: htmlToText(personalHtml),
-    ...(REPLY_TO && {
-      replyTo: REPLY_TO,
-      headers: { 'List-Unsubscribe': `<mailto:${REPLY_TO}?subject=Descadastrar>` },
-    }),
+    ...(REPLY_TO && { replyTo: REPLY_TO }),
+    // One-click unsubscribe (RFC 8058): Gmail/Outlook show their own
+    // "Cancelar inscrição" button instead of users hitting "Denunciar spam".
+    headers: {
+      'List-Unsubscribe': `<${unsubscribeOneClickUrl(to)}>${REPLY_TO ? `, <mailto:${REPLY_TO}?subject=Descadastrar>` : ''}`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    },
   }
 }
 
@@ -50,10 +54,10 @@ export async function POST(req: NextRequest) {
   if (!subject?.trim()) return NextResponse.json({ message: 'Assunto obrigatório.' }, { status: 400 })
   if (!bodyHtml?.trim()) return NextResponse.json({ message: 'Conteúdo obrigatório.' }, { status: 400 })
 
-  const html = useTemplate ? buildEmailHtml(subject, bodyHtml) : buildPlainEmailHtml(bodyHtml)
+  const html = withUnsubscribeLink(useTemplate ? buildEmailHtml(subject, bodyHtml) : buildPlainEmailHtml(bodyHtml))
 
   if (preview) {
-    return NextResponse.json({ html: personalize(html, SAMPLE_NAME) })
+    return NextResponse.json({ html: fillUnsubscribeLink(personalize(html, SAMPLE_NAME), '#') })
   }
 
   // Test send: only to the given address, regardless of environment
@@ -72,7 +76,7 @@ export async function POST(req: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(1)
     const name = firstName(rows?.[0]?.name) || SAMPLE_NAME
-    const msg = buildMessage(subject, html, name)
+    const msg = buildMessage(subject, html, name, to)
     const { error } = await resend.emails.send({ from: FROM, to, ...msg, subject: `Teste: ${msg.subject}` })
     if (error) return NextResponse.json({ message: `Falha ao enviar teste: ${error.message}` }, { status: 500 })
     return NextResponse.json({ message: `Email de teste enviado para ${to} ({{nome}} = "${name}").`, sent: 1 })
@@ -96,7 +100,9 @@ export async function POST(req: NextRequest) {
     if (!email) continue
     if (!names.get(email)) names.set(email, firstName(r.name))
   }
-  const emails = [...names.keys()]
+  const { data: unsubRows } = await service.from('email_unsubscribes').select('email')
+  const unsubscribed = new Set((unsubRows ?? []).map(r => r.email))
+  const emails = [...names.keys()].filter(e => !unsubscribed.has(e))
 
   if (emails.length === 0) {
     return NextResponse.json({ message: 'Nenhum destinatário encontrado.', sent: 0 })
@@ -110,27 +116,41 @@ export async function POST(req: NextRequest) {
   let sent = 0
   const errors: string[] = []
 
-  // Send in batches of 10 to avoid rate limits
-  const BATCH = 10
+  // Resend allows 10 requests/s; firing emails individually in parallel blew
+  // past it and ~half the sends got 429. The batch API takes up to 100 emails
+  // per request, so even large lists need only a handful of requests.
+  const BATCH = 100
   for (let i = 0; i < recipients.length; i += BATCH) {
-    const batch = recipients.slice(i, i + BATCH)
-    await Promise.allSettled(
-      batch.map(async (to) => {
-        const { error } = await resend.emails.send({ from: FROM, to, ...buildMessage(subject, html, names.get(to) ?? '') })
-        if (error) errors.push(`${to}: ${error.message}`)
-        else sent++
-      })
-    )
-    // Small delay between batches to respect rate limits
-    if (i + BATCH < recipients.length) await new Promise(r => setTimeout(r, 500))
+    const chunk = recipients.slice(i, i + BATCH)
+    const payload = chunk.map(to => ({ from: FROM, to, ...buildMessage(subject, html, names.get(to) ?? '', to) }))
+
+    for (let attempt = 1; ; attempt++) {
+      const { data, error } = await resend.batch.send(payload, { batchValidation: 'permissive' })
+      if (error) {
+        if (error.name === 'rate_limit_exceeded' && attempt < 5) {
+          await new Promise(r => setTimeout(r, 1000 * attempt))
+          continue
+        }
+        errors.push(...chunk.map(to => `${to}: ${error.message}`))
+        break
+      }
+      const failed = data.errors ?? []
+      for (const e of failed) errors.push(`${chunk[e.index]}: ${e.message}`)
+      sent += chunk.length - failed.length
+      break
+    }
+
+    if (i + BATCH < recipients.length) await new Promise(r => setTimeout(r, 250))
   }
+
+  if (errors.length > 0) console.error('[send-broadcast] falhas:', errors)
 
   if (errors.length > 0 && sent === 0) {
     return NextResponse.json({ message: `Falha ao enviar: ${errors[0]}` }, { status: 500 })
   }
 
   const message = errors.length > 0
-    ? `Enviado para ${sent} destinatário(s). ${errors.length} falha(s).`
+    ? `Enviado para ${sent} destinatário(s). ${errors.length} falha(s) — ex.: ${errors[0]}`
     : `Email enviado com sucesso para ${sent} destinatário(s)!`
 
   return NextResponse.json({ message, sent })
