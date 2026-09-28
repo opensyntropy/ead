@@ -2,8 +2,8 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import type { ProductId } from '@/config/products'
-import { createDownloadToken } from '@/lib/download'
-import { sendDownloadEmail } from '@/lib/email'
+import { createDownloadToken, type EbookLang } from '@/lib/download'
+import { sendDownloadEmail, sendDownloadEmailEn } from '@/lib/email'
 
 async function checkAdmin(): Promise<boolean> {
   const jar = await cookies()
@@ -14,7 +14,8 @@ async function checkAdmin(): Promise<boolean> {
 export async function POST(request: Request) {
   if (!await checkAdmin()) return new NextResponse('Forbidden', { status: 403 })
 
-  const { email, product, name, manual_paid } = await request.json() as { email: string; product: ProductId; name?: string; manual_paid?: boolean }
+  const { email, product, name, manual_paid, lang: rawLang } = await request.json() as { email: string; product: ProductId; name?: string; manual_paid?: boolean; lang?: EbookLang }
+  const lang: EbookLang = rawLang === 'en' ? 'en' : 'pt'
   const service = await createServiceClient()
 
   // Cria ou encontra usuário
@@ -42,8 +43,9 @@ export async function POST(request: Request) {
   let emailError: string | null = null
   if (product === 'ebook' || product === 'bundle') {
     try {
-      const token = await createDownloadToken(email, 'ebook')
-      await sendDownloadEmail(email, token)
+      const token = await createDownloadToken(email, 'ebook', { lang })
+      if (lang === 'en') await sendDownloadEmailEn(email, token)
+      else await sendDownloadEmail(email, token)
     } catch (emailErr) {
       emailError = emailErr instanceof Error ? emailErr.message : String(emailErr)
       console.error('Erro ao enviar email de download:', emailError)

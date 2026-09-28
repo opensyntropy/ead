@@ -65,7 +65,8 @@ async function grantAccessAndSendEmail(
   }
 
   if (productId === 'ebook' || productId === 'session') {
-    const token = await createDownloadToken(email, 'ebook')
+    // No Spanish edition yet: es buyers keep the Portuguese PDF
+    const token = await createDownloadToken(email, 'ebook', { lang: locale === 'es' ? 'pt' : 'en' })
     if (locale === 'es') {
       await sendDownloadEmailEs(email, token)
     } else {

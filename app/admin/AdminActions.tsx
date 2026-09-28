@@ -20,6 +20,7 @@ export default function AdminActions({ mode, id, email, product, userId, status,
   const [newEmail, setNewEmail] = useState('')
   const [newProduct, setNewProduct] = useState<'ebook' | 'course' | 'bundle'>('ebook')
   const [manualPaid, setManualPaid] = useState(false)
+  const [lang, setLang] = useState<'pt' | 'en'>('pt')
 
   async function handleRevoke() {
     if (!confirm(`Revogar acesso "${product}" de ${email}?`)) return
@@ -39,7 +40,7 @@ export default function AdminActions({ mode, id, email, product, userId, status,
     const res = await fetch('/api/admin/access', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: newEmail, product: newProduct, manual_paid: manualPaid }),
+      body: JSON.stringify({ email: newEmail, product: newProduct, manual_paid: manualPaid, lang }),
     })
     const data = await res.json()
     setLoading(false)
@@ -47,6 +48,7 @@ export default function AdminActions({ mode, id, email, product, userId, status,
       if (data.emailError) alert(`Acesso concedido, mas erro no email: ${data.emailError}`)
       setNewEmail('')
       setManualPaid(false)
+      setLang('pt')
       window.location.reload()
     }
   }
@@ -284,6 +286,28 @@ export default function AdminActions({ mode, id, email, product, userId, status,
             <option value="bundle">Bundle</option>
           </select>
         </div>
+        {(newProduct === 'ebook' || newProduct === 'bundle') && (
+          <div>
+            <label className="block text-sm font-semibold text-gray-600 mb-2">Idioma do ebook</label>
+            <div className="flex gap-2">
+              {([['pt', 'Português'], ['en', 'English']] as const).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setLang(value)}
+                  className={`flex-1 py-2 rounded-lg text-sm font-semibold border transition-colors ${
+                    lang === value
+                      ? 'bg-[#d8f3dc] border-[#52b788] text-[#1b4332]'
+                      : 'border-gray-200 text-gray-400 hover:bg-gray-50'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-gray-400 mt-1.5">Define o PDF e o idioma do email de download.</p>
+          </div>
+        )}
         <div>
           <label className="block text-sm font-semibold text-gray-600 mb-2">Tipo de acesso</label>
           <div className="flex gap-2">

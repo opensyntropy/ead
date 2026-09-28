@@ -3,10 +3,11 @@ import { PDFDocument, StandardFonts, rgb, degrees } from 'pdf-lib'
 export async function generateWatermarkedPDF(
   pdfBytes: Uint8Array,
   email: string,
+  label = 'Licenciado para',
 ): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.load(pdfBytes)
   const font = await pdfDoc.embedFont(StandardFonts.HelveticaOblique)
-  const watermarkText = `Licenciado para: ${email}`
+  const watermarkText = `${label}: ${email}`
 
   const pages = pdfDoc.getPages()
   for (let i = 1; i < pages.length; i += 10) {

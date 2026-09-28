@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
     minimumCacheTTL: 31536000,
   },
   outputFileTracingIncludes: {
-    '/api/download': ['./ebook.pdf'],
+    '/api/download': ['./ebook.pdf', './ebook_en.pdf'],
   },
 };
 

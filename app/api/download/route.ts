@@ -3,6 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { generateWatermarkedPDF } from '@/lib/watermark'
 import { readFile } from 'fs/promises'
 import path from 'path'
+import { ebookForStoragePath } from '@/lib/download'
 
 export const maxDuration = 30
 
@@ -20,7 +21,7 @@ export async function GET(request: Request) {
 
   const { data: row, error } = await supabase
     .from('download_tokens')
-    .select('email, product, used, download_count, no_limit')
+    .select('email, product, used, download_count, no_limit, storage_path')
     .eq('token', token)
     .single()
 
@@ -53,14 +54,15 @@ export async function GET(request: Request) {
     }
   }
 
-  const masterPath = path.join(process.cwd(), 'ebook.pdf')
+  const ebook = ebookForStoragePath(row.storage_path)
+  const masterPath = path.join(process.cwd(), ebook.file)
   const pdfBytes = new Uint8Array(await readFile(masterPath))
-  const watermarked = await generateWatermarkedPDF(pdfBytes, row.email)
+  const watermarked = await generateWatermarkedPDF(pdfBytes, row.email, ebook.watermark)
 
   return new Response(watermarked.buffer as ArrayBuffer, {
     headers: {
       'Content-Type': 'application/pdf',
-      'Content-Disposition': 'attachment; filename="Agrofloresta-Sintropica-Michel-Bottan.pdf"',
+      'Content-Disposition': `attachment; filename="${ebook.downloadName}"`,
       'Content-Length': String(watermarked.length),
     },
   })
