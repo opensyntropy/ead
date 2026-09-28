@@ -50,6 +50,29 @@ export function buildEmailHtml(subject: string, bodyHtml: string): string {
 </html>`
 }
 
+// No branding: used when the admin opts out of the OpenSyntropy template.
+// Full documents pass through untouched; fragments get a bare, readable shell.
+export function buildPlainEmailHtml(bodyHtml: string): string {
+  if (isFullHtmlDocument(bodyHtml)) return bodyHtml
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <style>
+    body{margin:0;padding:24px 16px;background:#ffffff;color:#1a1a1a;font-family:Arial,sans-serif;font-size:16px;line-height:1.6}
+    img{max-width:100%;height:auto}
+    p{margin:0 0 16px}
+  </style>
+</head>
+<body>
+  <div style="max-width:600px;margin:0 auto">
+    ${bodyHtml}
+  </div>
+</body>
+</html>`
+}
+
 export function isFullHtmlDocument(html: string): boolean {
   return /^\s*(<!doctype|<html)/i.test(html)
 }

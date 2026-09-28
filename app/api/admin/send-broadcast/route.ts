@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createServiceClient } from '@/lib/supabase/server'
 import { Resend } from 'resend'
-import { buildEmailHtml, firstName, personalize, htmlToText } from '@/lib/broadcast-template'
+import { buildEmailHtml, buildPlainEmailHtml, firstName, personalize, htmlToText } from '@/lib/broadcast-template'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -50,7 +50,7 @@ export async function POST(req: NextRequest) {
   if (!subject?.trim()) return NextResponse.json({ message: 'Assunto obrigatório.' }, { status: 400 })
   if (!bodyHtml?.trim()) return NextResponse.json({ message: 'Conteúdo obrigatório.' }, { status: 400 })
 
-  const html = useTemplate ? buildEmailHtml(subject, bodyHtml) : bodyHtml
+  const html = useTemplate ? buildEmailHtml(subject, bodyHtml) : buildPlainEmailHtml(bodyHtml)
 
   if (preview) {
     return NextResponse.json({ html: personalize(html, SAMPLE_NAME) })

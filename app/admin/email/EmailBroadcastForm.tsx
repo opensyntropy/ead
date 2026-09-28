@@ -1,7 +1,7 @@
 'use client'
 import { useState, useCallback, useMemo } from 'react'
 import dynamic from 'next/dynamic'
-import { buildEmailHtml, isFullHtmlDocument, personalize } from '@/lib/broadcast-template'
+import { buildEmailHtml, buildPlainEmailHtml, isFullHtmlDocument, personalize } from '@/lib/broadcast-template'
 
 const EmailEditor = dynamic(() => import('./EmailEditor'), { ssr: false })
 
@@ -35,11 +35,11 @@ export default function EmailBroadcastForm({ buyerCount }: Props) {
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null)
 
   const content = mode === 'editor' ? body : htmlSource
-  const wrap = mode === 'editor' || useTemplate
+  const wrap = useTemplate
   const isEmpty = mode === 'editor' ? (!body || body === INITIAL_CONTENT) : !htmlSource.trim()
 
   const previewHtml = useMemo(
-    () => personalize(wrap ? buildEmailHtml(personalize(subject || '(sem assunto)', 'Maria', false), content) : content, 'Maria'),
+    () => personalize(wrap ? buildEmailHtml(personalize(subject || '(sem assunto)', 'Maria', false), content) : buildPlainEmailHtml(content), 'Maria'),
     [wrap, subject, content],
   )
 
@@ -176,10 +176,21 @@ export default function EmailBroadcastForm({ buyerCount }: Props) {
           </div>
         </div>
 
+        <label className="flex items-center gap-2 text-xs text-gray-600">
+          <input
+            type="checkbox"
+            checked={useTemplate}
+            onChange={e => setUseTemplate(e.target.checked)}
+            className="accent-[#1b4332]"
+          />
+          Usar o template padrão OpenSyntropy (cabeçalho, moldura e rodapé)
+          {mode === 'html' && ' — desmarque se o HTML já é um email completo'}
+        </label>
+
         {mode === 'editor' ? (
           <>
             <p className="text-xs text-gray-400">
-              O texto será inserido no template padrão OpenSyntropy. Use negrito, links e imagens à vontade.
+              Use negrito, links e imagens à vontade.
             </p>
             <p className="text-xs text-gray-400">
               Escreva <code className="bg-gray-100 px-1 rounded">{'{{nome}}'}</code> para inserir o primeiro nome do comprador (no assunto também). Sem nome cadastrado, o marcador é removido.
@@ -188,15 +199,6 @@ export default function EmailBroadcastForm({ buyerCount }: Props) {
           </>
         ) : (
           <>
-            <label className="flex items-center gap-2 text-xs text-gray-600">
-              <input
-                type="checkbox"
-                checked={useTemplate}
-                onChange={e => setUseTemplate(e.target.checked)}
-                className="accent-[#1b4332]"
-              />
-              Inserir no template padrão OpenSyntropy (desmarque se o HTML já é um email completo)
-            </label>
             <textarea
               value={htmlSource}
               onChange={e => handleHtmlChange(e.target.value)}
