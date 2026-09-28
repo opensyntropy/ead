@@ -17,6 +17,13 @@ const PRODUCTS_OPTIONS = [
   { value: 'ebook_session', label: 'Ebook + Sessão Individual' },
 ]
 
+// TEMPORÁRIO: completar o convite da aula (13/10) para quem não recebeu por
+// causa do limite do Resend. Remover depois do envio.
+const INVITE_SUBJECTS = [
+  'AGROFLORESTA: Aula gratuita para começar seus plantios',
+  'Um convite para quem tem o guia de introdução à agrofloresta',
+]
+
 const INITIAL_CONTENT = '<p>Olá {{nome}},</p><p></p><p></p>'
 
 export default function EmailBroadcastForm({ buyerCount }: Props) {
@@ -33,7 +40,8 @@ export default function EmailBroadcastForm({ buyerCount }: Props) {
   const [testEmail, setTestEmail] = useState('')
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null)
-  const [excludeSubject, setExcludeSubject] = useState('')
+  const [onlyMissingInvite, setOnlyMissingInvite] = useState(false)
+  const [missingList, setMissingList] = useState<{ loading: boolean; emails?: string[]; error?: string }>({ loading: false })
 
   const content = mode === 'editor' ? body : htmlSource
   const wrap = useTemplate
@@ -80,11 +88,28 @@ export default function EmailBroadcastForm({ buyerCount }: Props) {
     }
   }, [subject, content, wrap, testEmail, isEmpty])
 
+  const toggleMissingInvite = useCallback(async (checked: boolean) => {
+    setOnlyMissingInvite(checked)
+    if (!checked) { setMissingList({ loading: false }); return }
+    setMissingList({ loading: true })
+    try {
+      const res = await fetch('/api/admin/send-broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dryRun: true, filter: recipientFilter, product: selectedProduct, excludeSubjects: INVITE_SUBJECTS }),
+      })
+      const data = await res.json()
+      setMissingList(res.ok ? { loading: false, emails: data.emails } : { loading: false, error: data.message ?? 'Erro ao montar a lista.' })
+    } catch {
+      setMissingList({ loading: false, error: 'Erro de rede ao montar a lista.' })
+    }
+  }, [recipientFilter, selectedProduct])
+
   const handleSend = useCallback(async () => {
     if (!subject.trim()) { alert('Informe o assunto do email.'); return }
     if (isEmpty) { alert('Escreva o conteúdo do email.'); return }
     const confirmed = window.confirm(
-      `Enviar este email para ${recipientFilter === 'all' ? `todos os ${buyerCount} compradores` : `compradores do produto selecionado`}${excludeSubject.trim() ? `, exceto quem já recebeu "${excludeSubject.trim()}"` : ''}?\n\nAssunto: ${subject}`
+      `Enviar este email para ${recipientFilter === 'all' ? `todos os ${buyerCount} compradores` : `compradores do produto selecionado`}${onlyMissingInvite ? ` — APENAS os ${missingList.emails?.length ?? '?'} que ainda não receberam o convite da aula` : ''}?\n\nAssunto: ${subject}`
     )
     if (!confirmed) return
 
@@ -94,7 +119,7 @@ export default function EmailBroadcastForm({ buyerCount }: Props) {
       const res = await fetch('/api/admin/send-broadcast', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subject, body: content, useTemplate: wrap, filter: recipientFilter, product: selectedProduct, excludeSubject }),
+        body: JSON.stringify({ subject, body: content, useTemplate: wrap, filter: recipientFilter, product: selectedProduct, excludeSubjects: onlyMissingInvite ? INVITE_SUBJECTS : [] }),
       })
       const data = await res.json()
       setResult({ ok: res.ok, message: data.message ?? (res.ok ? 'Enviado com sucesso!' : 'Erro ao enviar.'), sent: data.sent })
@@ -103,7 +128,7 @@ export default function EmailBroadcastForm({ buyerCount }: Props) {
     } finally {
       setSending(false)
     }
-  }, [subject, content, wrap, isEmpty, recipientFilter, selectedProduct, buyerCount, excludeSubject])
+  }, [subject, content, wrap, isEmpty, recipientFilter, selectedProduct, buyerCount, onlyMissingInvite, missingList.emails])
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -142,21 +167,36 @@ export default function EmailBroadcastForm({ buyerCount }: Props) {
             ))}
           </select>
         )}
-        <div className="space-y-1.5">
-          <label className="text-xs font-semibold text-gray-600" htmlFor="exclude-subject">
-            Não enviar para quem já recebeu o email com o assunto (opcional)
+        {/* TEMPORÁRIO: remover junto com INVITE_SUBJECTS */}
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 space-y-2">
+          <label className="flex items-center gap-2 text-sm font-semibold text-amber-900">
+            <input
+              type="checkbox"
+              checked={onlyMissingInvite}
+              onChange={e => toggleMissingInvite(e.target.checked)}
+              className="accent-amber-700"
+            />
+            Só quem ainda não recebeu o convite da aula
           </label>
-          <input
-            id="exclude-subject"
-            type="text"
-            value={excludeSubject}
-            onChange={e => setExcludeSubject(e.target.value)}
-            placeholder="Cole o assunto exato do envio anterior"
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#52b788]"
-          />
-          <p className="text-xs text-gray-400">
-            Útil para completar um envio que falhou pela metade. Quem se descadastrou nunca recebe.
-          </p>
+          {onlyMissingInvite && (
+            <div className="text-xs text-amber-900 space-y-1.5">
+              {missingList.loading && <div>Montando a lista...</div>}
+              {missingList.error && <div className="text-red-700">{missingList.error}</div>}
+              {missingList.emails && (
+                <>
+                  <div><strong>{missingList.emails.length}</strong> pessoa(s) vão receber (exclui quem recebeu qualquer um dos dois envios e quem se descadastrou).</div>
+                  <details>
+                    <summary className="cursor-pointer">Ver lista</summary>
+                    <textarea
+                      readOnly
+                      value={missingList.emails.join('\n')}
+                      className="mt-1.5 w-full h-40 border border-amber-200 rounded bg-white p-2 font-mono text-xs"
+                    />
+                  </details>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

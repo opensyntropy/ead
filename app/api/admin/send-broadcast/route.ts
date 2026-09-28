@@ -33,11 +33,11 @@ function buildMessage(subject: string, html: string, name: string, to: string) {
   }
 }
 
-// Recipients Resend already accepted an email with this exact subject, so a
-// resend after a partial failure doesn't hit the same people twice. Built
+// Recipients Resend already accepted an email with one of these exact
+// subjects, so a resend after a partial failure doesn't hit the same people twice. Built
 // up front from the account's send log, 100 emails per request, paced well
 // under the 10 req/s limit.
-async function alreadySentTo(subject: string): Promise<Set<string>> {
+async function alreadySentTo(subjects: string[]): Promise<Set<string>> {
   const sent = new Set<string>()
   let after: string | undefined
   for (let page = 0; page < 100; page++) {
@@ -49,7 +49,7 @@ async function alreadySentTo(subject: string): Promise<Set<string>> {
     const { data, error } = res
     if (error) throw new Error(`Resend: ${error.message}`)
     for (const e of data.data) {
-      if (e.subject?.trim() === subject) for (const to of e.to) sent.add(to.toLowerCase().trim())
+      if (subjects.includes(e.subject?.trim() ?? '')) for (const to of e.to) sent.add(to.toLowerCase().trim())
     }
     if (!data.has_more || data.data.length === 0) break
     after = data.data[data.data.length - 1].id
@@ -72,15 +72,17 @@ export async function POST(req: NextRequest) {
     preview?: boolean
     useTemplate?: boolean
     testTo?: string
-    excludeSubject?: string
+    excludeSubjects?: string[]
+    dryRun?: boolean
   }
 
-  const { subject, body: bodyHtml, filter, product, preview, useTemplate = true, testTo, excludeSubject } = body
+  const { subject, body: bodyHtml, filter, product, preview, useTemplate = true, testTo, excludeSubjects = [], dryRun } = body
 
-  if (!subject?.trim()) return NextResponse.json({ message: 'Assunto obrigatório.' }, { status: 400 })
-  if (!bodyHtml?.trim()) return NextResponse.json({ message: 'Conteúdo obrigatório.' }, { status: 400 })
+  // dryRun only computes the recipient list, so it needs no content
+  if (!dryRun && !subject?.trim()) return NextResponse.json({ message: 'Assunto obrigatório.' }, { status: 400 })
+  if (!dryRun && !bodyHtml?.trim()) return NextResponse.json({ message: 'Conteúdo obrigatório.' }, { status: 400 })
 
-  const html = withUnsubscribeLink(useTemplate ? buildEmailHtml(subject, bodyHtml) : buildPlainEmailHtml(bodyHtml))
+  const html = dryRun ? '' : withUnsubscribeLink(useTemplate ? buildEmailHtml(subject, bodyHtml) : buildPlainEmailHtml(bodyHtml))
 
   if (preview) {
     return NextResponse.json({ html: fillUnsubscribeLink(personalize(html, SAMPLE_NAME), '#') })
@@ -129,18 +131,21 @@ export async function POST(req: NextRequest) {
   const { data: unsubRows } = await service.from('email_unsubscribes').select('email')
   const unsubscribed = new Set((unsubRows ?? []).map(r => r.email))
   let alreadySent = new Set<string>()
-  if (excludeSubject?.trim()) {
+  const subjects = excludeSubjects.map(x => x.trim()).filter(Boolean)
+  if (subjects.length > 0) {
     try {
-      alreadySent = await alreadySentTo(excludeSubject.trim())
+      alreadySent = await alreadySentTo(subjects)
     } catch (e) {
       return NextResponse.json({ message: `Não foi possível consultar os envios anteriores: ${(e as Error).message}` }, { status: 502 })
     }
     if (alreadySent.size === 0) {
-      return NextResponse.json({ message: `Nenhum envio anterior encontrado com o assunto "${excludeSubject.trim()}". Confira o texto exato.` }, { status: 400 })
+      return NextResponse.json({ message: 'Nenhum envio anterior encontrado com esses assuntos.' }, { status: 400 })
     }
   }
   const emails = [...names.keys()].filter(e => !unsubscribed.has(e) && !alreadySent.has(e))
   const skipped = names.size - emails.length
+
+  if (dryRun) return NextResponse.json({ count: emails.length, emails, skipped })
 
   if (emails.length === 0) {
     return NextResponse.json({ message: 'Nenhum destinatário encontrado.', sent: 0 })
