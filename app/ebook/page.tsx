@@ -1,6 +1,9 @@
 import { headers } from 'next/headers'
 import { sendMetaPageView } from '@/lib/meta-pixel'
-import EbookClientPage from './EbookClientPage'
+import { STRIPE_PRODUCTS, STRIPE_EBOOK_PT_EUR } from '@/config/products'
+import { getCountryTier, getCountryCurrency } from '@/lib/geo'
+import { isStripeEnabled } from '@/lib/stripe'
+import EbookClientPage, { type IntlOffer } from './EbookClientPage'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,5 +47,19 @@ export default async function EbookPage({
   // independente de bloqueadores de anúncio ou saída rápida antes do JS hidratar
   sendMetaPageView({ eventId, fbc, fbp: fbpCookie, ip, userAgent: ua, sourceUrl }).catch(() => {})
 
-  return <EbookClientPage serverEventId={eventId} />
+  return <EbookClientPage serverEventId={eventId} intlOffer={getIntlOffer(hdrs.get('x-vercel-ip-country'), params.checkout)} />
+}
+
+// Fora do Brasil (Portugal etc.) não há PIX nem CPF: o checkout vira Stripe na
+// moeda do país. ?checkout=intl|br força um dos fluxos (testes, VPN).
+function getIntlOffer(country: string | null, override: string | string[] | undefined): IntlOffer | null {
+  if (!isStripeEnabled()) return null
+  const forced = override === 'intl' ? 'PT' : override === 'br' ? 'BR' : null
+  const code = (forced ?? country ?? 'BR').toUpperCase()
+  if (code === 'BR') return null
+
+  const tier = getCountryTier(code)
+  const currency = getCountryCurrency(code)
+  const price = currency === 'eur' ? STRIPE_EBOOK_PT_EUR : STRIPE_PRODUCTS.ebook[tier][currency]
+  return { tier, currency, label: price.label }
 }

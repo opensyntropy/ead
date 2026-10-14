@@ -2,7 +2,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { sendRefundEmail } from '@/lib/email'
-import { refundPayment } from '@/lib/asaas'
+import { refundAnyPayment } from '@/lib/refund'
 
 // Estorno direto de um cliente a partir da lista de acessos.
 export async function POST(request: Request) {
@@ -14,12 +14,12 @@ export async function POST(request: Request) {
 
   const service = await createServiceClient()
 
-  // Estorna na Asaas antes de revogar — se falhar, aborta sem alterar nada
+  // Estorna (Asaas ou Stripe) antes de revogar — se falhar, aborta sem alterar nada
   try {
-    await refundPayment(paymentId)
+    await refundAnyPayment(paymentId)
   } catch (err) {
-    console.error('Erro ao estornar na Asaas:', err)
-    return NextResponse.json({ error: `Falha ao estornar na Asaas: ${err instanceof Error ? err.message : 'erro desconhecido'}` }, { status: 502 })
+    console.error('Erro ao estornar:', err)
+    return NextResponse.json({ error: `Falha ao estornar: ${err instanceof Error ? err.message : 'erro desconhecido'}` }, { status: 502 })
   }
 
   await service

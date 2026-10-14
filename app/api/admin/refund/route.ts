@@ -2,7 +2,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { sendRefundEmail } from '@/lib/email'
-import { refundPayment } from '@/lib/asaas'
+import { refundAnyPayment } from '@/lib/refund'
 
 export async function PATCH(request: Request) {
   const jar = await cookies()
@@ -34,13 +34,13 @@ export async function PATCH(request: Request) {
       .limit(1)
       .maybeSingle()
 
-    // Estorna na Asaas antes de marcar resolvido — se falhar, aborta sem alterar nada
+    // Estorna (Asaas ou Stripe) antes de marcar resolvido — se falhar, aborta sem alterar nada
     if (charge?.asaas_payment_id) {
       try {
-        await refundPayment(charge.asaas_payment_id)
+        await refundAnyPayment(charge.asaas_payment_id)
       } catch (err) {
-        console.error('Erro ao estornar na Asaas:', err)
-        return NextResponse.json({ error: `Falha ao estornar na Asaas: ${err instanceof Error ? err.message : 'erro desconhecido'}` }, { status: 502 })
+        console.error('Erro ao estornar:', err)
+        return NextResponse.json({ error: `Falha ao estornar: ${err instanceof Error ? err.message : 'erro desconhecido'}` }, { status: 502 })
       }
       await service
         .from('user_products')

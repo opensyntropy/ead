@@ -5,6 +5,9 @@ import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { track } from '@/lib/cybereco'
 import { formatPhoneInput } from '@/lib/phone'
+import StripeCheckout, { type IntlOffer } from './StripeCheckout'
+
+export type { IntlOffer }
 
 const PAGES = [
   { src: '/preview/pagina_17.png', cap: 'Cap. 2', title: 'O Que É Sintropia' },
@@ -384,7 +387,14 @@ function formatCep(value: string) {
   return digits
 }
 
-function CheckoutForm() {
+// Fora do Brasil mostra o checkout Stripe; o visitante pode voltar ao fluxo BR.
+function CheckoutForm({ intlOffer }: { intlOffer: IntlOffer | null }) {
+  const [useBr, setUseBr] = useState(false)
+  if (intlOffer && !useBr) return <StripeCheckout offer={intlOffer} onUseBr={() => setUseBr(true)} />
+  return <BrCheckoutForm />
+}
+
+function BrCheckoutForm() {
   const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
@@ -1030,7 +1040,7 @@ function InfographicsCarousel() {
   )
 }
 
-export default function EbookLandingPage({ serverEventId }: { serverEventId: string }) {
+export default function EbookLandingPage({ serverEventId, intlOffer }: { serverEventId: string; intlOffer: IntlOffer | null }) {
   const [previewOnly, setPreviewOnly] = useState(false)
   const [lightbox, setLightbox] = useState<number | null>(null)
   const [returning, setReturning] = useState(false)
@@ -1124,7 +1134,7 @@ export default function EbookLandingPage({ serverEventId }: { serverEventId: str
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="w-full max-w-sm rounded-2xl overflow-hidden shadow-xl">
-          <CheckoutForm />
+          <CheckoutForm intlOffer={intlOffer} />
         </div>
       </div>
     )
@@ -1537,14 +1547,16 @@ export default function EbookLandingPage({ serverEventId }: { serverEventId: str
           {/* card de compra */}
           <div className="rounded-3xl overflow-hidden shadow-2xl" style={{ border: `2px solid ${LIME}30` }}>
             <Suspense>
-              <CheckoutForm />
+              <CheckoutForm intlOffer={intlOffer} />
             </Suspense>
           </div>
 
           {/* nota de urgência abaixo do card */}
           <p className="text-center text-xs text-gray-500 mt-5 leading-relaxed">
-            Após o período de lançamento o preço volta a <strong className="text-gray-400">R$ 127</strong>.
-            Compre agora e garanta o valor atual para sempre.
+            {intlOffer
+              ? 'Preço de lançamento por tempo limitado. Compre agora e garanta o valor atual.'
+              : <>Após o período de lançamento o preço volta a <strong className="text-gray-400">R$ 127</strong>.
+                Compre agora e garanta o valor atual para sempre.</>}
           </p>
         </div>
       </section>

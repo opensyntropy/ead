@@ -4,6 +4,7 @@ import Image from 'next/image'
 import type { Metadata } from 'next'
 import { getCountryTier, getCountryLocale, getCountryCurrency } from '@/lib/geo'
 import CheckoutSection from './CheckoutSection'
+import { isStripeEnabled } from '@/lib/stripe'
 
 export const metadata: Metadata = {
   title: 'Introduction to Syntropic Agroforestry — Ebook',
@@ -46,9 +47,11 @@ const CHAPTERS = [
 ]
 
 export default async function EnPage() {
-  if (process.env.STRIPE_ENABLED !== 'true') notFound()
-
+  // headers() antes do check: mantém a página dinâmica, senão um build sem a
+  // chave do Stripe congela um 404 estático.
   const hdrs = await headers()
+  if (!isStripeEnabled()) notFound()
+
   const country = hdrs.get('x-vercel-ip-country')
 
   const locale = getCountryLocale(country)
