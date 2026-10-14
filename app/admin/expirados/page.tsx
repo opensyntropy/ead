@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import AdminHeader from '../AdminHeader'
 import { type PixCharge } from '../AdminAccessTabs'
 import { PRODUCTS, type ProductId } from '@/config/products'
+import { toWaNumber } from '@/lib/phone'
 
 export const dynamic = 'force-dynamic'
 
@@ -189,8 +190,7 @@ export default async function ExpiradosPage() {
                     {item.name && <p className="text-xs text-gray-400">{item.name}</p>}
                     {item.reason && <p className="text-xs text-rose-400">{item.reason}</p>}
                     {item.whatsapp && (() => {
-                      const digits = item.whatsapp.replace(/\D/g, '')
-                      const waNumber = digits.startsWith('55') ? digits : `55${digits}`
+                      const waNumber = toWaNumber(item.whatsapp)
                       return (
                         <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer"
                           className="text-xs text-green-600 hover:text-green-800 hover:underline">

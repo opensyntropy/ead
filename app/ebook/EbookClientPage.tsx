@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom'
 import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { track } from '@/lib/cybereco'
+import { formatPhoneInput } from '@/lib/phone'
 
 const PAGES = [
   { src: '/preview/pagina_17.png', cap: 'Cap. 2', title: 'O Que É Sintropia' },
@@ -357,13 +358,6 @@ function FaqItem({ q, a, link }: { q: string; a: string; link?: { href: string; 
       )}
     </div>
   )
-}
-
-function formatWhatsapp(value: string) {
-  const digits = value.replace(/\D/g, '').slice(0, 11)
-  if (digits.length <= 2) return digits
-  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
-  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
 }
 
 function formatCpf(value: string) {
@@ -746,11 +740,12 @@ function CheckoutForm() {
           <input type="email" required name="email" autoComplete="email" placeholder="Seu melhor e-mail" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
           <input type="text" required inputMode="numeric" placeholder="CPF (somente números)" value={cpf}
             onChange={e => setCpf(formatCpf(e.target.value))} className={inputCls} />
-          <input type="text" inputMode="numeric"
+          <input type="tel" inputMode="tel" autoComplete="tel"
             placeholder={paymentMethod === 'card' ? 'Celular com DDD (obrigatório para cartão)' : 'WhatsApp'}
             required={paymentMethod === 'card'}
             value={whatsapp}
-            onChange={e => setWhatsapp(formatWhatsapp(e.target.value))} className={inputCls} />
+            onChange={e => setWhatsapp(formatPhoneInput(e.target.value))} className={inputCls} />
+          <p className="-mt-2 text-xs text-gray-400">Fora do Brasil? Comece com + e o código do país (ex.: +351912345678).</p>
 
           {paymentMethod === 'card' && (
             <div className="flex flex-col gap-3">
