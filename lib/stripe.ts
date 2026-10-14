@@ -42,6 +42,8 @@ export async function createStripeCheckoutSession({
     cancel_url: cancelUrl,
     metadata,
     payment_intent_data: { metadata },
+    // Telefone obrigatório no checkout; o webhook grava em pix_charges.whatsapp.
+    phone_number_collection: { enabled: true },
   })
 }
 
