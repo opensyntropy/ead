@@ -43,28 +43,30 @@ export const PRODUCTS = {
 
 export type ProductId = keyof typeof PRODUCTS
 
-// Stripe pricing per tier and currency
+// Stripe pricing per tier and currency. Os preços são criados na hora no checkout
+// (price_data), então não há produto/preço cadastrado no painel do Stripe.
+// `currency` é a moeda cobrada: GS em EUR cai para USD.
 export const STRIPE_PRODUCTS = {
   ebook: {
     gn: {
-      usd: { cents: 4700, label: '$47', priceId: process.env.STRIPE_PRICE_EBOOK_GN_USD ?? '' },
-      eur: { cents: 4400, label: '€44', priceId: process.env.STRIPE_PRICE_EBOOK_GN_EUR ?? '' },
+      usd: { cents: 4700, label: '$47', currency: 'usd' },
+      eur: { cents: 4400, label: '€44', currency: 'eur' },
     },
     gs: {
-      usd: { cents: 2700, label: '$27', priceId: process.env.STRIPE_PRICE_EBOOK_GS_USD ?? '' },
-      eur: { cents: 2700, label: '$27', priceId: process.env.STRIPE_PRICE_EBOOK_GS_USD ?? '' }, // GS countries don't use EUR, fallback to USD
+      usd: { cents: 2700, label: '$27', currency: 'usd' },
+      eur: { cents: 2700, label: '$27', currency: 'usd' }, // GS countries don't use EUR, fallback to USD
     },
     name: 'Introduction to Syntropic Agroforestry — Ebook',
     nameEs: 'Introducción a la Agroforestería Sintrópica — Ebook',
   },
   session: {
     gn: {
-      usd: { cents: 14700, label: '$147', priceId: process.env.STRIPE_PRICE_SESSION_GN_USD ?? '' },
-      eur: { cents: 13700, label: '€137', priceId: process.env.STRIPE_PRICE_SESSION_GN_EUR ?? '' },
+      usd: { cents: 14700, label: '$147', currency: 'usd' },
+      eur: { cents: 13700, label: '€137', currency: 'eur' },
     },
     gs: {
-      usd: { cents: 7700, label: '$77', priceId: process.env.STRIPE_PRICE_SESSION_GS_USD ?? '' },
-      eur: { cents: 7700, label: '$77', priceId: process.env.STRIPE_PRICE_SESSION_GS_USD ?? '' },
+      usd: { cents: 7700, label: '$77', currency: 'usd' },
+      eur: { cents: 7700, label: '$77', currency: 'usd' },
     },
     name: 'Ebook + 1h Individual Session with Michel Bottan',
     nameEs: 'Ebook + Sesión Individual 1h con Michel Bottan',
@@ -72,3 +74,8 @@ export const STRIPE_PRODUCTS = {
 } as const
 
 export type StripeProductId = keyof typeof STRIPE_PRODUCTS
+
+// Landing /ebook (PT) para quem está na zona do euro (Portugal): preço próprio,
+// abaixo do €44 das páginas /en e /es.
+export const STRIPE_EBOOK_PT_EUR = { cents: 2700, label: '€27', currency: 'eur' } as const
+export const STRIPE_EBOOK_PT_NAME = 'Ebook Agricultura Sintrópica'

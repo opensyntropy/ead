@@ -2,7 +2,10 @@ import { headers } from 'next/headers'
 import type { Metadata } from 'next'
 import { sendMetaPageView } from '@/lib/meta-pixel'
 import { SITE_URL, SITE_NAME, AUTHOR, AUTHOR_LINKS, EBOOK_TITLE, EBOOK_PRICE_BRL, EBOOK_ISBN } from '@/lib/site'
-import EbookClientPage from '../ebook/EbookClientPage'
+import { STRIPE_PRODUCTS, STRIPE_EBOOK_PT_EUR } from '@/config/products'
+import { getCountryTier, getCountryCurrency } from '@/lib/geo'
+import { isStripeEnabled } from '@/lib/stripe'
+import EbookClientPage, { type IntlOffer } from '../ebook/EbookClientPage'
 import { FAQ_ITEMS } from '../ebook/faq'
 
 export const dynamic = 'force-dynamic'
@@ -119,7 +122,21 @@ export default async function GuiaAgroflorestaPage({
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }} />
-      <EbookClientPage serverEventId={eventId} />
+      <EbookClientPage serverEventId={eventId} intlOffer={getIntlOffer(hdrs.get('x-vercel-ip-country'), params.checkout)} />
     </>
   )
+}
+
+// Fora do Brasil (Portugal etc.) não há PIX nem CPF: o checkout vira Stripe na
+// moeda do país. ?checkout=intl|br força um dos fluxos (testes, VPN).
+function getIntlOffer(country: string | null, override: string | string[] | undefined): IntlOffer | null {
+  if (!isStripeEnabled()) return null
+  const forced = override === 'intl' ? 'PT' : override === 'br' ? 'BR' : null
+  const code = (forced ?? country ?? 'BR').toUpperCase()
+  if (code === 'BR') return null
+
+  const tier = getCountryTier(code)
+  const currency = getCountryCurrency(code)
+  const price = currency === 'eur' ? STRIPE_EBOOK_PT_EUR : STRIPE_PRODUCTS.ebook[tier][currency]
+  return { tier, currency, label: price.label }
 }
