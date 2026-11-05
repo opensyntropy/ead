@@ -37,3 +37,28 @@ export function unsubscribePageUrl(email: string): string {
 export function unsubscribeOneClickUrl(email: string): string {
   return `${BASE_URL}/api/unsubscribe?${query(email)}`
 }
+
+// Lista "Novos vídeos" do Guia: token com escopo próprio, então sair dela não descadastra
+// o comprador dos comunicados do livro (e vice-versa).
+function signVideos(email: string): string {
+  return createHmac('sha256', secret()).update(`videos:${email}`).digest('base64url')
+}
+
+export function verifyVideoUnsubscribeToken(email: string, token: string): boolean {
+  const expected = Buffer.from(signVideos(normalizeEmail(email)))
+  const given = Buffer.from(token)
+  return expected.length === given.length && timingSafeEqual(expected, given)
+}
+
+function videoQuery(email: string): string {
+  const e = normalizeEmail(email)
+  return `e=${encodeURIComponent(e)}&t=${signVideos(e)}`
+}
+
+export function videoUnsubscribePageUrl(email: string): string {
+  return `${BASE_URL}/avisos/sair?${videoQuery(email)}`
+}
+
+export function videoUnsubscribeOneClickUrl(email: string): string {
+  return `${BASE_URL}/api/inscrever/sair?${videoQuery(email)}`
+}

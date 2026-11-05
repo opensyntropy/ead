@@ -93,7 +93,7 @@ export async function GET(request: Request) {
 
         // Link tagueado para atribuir a venda à recuperação quando o cliente
         // volta pelo e-mail (checkout marca via_recovery na nova cobrança).
-        const checkoutUrl = `${BASE_URL}/ebook?utm_source=email&utm_medium=recovery&utm_content=attempt${attempt}`
+        const checkoutUrl = `${BASE_URL}/guia-agrofloresta?utm_source=email&utm_medium=recovery&utm_content=attempt${attempt}`
         await sendRecoveryEmail(charge.email, charge.name, productName(charge.product), checkoutUrl, attempt)
         await supabase.from('pix_charges').update({ [column]: now }).eq('id', charge.id)
         sent++
@@ -137,7 +137,7 @@ export async function GET(request: Request) {
       try {
         // Se já comprou (cartão na 2ª tentativa, PIX, etc.), não manda — só marca.
         if (!(await hasConfirmedPurchase(rep.email, rep.product))) {
-          const checkoutUrl = `${BASE_URL}/ebook?utm_source=email&utm_medium=recovery&utm_content=card`
+          const checkoutUrl = `${BASE_URL}/guia-agrofloresta?utm_source=email&utm_medium=recovery&utm_content=card`
           await sendCardRecoveryEmail(rep.email, rep.name, productName(rep.product), checkoutUrl)
           sent++
         }

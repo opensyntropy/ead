@@ -55,7 +55,7 @@ export default async function EnPage() {
   const country = hdrs.get('x-vercel-ip-country')
 
   const locale = getCountryLocale(country)
-  if (locale === 'pt') redirect('/ebook')
+  if (locale === 'pt') redirect('/guia-agrofloresta')
   if (locale === 'es') redirect('/es')
 
   const tier = getCountryTier(country)

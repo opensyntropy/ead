@@ -1,65 +1,17 @@
-import { headers } from 'next/headers'
-import { sendMetaPageView } from '@/lib/meta-pixel'
-import { STRIPE_PRODUCTS, STRIPE_EBOOK_PT_EUR } from '@/config/products'
-import { getCountryTier, getCountryCurrency } from '@/lib/geo'
-import { isStripeEnabled } from '@/lib/stripe'
-import EbookClientPage, { type IntlOffer } from './EbookClientPage'
+import { permanentRedirect } from 'next/navigation'
 
-export const dynamic = 'force-dynamic'
-
-const BASE_URL = 'https://www.agroflorestasintropica.com.br'
-
-function parseCookieHeader(cookieHeader: string, name: string): string | null {
-  const match = cookieHeader.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`))
-  return match ? decodeURIComponent(match[1]) : null
-}
-
-export default async function EbookPage({
+// A landing mora em /guia-agrofloresta. /ebook continua existindo para anúncios e e-mails antigos,
+// preservando fbclid/UTMs na query.
+export default async function EbookRedirect({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const hdrs = await headers()
   const params = await searchParams
-
-  const ip = hdrs.get('x-forwarded-for')?.split(',')[0].trim() ?? hdrs.get('x-real-ip') ?? null
-  const ua = hdrs.get('user-agent') ?? null
-  const cookieHeader = hdrs.get('cookie') ?? ''
-
-  const fbcCookie = parseCookieHeader(cookieHeader, '_fbc')
-  const fbpCookie = parseCookieHeader(cookieHeader, '_fbp')
-
-  const fbclid = typeof params.fbclid === 'string' ? params.fbclid : null
-
-  // Constrói fbc: preferência pelo cookie (já validado pelo Pixel), fallback pelo fbclid da URL
-  const fbc = fbcCookie ?? (fbclid ? `fb.1.${Date.now()}.${fbclid}` : null)
-
-  // URL completa com query params para o Meta conseguir associar ao clique do anúncio
-  const qs = Object.entries(params)
-    .filter(([, v]) => v != null)
-    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
-    .join('&')
-  const sourceUrl = `${BASE_URL}/ebook${qs ? '?' + qs : ''}`
-
-  const eventId = crypto.randomUUID()
-
-  // Dispara CAPI imediatamente — captura todos os visitantes,
-  // independente de bloqueadores de anúncio ou saída rápida antes do JS hidratar
-  sendMetaPageView({ eventId, fbc, fbp: fbpCookie, ip, userAgent: ua, sourceUrl }).catch(() => {})
-
-  return <EbookClientPage serverEventId={eventId} intlOffer={getIntlOffer(hdrs.get('x-vercel-ip-country'), params.checkout)} />
-}
-
-// Fora do Brasil (Portugal etc.) não há PIX nem CPF: o checkout vira Stripe na
-// moeda do país. ?checkout=intl|br força um dos fluxos (testes, VPN).
-function getIntlOffer(country: string | null, override: string | string[] | undefined): IntlOffer | null {
-  if (!isStripeEnabled()) return null
-  const forced = override === 'intl' ? 'PT' : override === 'br' ? 'BR' : null
-  const code = (forced ?? country ?? 'BR').toUpperCase()
-  if (code === 'BR') return null
-
-  const tier = getCountryTier(code)
-  const currency = getCountryCurrency(code)
-  const price = currency === 'eur' ? STRIPE_EBOOK_PT_EUR : STRIPE_PRODUCTS.ebook[tier][currency]
-  return { tier, currency, label: price.label }
+  const qs = new URLSearchParams()
+  for (const [k, v] of Object.entries(params)) {
+    for (const value of Array.isArray(v) ? v : v != null ? [v] : []) qs.append(k, value)
+  }
+  const query = qs.toString()
+  permanentRedirect(query ? `/guia-agrofloresta?${query}` : '/guia-agrofloresta')
 }

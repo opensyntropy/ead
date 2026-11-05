@@ -6,11 +6,16 @@ import MarkdownReader from '@/app/ebook/(reader)/[chapterId]/MarkdownReader'
 
 export const dynamic = 'force-dynamic'
 
+// Ferramenta de desenvolvimento: capítulo completo sem login. Nunca expor em produção.
+export const metadata = { robots: { index: false, follow: false } }
+
 interface Props {
   params: Promise<{ chapterId: string }>
 }
 
 export default async function PreviewPage({ params }: Props) {
+  if (process.env.NODE_ENV === 'production') notFound()
+
   const { chapterId } = await params
   const chapter = CHAPTERS.find(c => c.id === chapterId)
   if (!chapter) notFound()

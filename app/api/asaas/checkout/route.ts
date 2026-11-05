@@ -3,6 +3,7 @@ import { PRODUCTS, type ProductId } from '@/config/products'
 import { findOrCreateCustomer, createCreditCardCharge, createPixCharge, createCharge, getPixQrCode } from '@/lib/asaas'
 import { createServiceClient } from '@/lib/supabase/server'
 import { createDownloadToken } from '@/lib/download'
+import { WHATSAPP_COMMUNITY_COMPRADORES } from '@/lib/site'
 import { sendDownloadEmail, sendSessionPurchaseEmail, sendPurchaseNotification } from '@/lib/email'
 import { sendPurchaseEvent } from '@/lib/meta-pixel'
 import { toBrazilianLocal } from '@/lib/phone'
@@ -211,7 +212,10 @@ export async function POST(request: Request) {
       }
     }
 
-    return NextResponse.json({ cardSuccess: true, chargeId: charge.id, chargeStatus: charge.status, postError, downloadUrl })
+    return NextResponse.json({
+      cardSuccess: true, chargeId: charge.id, chargeStatus: charge.status, postError, downloadUrl,
+      comunidade: charge.status === 'CONFIRMED' ? WHATSAPP_COMMUNITY_COMPRADORES : null,
+    })
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error('Asaas checkout error:', msg)

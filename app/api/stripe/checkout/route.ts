@@ -36,11 +36,11 @@ export async function POST(request: Request) {
     if (typeof v === 'string' && v) metadata[k] = v.slice(0, 500)
   }
 
-  // Comprador lusófono compra pela landing /ebook (PT); en/es têm páginas próprias.
+  // Comprador lusófono compra pela landing /guia-agrofloresta (PT); en/es têm páginas próprias.
   const successUrl = locale === 'pt'
     ? `${BASE_URL}/compra-confirmada?session_id={CHECKOUT_SESSION_ID}`
     : `${BASE_URL}/${locale}/sucesso?session_id={CHECKOUT_SESSION_ID}`
-  const cancelUrl = locale === 'pt' ? `${BASE_URL}/ebook#comprar` : `${BASE_URL}/${locale}`
+  const cancelUrl = locale === 'pt' ? `${BASE_URL}/guia-agrofloresta#comprar` : `${BASE_URL}/${locale}`
 
   try {
     const session = await createStripeCheckoutSession({
