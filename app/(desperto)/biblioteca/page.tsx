@@ -3,7 +3,6 @@ import type { Metadata } from 'next'
 import { getBiblioteca, getConteudo } from '@/lib/conteudo'
 import { padCap } from '@/lib/livro'
 import Busca from '../Busca'
-import LivroDestaque from '../LivroDestaque'
 import Data from '../Data'
 
 const TITLE = 'Agrofloresta sintrópica na prática: Biblioteca do Guia'
@@ -81,7 +80,6 @@ export default async function BibliotecaPage() {
         ))}
       </div>
 
-      <LivroDestaque titulo="A Biblioteca segue o livro. O livro reúne tudo em um só lugar." />
     </main>
   )
 }

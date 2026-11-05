@@ -9,6 +9,8 @@ import AboutBook from './AboutBook'
 import { formatPhoneInput } from '@/lib/phone'
 import { PARTES, padCap } from '@/lib/livro'
 import StripeCheckout, { type IntlOffer } from './StripeCheckout'
+import ComunidadeCompradores from './ComunidadeCompradores'
+import { IconeWhatsApp } from '../(desperto)/Comunidade'
 
 export type { IntlOffer }
 
@@ -346,6 +348,7 @@ function BrCheckoutForm() {
   const [pixData, setPixData] = useState<{ qrCode: string; payload: string } | null>(null)
   const [pixChargeId, setPixChargeId] = useState<string | null>(null)
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
+  const [comunidade, setComunidade] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [cardSuccess, setCardSuccess] = useState(false)
   const [utmParams, setUtmParams] = useState<Record<string, string>>({})
@@ -415,6 +418,7 @@ function BrCheckoutForm() {
         const json = await res.json()
         if (json.confirmed && json.downloadUrl) {
           setDownloadUrl(json.downloadUrl)
+          setComunidade(json.comunidade ?? null)
           ;(window as any).fbq?.('track', 'Purchase', { value: 87, currency: 'BRL' }, { eventID: pixChargeId })
           track('purchase', { produto: 'ebook', metodo: 'pix' }, 8700)
           return
@@ -474,6 +478,7 @@ function BrCheckoutForm() {
     } else if (data.cardSuccess) {
       setCardSuccess(true)
       if (data.downloadUrl) setDownloadUrl(data.downloadUrl)
+      if (data.comunidade) setComunidade(data.comunidade)
       // Só conta conversão quando o cartão é de fato confirmado. Cobranças
       // pendentes/em análise viram venda só depois — a CAPI no webhook dispara
       // o Purchase nesse caso (deduplicado pelo mesmo eventID = id da cobrança).
@@ -547,7 +552,9 @@ function BrCheckoutForm() {
               Baixar meu Guia →
             </a>
           </div>
-        ) : (
+        ) : null}
+        {downloadUrl && <ComunidadeCompradores url={comunidade} />}
+        {downloadUrl ? null : (
           <>
             <div className="w-full flex items-center gap-4">
               <Image src="/capa_livro_nobg.png" alt="Capa do ebook" width={128} height={160} loading="lazy" className="w-32 sm:w-24 h-auto flex-shrink-0" />
@@ -625,12 +632,15 @@ function BrCheckoutForm() {
               Baixar meu Guia →
             </a>
           </div>
-        ) : (
+        ) : null}
+        {downloadUrl && <ComunidadeCompradores url={comunidade} />}
+        {downloadUrl ? null : (
           <div className="text-center flex flex-col gap-3">
             <p className="text-3xl">✓</p>
             <p className="font-bold text-[#2B1A15] text-lg">Pagamento confirmado!</p>
             <p className="text-[#7C3A5B] text-sm leading-relaxed">Você receberá o link de download do ebook por e-mail em instantes.</p>
             <p className="text-gray-400 text-xs">Não encontrou? Verifique a caixa de spam ou promoções.</p>
+            <ComunidadeCompradores url={comunidade} />
           </div>
         )}
         {downloadUrl && (
@@ -658,7 +668,8 @@ function BrCheckoutForm() {
       <div className="px-8 py-7 text-center" style={{ backgroundColor: '#4A1F35' }}>
         <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Ebook Digital — PDF · +200 páginas</p>
         <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Leia onde quiser ou imprima</p>
-        <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: LIME }}>Acesso permanente · entrega imediata</p>
+        <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: LIME }}>Acesso permanente · entrega imediata</p>
+        <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: '#7FE0A6' }}>+ Bônus: grupo exclusivo de leitores no WhatsApp</p>
         <div className="flex items-center justify-center gap-4 mb-1">
           <span className="text-gray-500 text-3xl line-through">R$ 127</span>
           <span className="text-xs font-black px-2.5 py-1 rounded-full" style={{ backgroundColor: LIME + '22', color: LIME }}>31% OFF</span>
@@ -1489,6 +1500,21 @@ export default function EbookLandingPage({ serverEventId, intlOffer }: { serverE
               style={{ fontSize: 'clamp(1.8rem, 5vw, 2.8rem)' }}>
               Dê o primeiro passo com segurança.
             </h2>
+          </div>
+
+          {/* bônus: grupo exclusivo de leitores */}
+          <div className="mb-6 rounded-2xl p-5 flex items-start gap-4 text-left" style={{ background: 'linear-gradient(150deg, #0F6B3A, #12874A)', color: '#E7F8EE' }}>
+            <span className="grid place-items-center w-12 h-12 rounded-2xl bg-white flex-shrink-0" style={{ color: '#1FAF5A' }}>
+              <IconeWhatsApp className="w-7 h-7" />
+            </span>
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest mb-1" style={{ color: '#B9F0CF' }}>Bônus para quem compra</p>
+              <p className="font-bold text-white text-lg leading-snug mb-1">Grupo exclusivo de leitores no WhatsApp</p>
+              <p className="text-sm leading-relaxed">
+                Um grupo aberto só para quem tem o guia: tire dúvidas da leitura, compartilhe seu plantio e troque experiências.
+                Eu estou lá e, sempre que posso, respondo as perguntas.
+              </p>
+            </div>
           </div>
 
           {/* card de compra */}

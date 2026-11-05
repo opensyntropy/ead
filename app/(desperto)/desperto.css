@@ -662,3 +662,108 @@
   .desperto .sobre-abertura { font-size: 19px; }
   .desperto .sobre-pagina .texto { font-size: 17px; }
 }
+
+/* comunidade no WhatsApp + livro: presentes em todas as páginas (layout) */
+.desperto { --whats: #1FAF5A; --whats-escuro: #0F6B3A; }
+.desperto .faixa-comunidade { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 9px 20px;
+  background: linear-gradient(90deg, var(--whats-escuro), var(--whats)); color: #fff !important; text-decoration: none;
+  font-size: 15px; line-height: 1.35; text-align: center; transition: filter .15s; }
+.desperto .faixa-comunidade:hover { filter: brightness(1.08); }
+.desperto .faixa-comunidade strong { font-weight: 700; }
+.desperto .faixa-icone { flex: none; width: 20px; height: 20px; }
+.desperto .faixa-seta { flex: none; display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,.2); font-weight: 700; transition: transform .15s; }
+.desperto .faixa-comunidade:hover .faixa-seta { transform: translateX(3px); }
+
+.desperto .destaques { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; max-width: 1100px; margin: 72px auto 0; padding: 0 24px; }
+.desperto .destaques.so-livro { grid-template-columns: minmax(0, 1fr); }
+.desperto .destaques .eyebrow { margin: 0; }
+.desperto .destaque-comunidade, .desperto .destaque-livro { position: relative; overflow: hidden; border-radius: 22px; padding: 32px 34px; text-decoration: none; box-shadow: var(--sombra); transition: transform .2s; }
+.desperto .destaque-comunidade:hover, .desperto .destaque-livro:hover { transform: translateY(-3px); }
+.desperto .destaque-comunidade { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; background: linear-gradient(150deg, var(--whats-escuro), #12874A); color: #E7F8EE !important; }
+.desperto .destaque-comunidade::before { content: ""; position: absolute; right: -90px; top: -90px; width: 280px; height: 280px; border-radius: 50%; background: radial-gradient(circle, rgba(255,255,255,.18), transparent 70%); }
+.desperto .destaque-comunidade .eyebrow { color: #B9F0CF; }
+.desperto .destaque-comunidade h2 { margin: 0; font-size: clamp(24px, 2.6vw, 32px); font-weight: 600; line-height: 1.15; color: #fff; }
+.desperto .destaque-comunidade h2::after { display: none; }
+.desperto .destaque-comunidade p { margin: 0; font-size: 16px; line-height: 1.55; }
+.desperto .destaque-icone { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 16px; background: #fff; color: var(--whats); box-shadow: 0 8px 20px rgba(0,0,0,.2); }
+.desperto .destaque-icone svg { width: 32px; height: 32px; }
+.desperto .botao.botao-whats { margin-top: auto; background: #fff; color: var(--whats-escuro) !important; }
+.desperto .destaque-comunidade:hover .botao-whats { background: #DFFBEA; color: var(--whats-escuro) !important; }
+.desperto .destaque-livro { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 28px; align-items: center; background: var(--ameixa); color: #F3DCCB !important; }
+.desperto .destaque-livro::before { content: ""; position: absolute; right: -110px; bottom: -110px; width: 300px; height: 300px; border-radius: 50%; background: radial-gradient(circle, rgba(249,185,120,.3), transparent 70%); }
+.desperto .destaque-livro:hover .livro-3d img { transform: rotateY(-8deg); }
+.desperto .destaque-livro-texto { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.desperto .destaque-livro .eyebrow { color: var(--ambar); }
+.desperto .destaque-livro strong { font-size: clamp(22px, 2.3vw, 28px); font-weight: 600; line-height: 1.18; color: #fff; }
+.desperto .destaque-livro-sub { font-size: 15px; line-height: 1.55; }
+.desperto .destaque-livro .botao { margin-top: 6px; }
+.desperto .destaque-livro:hover .botao { background: var(--coral); color: #fff !important; }
+@media (max-width: 900px) {
+  .desperto .destaques { grid-template-columns: minmax(0, 1fr); gap: 16px; margin-top: 48px; padding: 0 16px; }
+  .desperto .destaque-comunidade, .desperto .destaque-livro { padding: 26px 22px; }
+  .desperto .destaque-livro { grid-template-columns: 96px minmax(0, 1fr); gap: 18px; }
+  .desperto .destaque-livro .livro-3d { width: auto; margin: 0; }
+}
+@media (max-width: 760px) {
+  .desperto .faixa-comunidade { font-size: 14px; padding: 8px 14px; }
+  .desperto .faixa-extra { display: none; }
+}
+
+/* sair dos avisos */
+.desperto .aviso-sair { max-width: 620px; margin: 40px auto 0; padding: 36px 40px; border-radius: 22px; background: var(--papel); box-shadow: var(--sombra); }
+.desperto .aviso-sair h1 { margin: 8px 0 12px; font-size: clamp(26px, 3.4vw, 34px); font-weight: 500; line-height: 1.2; }
+.desperto .aviso-sair p { margin: 0 0 18px; font-size: 17px; }
+.desperto .aviso-sair .botao { border: 0; cursor: pointer; font: 700 16px var(--font-desperto), sans-serif; }
+.desperto .aviso-sair-volta { margin: 22px 0 0 !important; font-size: 15px !important; }
+@media (max-width: 760px) { .desperto .aviso-sair { padding: 26px 20px; margin-top: 16px; } }
+.desperto .destaques .botao { white-space: nowrap; }
+@media (max-width: 760px) {
+  .desperto .destaques .eyebrow { letter-spacing: .18em; font-size: 12px; }
+  .desperto .destaque-livro { grid-template-columns: 84px minmax(0, 1fr); }
+  .desperto .destaque-livro strong { font-size: 20px; }
+  .desperto .destaque-livro-sub { font-size: 14px; }
+  .desperto .destaques .botao { padding: 11px 20px; font-size: 15px; }
+}
+.desperto .selo-so-avisos { display: inline-block; padding: 6px 12px; border-radius: 999px; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.3); color: #fff; font-size: 14px; font-weight: 600; line-height: 1.35; }
+
+/* botão do livro no cabeçalho: capa + duas linhas, com brilho */
+.desperto .menu .livro { position: relative; gap: 10px; margin-left: 12px; padding: 6px 20px 6px 8px; border-radius: 14px; line-height: 1.1;
+  background: linear-gradient(135deg, #FFD29A, var(--ambar) 45%, var(--ouro)); color: var(--breu); overflow: visible;
+  box-shadow: 0 0 0 2px rgba(255,255,255,.35), 0 6px 22px rgba(249,185,120,.55); animation: livro-brilho 2.8s ease-in-out infinite; }
+.desperto .menu .livro:hover { background: linear-gradient(135deg, #F7A37E, var(--coral)); color: #fff; transform: translateY(-2px) scale(1.03); animation: none; }
+.desperto .menu .livro .livro-capa { width: 30px; height: 42px; margin: -10px 0 -10px; object-fit: cover; border-radius: 2px 4px 4px 2px;
+  transform: rotate(-6deg); box-shadow: 3px 4px 10px rgba(0,0,0,.4); transition: transform .2s; }
+.desperto .menu .livro:hover .livro-capa { transform: rotate(0) scale(1.08); }
+.desperto .menu .livro-rotulo { display: flex; flex-direction: column; align-items: flex-start; }
+.desperto .menu .livro-rotulo strong { font-size: 16px; font-weight: 800; }
+.desperto .menu .livro-rotulo small { font-size: 11.5px; font-weight: 700; opacity: .8; letter-spacing: .02em; }
+@keyframes livro-brilho {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(255,255,255,.35), 0 6px 22px rgba(249,185,120,.5); }
+  50% { box-shadow: 0 0 0 4px rgba(255,255,255,.18), 0 8px 30px rgba(249,185,120,.85); }
+}
+@media (prefers-reduced-motion: reduce) { .desperto .menu .livro { animation: none; } }
+@media (max-width: 760px) {
+  .desperto .menu .livro { margin: 0; padding: 5px 14px 5px 6px; gap: 8px; }
+  .desperto .menu .livro .livro-capa { width: 24px; height: 34px; margin: -6px 0; }
+  .desperto .menu .livro-rotulo strong { font-size: 14.5px; }
+  .desperto .menu .livro-rotulo small { font-size: 10px; }
+}
+@media (max-width: 760px) {
+  .desperto .menu .livro-rotulo small { display: none; }
+  .desperto .menu .livro { padding-right: 16px; }
+  .desperto .marca-texto small { white-space: nowrap; }
+}
+/* marca em uma linha só; em telas menores não cabe ao lado do menu e do "Compre o livro" e quebra em duas */
+.desperto .marca-texto strong { white-space: nowrap; }
+@media (max-width: 1100px) {
+  .desperto .marca-texto strong span { display: block; }
+}
+.desperto .marca-texto small, .desperto .menu .livro-rotulo strong { white-space: nowrap; }
+@media (max-width: 1000px) {
+  .desperto .menu .livro-rotulo small { display: none; }
+  .desperto .menu .menu-item { padding: 8px 12px; }
+}
+@media (max-width: 900px) {
+  .desperto .menu .menu-item { padding: 8px 9px; font-size: 14.5px; }
+  .desperto .menu .livro { margin-left: 6px; }
+}

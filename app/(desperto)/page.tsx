@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
-import LivroDestaque from './LivroDestaque'
 import Inscricao from './Inscricao'
 import { VideoPlayer } from './manejo/Video'
 import { getConteudo, getContagemCapitulos, ehNovo } from '@/lib/conteudo'
@@ -127,7 +126,6 @@ export default async function Home() {
         </div>
       </section>
 
-      <LivroDestaque />
     </main>
   )
 }

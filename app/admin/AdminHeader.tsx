@@ -22,6 +22,12 @@ export default function AdminHeader() {
             ✉ Email
           </a>
           <a
+            href="/admin/inscritos"
+            className="text-sm font-semibold text-white/80 hover:text-white border border-white/30 hover:border-white/60 rounded-lg px-4 py-1.5 transition-colors"
+          >
+            🔔 Inscritos
+          </a>
+          <a
             href="/admin/aguardando"
             className="text-sm font-semibold text-white/80 hover:text-white border border-white/30 hover:border-white/60 rounded-lg px-4 py-1.5 transition-colors"
           >

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { createDownloadToken } from '@/lib/download'
+import { WHATSAPP_COMMUNITY_COMPRADORES } from '@/lib/site'
 
 export async function GET(request: Request) {
   const paymentId = new URL(request.url).searchParams.get('paymentId')
@@ -16,5 +17,5 @@ export async function GET(request: Request) {
   if (data?.status !== 'confirmed') return NextResponse.json({ confirmed: false })
 
   const token = await createDownloadToken(data.email, 'ebook')
-  return NextResponse.json({ confirmed: true, downloadUrl: `/api/download?token=${token}` })
+  return NextResponse.json({ confirmed: true, downloadUrl: `/api/download?token=${token}`, comunidade: WHATSAPP_COMMUNITY_COMPRADORES })
 }

@@ -2,7 +2,6 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { SITE_URL, SITE_NAME, AUTHOR, AUTHOR_LINKS, INTRO_VIDEO } from '@/lib/site'
 import { VideoPlayer } from '../manejo/Video'
-import LivroDestaque from '../LivroDestaque'
 
 export const metadata: Metadata = {
   title: 'Michel Bottan, autor do livro de Agrofloresta Sintrópica',
@@ -118,7 +117,6 @@ export default function SobrePage() {
           </div>
         </section>}
 
-        <LivroDestaque titulo="O livro que eu gostaria de ter tido quando comecei" />
       </main>
     </>
   )

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
 import { normalizeEmail } from '@/lib/unsubscribe'
 import { toWaNumber } from '@/lib/phone'
+import { enviarBoasVindas } from '@/lib/avisos'
 
 // Inscrição para aviso de novos vídeos (e-mail e/ou WhatsApp). Grava em video_subscribers.
 export async function POST(req: NextRequest) {
@@ -29,11 +30,22 @@ export async function POST(req: NextRequest) {
 
   // Quem já está inscrito por um canal e volta com o outro: completa o mesmo registro.
   const filtros = [email && `email.eq.${email}`, whatsappDigits && `whatsapp.eq.${whatsappDigits}`].filter(Boolean).join(',')
-  const { data: existente } = await service.from('video_subscribers').select('id, email, whatsapp').or(filtros).limit(1).maybeSingle()
+  const { data: existente } = await service.from('video_subscribers')
+    .select('id, email, whatsapp, email_descadastrado_em').or(filtros).limit(1).maybeSingle()
+
+  // Boas-vindas só quando este e-mail passa a receber agora: inscrição nova, e-mail novo num
+  // registro que só tinha WhatsApp, ou quem tinha saído da lista e voltou.
+  const emailFinal = existente ? existente.email ?? email : email
+  const voltou = !!existente?.email_descadastrado_em && !!email && existente.email === email
+  const boasVindas = !!emailFinal && (!existente || !existente.email || voltou)
 
   const { error } = existente
     ? await service.from('video_subscribers')
-        .update({ email: existente.email ?? email, whatsapp: existente.whatsapp ?? whatsappDigits })
+        .update({
+          email: emailFinal,
+          whatsapp: existente.whatsapp ?? whatsappDigits,
+          ...(voltou && { email_descadastrado_em: null }),
+        })
         .eq('id', existente.id)
     : await service.from('video_subscribers').insert({ email, whatsapp: whatsappDigits, origem })
 
@@ -41,5 +53,7 @@ export async function POST(req: NextRequest) {
     console.error('[inscrever]', error)
     return NextResponse.json({ message: 'Não foi possível salvar agora. Tente de novo em instantes.' }, { status: 500 })
   }
+  // a inscrição já valeu; falha no e-mail só vai para o log
+  if (boasVindas) await enviarBoasVindas(emailFinal!).catch(e => console.error('[inscrever] boas-vindas', e))
   return NextResponse.json({ message: 'Inscrição feita! Você vai receber o aviso do próximo vídeo.' })
 }

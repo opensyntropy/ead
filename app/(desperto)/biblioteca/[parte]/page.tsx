@@ -7,7 +7,6 @@ import { PARTES, LEITURAS, padCap, infografico } from '@/lib/livro'
 import { SITE_URL } from '@/lib/site'
 import Cartao from '../Cartao'
 import Trilha, { breadcrumbJsonLd, type Passo } from '../Trilha'
-import LivroDestaque from '../../LivroDestaque'
 
 interface Props {
   params: Promise<{ parte: string }>
@@ -161,13 +160,11 @@ export default async function ParteBiblioteca({ params }: Props) {
                 : <Link href="/biblioteca/especies" className="prox"><small>Atalho →</small><strong>Espécies de A a Z</strong></Link>}
             </nav>
 
-            <LivroDestaque titulo={`A Parte ${parte.num} completa está no livro`} />
           </main>
         </div>
       ) : (
         <main className="inicio">
           <div className="relacionados-grade">{prateleira!.avulsos.map(item => <Cartao key={item.href} item={item} />)}</div>
-          <LivroDestaque />
         </main>
       )}
     </>

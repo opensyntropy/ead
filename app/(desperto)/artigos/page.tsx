@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { getArticles } from '@/lib/articles'
-import LivroDestaque from '../LivroDestaque'
 import Data from '../Data'
 
 export const metadata: Metadata = {
@@ -32,7 +31,6 @@ export default async function ArtigosPage() {
           </li>
         ))}
       </ul>
-      <LivroDestaque titulo="Quer ir além dos artigos? O livro reúne tudo em um só lugar." />
     </main>
   )
 }

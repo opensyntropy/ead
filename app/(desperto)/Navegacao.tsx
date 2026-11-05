@@ -100,7 +100,7 @@ export function Cabecalho({ contagem }: { contagem: Record<number, number> }) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/desperto/logo.webp" alt="" />
         <span className="marca-texto">
-          <strong>Guia Agrofloresta<br />Sintrópica</strong>
+          <strong><span>Guia Agrofloresta</span> <span>Sintrópica</span></strong>
           <small>aplicações práticas</small>
         </span>
       </Link>
@@ -112,8 +112,13 @@ export function Cabecalho({ contagem }: { contagem: Record<number, number> }) {
               {i.label}
             </Link>
           ))}
-        <Link href="/guia-agrofloresta" className="livro">
-          <span className="livro-icone" aria-hidden>📖</span> O livro
+        <Link href="/guia-agrofloresta" className="livro" aria-label="Compre o livro: Guia de Introdução à Agrofloresta Sintrópica">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img className="livro-capa" src="/desperto/capa-livro.jpg" alt="" />
+          <span className="livro-rotulo">
+            <strong>Compre o livro</strong>
+            <small>+200 páginas →</small>
+          </span>
         </Link>
       </nav>
     </header>

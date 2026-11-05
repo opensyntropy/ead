@@ -1,7 +1,26 @@
 import { Resend } from 'resend'
+import { WHATSAPP_COMMUNITY_COMPRADORES } from '@/lib/site'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const BASE_URL = (process.env.NEXT_PUBLIC_BASE_URL ?? 'https://ead.opensyntropy.earth').replace(/\/$/, '')
+
+// Convite para a comunidade exclusiva de leitores (WhatsApp), nos e-mails de compra em português.
+function comunidadeLeitoresHtml() {
+  if (!WHATSAPP_COMMUNITY_COMPRADORES) return ''
+  return `<tr>
+          <td style="padding:0 40px 32px">
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#E7F8EE;border-radius:12px">
+              <tr><td style="padding:24px;text-align:center">
+                <p style="margin:0 0 6px;color:#0F6B3A;font-size:17px;font-weight:700;font-family:Arial,sans-serif">Comunidade exclusiva de leitores</p>
+                <p style="margin:0 0 18px;color:#1a1a1a;font-size:15px;line-height:1.6">Um grupo no WhatsApp só para quem tem o guia: tire dúvidas da leitura e troque experiências de plantio. Eu estou lá e, sempre que posso, respondo as perguntas.</p>
+                <a href="${WHATSAPP_COMMUNITY_COMPRADORES}" style="display:inline-block;background:#1FAF5A;color:#ffffff;font-family:Arial,sans-serif;font-size:16px;font-weight:700;text-decoration:none;padding:14px 30px;border-radius:10px">
+                  Entrar na comunidade →
+                </a>
+              </td></tr>
+            </table>
+          </td>
+        </tr>`
+}
 
 export async function sendDownloadEmail(email: string, token: string) {
   const downloadUrl = `${BASE_URL}/api/download?token=${token}`
@@ -56,6 +75,7 @@ export async function sendDownloadEmail(email: string, token: string) {
           </td>
         </tr>
 
+        ${comunidadeLeitoresHtml()}
         <tr>
           <td style="padding:0 40px 40px">
             <hr style="border:none;border-top:1px solid #e8e8e0;margin:0 0 28px">
@@ -153,6 +173,7 @@ export async function sendSessionPurchaseEmail(email: string, downloadToken: str
           </td>
         </tr>
 
+        ${comunidadeLeitoresHtml()}
         <tr>
           <td style="padding:0 40px 40px">
             <hr style="border:none;border-top:1px solid #e8e8e0;margin:0 0 28px">

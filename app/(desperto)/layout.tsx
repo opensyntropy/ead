@@ -3,6 +3,8 @@ import type { Metadata, Viewport } from 'next'
 import { Montserrat } from 'next/font/google'
 import { Cabecalho, Abas } from './Navegacao'
 import { getContagemCapitulos } from '@/lib/conteudo'
+import { FaixaComunidade, Destaques } from './Comunidade'
+import SoNaPrimeiraVisita from './SoNaPrimeiraVisita'
 import './desperto.css'
 
 // Guia Agrofloresta, um projeto Desperto: home, Biblioteca (aulas de manejo e artigos).
@@ -26,7 +28,9 @@ export default async function DespertoLayout({ children }: { children: React.Rea
   return (
     <div className={`desperto ${montserrat.variable}`}>
       <Cabecalho contagem={contagem} />
+      <SoNaPrimeiraVisita><FaixaComunidade /></SoNaPrimeiraVisita>
       {children}
+      <Destaques />
       <footer className="rodape">
         <div className="rodape-marca">
           {/* eslint-disable-next-line @next/next/no-img-element */}

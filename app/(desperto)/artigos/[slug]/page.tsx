@@ -92,7 +92,6 @@ export default async function ArticlePage({ params }: Props) {
           {md(before)}
           {after !== undefined && <LivroDestaque titulo="A base de tudo isso está no livro" />}
           {after !== undefined && md(after)}
-          <LivroDestaque />
         </article>
         <Relacionados href={`/artigos/${article.slug}`} />
         <Link className="voltar" href={passos[1].href!}>← {passos[1].nome}</Link>

@@ -4,7 +4,6 @@ import { getConteudo } from '@/lib/conteudo'
 import { SITE_URL } from '@/lib/site'
 import Trilha, { breadcrumbJsonLd, type Passo } from '../Trilha'
 import Filtros, { type ItemEspecie } from './Filtros'
-import LivroDestaque from '../../LivroDestaque'
 
 const TITLE = 'Espécies para agrofloresta sintrópica de A a Z'
 const DESCRIPTION = 'Espécies para agrofloresta sintrópica com aula em vídeo e manejo na prática, filtradas por estrato, fase da sucessão e função no sistema: alimento, biomassa e serviço.'
@@ -45,7 +44,6 @@ export default async function EspeciesPage() {
         </p>
       </section>
       <Filtros especies={especies} />
-      <LivroDestaque titulo="A Caixa de Ferramentas completa está no livro" />
     </main>
   )
 }

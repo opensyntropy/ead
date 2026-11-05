@@ -184,7 +184,6 @@ export default async function ManejoChapterPage({ params }: Props) {
             {md(before)}
             {after !== undefined && <LivroDestaque titulo="A teoria por trás deste manejo está no livro" />}
             {after !== undefined && md(after)}
-            <LivroDestaque />
           </article>
           <Inscricao />
           <Relacionados href={`/manejo/${chapter.slug}`} />
