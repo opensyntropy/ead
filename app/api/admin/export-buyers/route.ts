@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { createServiceClient } from '@/lib/supabase/server'
+import { toWaNumber } from '@/lib/phone'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,12 +30,7 @@ export async function GET() {
     if (!r.email || seen.has(r.email.toLowerCase())) continue
     seen.add(r.email.toLowerCase())
 
-    let phone = (r.whatsapp ?? '').replace(/\D/g, '')
-    if (phone && !phone.startsWith('+')) {
-      // Adiciona +55 se não tiver código de país (números BR têm 10 ou 11 dígitos)
-      if (phone.length <= 11) phone = '55' + phone
-      phone = '+' + phone
-    }
+    const phone = r.whatsapp ? '+' + toWaNumber(r.whatsapp) : ''
 
     rows.push({
       name: r.name ?? '',

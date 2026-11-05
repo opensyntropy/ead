@@ -42,3 +42,9 @@ next-env.d.ts
 
 # conteúdo pago e arquivos originais
 public/hero_capa.heif
+
+# vídeos das aulas: hospedados no YouTube, não no git
+/public/manejo/**/*.mp4
+
+# configuração local do Claude Code
+/.claude/

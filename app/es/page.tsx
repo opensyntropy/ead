@@ -50,7 +50,7 @@ export default async function EsPage() {
 
   const hdrs = await headers()
   const country = hdrs.get('x-vercel-ip-country')
-  if (getCountryLocale(country) === 'pt') redirect('/ebook')
+  if (getCountryLocale(country) === 'pt') redirect('/guia-agrofloresta')
   const tier = getCountryTier(country)
   const currency = getCountryCurrency(country)
 

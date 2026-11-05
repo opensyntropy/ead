@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Lora, Lato, Literata, Bebas_Neue } from 'next/font/google'
 import './globals.css'
 import AnalyticsScripts from './AnalyticsScripts'
+import { SITE_URL } from '@/lib/site'
 
 const lora = Lora({
   variable: '--font-serif',
@@ -32,16 +33,14 @@ const bebasNeue = Bebas_Neue({
   display: 'swap',
 })
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://opensyntropy.com'
-
 export const metadata: Metadata = {
-  metadataBase: new URL(BASE_URL),
+  metadataBase: new URL(SITE_URL),
   title: 'Agrofloresta Sintrópica — Guia Introdutório | OpenSyntropy',
   description: 'O primeiro guia de ponta a ponta sobre agrofloresta sintrópica. 207 páginas, 27 capítulos, 25+ infográficos. Entenda a lógica da floresta antes de entrar nela. Por Michel Bottan.',
   openGraph: {
     title: 'Agrofloresta Sintrópica — Guia Introdutório',
     description: 'O primeiro guia de ponta a ponta sobre agrofloresta sintrópica. 207 páginas, 27 capítulos, 25+ infográficos exclusivos. Por Michel Bottan.',
-    url: BASE_URL,
+    url: SITE_URL,
     siteName: 'OpenSyntropy',
     locale: 'pt_BR',
     type: 'website',

@@ -4,6 +4,10 @@ import { createPortal } from 'react-dom'
 import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { track } from '@/lib/cybereco'
+import { FAQ_ITEMS } from './faq'
+import AboutBook from './AboutBook'
+import { formatPhoneInput } from '@/lib/phone'
+import { PARTES, padCap } from '@/lib/livro'
 
 const PAGES = [
   { src: '/preview/pagina_17.png', cap: 'Cap. 2', title: 'O Que É Sintropia' },
@@ -44,7 +48,7 @@ function PageLightbox({ index, onClose, onPrev, onNext }: {
           sizes="90vw"
           className="max-h-[82vh] w-auto rounded-xl shadow-2xl object-contain" />
         <p className="text-white/70 text-sm">
-          <span className="font-bold" style={{ color: '#7DC142' }}>{pg.cap}</span>
+          <span className="font-bold" style={{ color: '#E98059' }}>{pg.cap}</span>
           {': '}{pg.title}
           <span className="ml-4 text-white/40 text-xs">ESC para fechar · ← → para navegar</span>
         </p>
@@ -101,7 +105,7 @@ function VslPlayer() {
   }
 
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden" style={{ border: '2px solid rgba(125,193,66,0.3)', backgroundColor: '#0a1006' }}>
+    <div className="relative w-full rounded-2xl overflow-hidden" style={{ border: '2px solid rgba(233,128,89,0.3)', backgroundColor: '#271612' }}>
       <div className="relative w-full" style={{ aspectRatio: '9/16' }}>
         <video
           ref={videoRef}
@@ -154,7 +158,7 @@ function VslPlayer() {
             aria-label="Reproduzir"
           >
             <div className="w-20 h-20 rounded-full flex items-center justify-center shadow-2xl transition-transform hover:scale-105"
-              style={{ backgroundColor: '#7DC142' }}>
+              style={{ backgroundColor: '#E98059' }}>
               <svg viewBox="0 0 24 24" fill="white" className="w-9 h-9" style={{ marginLeft: 4 }}>
                 <path d="M8 5v14l11-7z" />
               </svg>
@@ -166,17 +170,19 @@ function VslPlayer() {
       <div className="h-1.5" style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}>
         <div
           className="h-full"
-          style={{ width: `${visualProgress}%`, backgroundColor: '#7DC142', transition: 'width 0.8s linear' }}
+          style={{ width: `${visualProgress}%`, backgroundColor: '#E98059', transition: 'width 0.8s linear' }}
         />
       </div>
     </div>
   )
 }
 
-// Paleta extraída da capa.png (análise pixel-a-pixel, mai/2026)
-const LIME   = '#7DC142'  // verde lima dos títulos
-const DARK   = '#141F0C'  // fundo floresta escuro
-const FOREST = '#476B18'  // verde floresta médio
+// Paleta Desperto (a mesma dos vídeos e da home)
+const LIME   = '#F9B978'  // âmbar: botões e destaques sobre fundo escuro
+const CORAL  = '#E98059'  // coral: destaques sobre fundo claro e botões com texto branco
+const DARK   = '#2B1A15'  // texto escuro (breu)
+const PLUM   = '#642D48'  // ameixa: fundos escuros
+const FOREST = '#7C3A5B'  // ameixa clara: rótulos e subtítulos
 async function copyToClipboard(text: string): Promise<void> {
   if (navigator.clipboard?.writeText) {
     try {
@@ -209,8 +215,8 @@ function getOfferDeadline(): Date {
   const monthOffset = now.getDate() <= 10 ? 0 : 1
   return new Date(now.getFullYear(), now.getMonth() + monthOffset, 10, 23, 59, 59)
 }
-const CREAM  = '#F2F0E9'  // creme parchment da barra inferior
-const GOLD   = '#C69B2D'  // dourado âmbar dos acentos
+const CREAM  = '#FBF5EC'  // fundo creme
+const GOLD   = '#C9822E'  // ouro escurecido para ler sobre o creme
 
 const TRANSFORMATIONS = [
   { icon: '🌿', text: 'Entende a lógica por trás da floresta, não só as técnicas, mas o porquê de cada uma funcionar.' },
@@ -219,60 +225,8 @@ const TRANSFORMATIONS = [
   { icon: '🧭', text: 'Sente segurança para dar o próximo passo: comprar terra, iniciar um projeto ou aprofundar o estudo.' },
 ]
 
-const ALL_PARTS = [
-  {
-    num: 'I', title: 'Fundamentos', subtitle: 'Por que e o quê: a lógica da vida que sustenta o método',
-    chapters: [
-      { n: '01', title: 'O Problema que a Agricultura Convencional Criou' },
-      { n: '02', title: 'O Que É Sintropia' },
-      { n: '03', title: 'Conceitos, Princípios e Práticas da Agricultura Sintrópica' },
-      { n: '04', title: 'Sucessão Natural: O Calendário da Floresta' },
-      { n: '05', title: 'Estratos: A Arquitetura Vertical da Floresta' },
-      { n: '06', title: 'Consórcios na Agrofloresta Sintrópica' },
-      { n: '07', title: 'O Pulso da Poda' },
-      { n: '08', title: 'Densidade e Diversidade' },
-      { n: '09', title: 'Capina Seletiva: A Arte de Escolher o Que Fica' },
-    ],
-  },
-  {
-    num: 'II', title: 'Solo e Fertilidade', subtitle: 'Como o SAF constrói a própria fertilidade',
-    chapters: [
-      { n: '10', title: 'O Solo Como Organismo Vivo' },
-      { n: '11', title: 'Produção de Biomassa' },
-      { n: '12', title: 'Relação C/N: A Química da Sucessão' },
-      { n: '13', title: 'O Papel das Gramíneas no SAF Sintrópico' },
-      { n: '14', title: 'Adubação Verde: Fertilidade Construída por Dentro' },
-    ],
-  },
-  {
-    num: 'III', title: 'Como Planejar', subtitle: 'Do diagnóstico ao design',
-    chapters: [
-      { n: '15', title: 'Leia Sua Terra Antes de Desenhar' },
-      { n: '16', title: 'Defina Seus Objetivos Antes de Escolher Espécies' },
-      { n: '17', title: 'A Caixa de Ferramentas Sintrópica' },
-      { n: '18', title: 'Linhas de Plantio e Arranjo Espacial' },
-    ],
-  },
-  {
-    num: 'IV', title: 'Modelos de SAF', subtitle: 'Diferentes formas de aplicar o método',
-    chapters: [
-      { n: '19', title: 'SAF Base: O Módulo Fundamental' },
-      { n: '20', title: 'SAF + Horta: Uma Integração que Precisa Ser Entendida com Honestidade' },
-      { n: '21', title: 'SAF para Mecanização: Produção em Escala' },
-      { n: '22', title: 'SAF Café: O Modelo Sintrópico para Cafeicultura' },
-      { n: '23', title: 'SAF Biodiverso: Quando a Floresta É o Produto' },
-    ],
-  },
-  {
-    num: 'V', title: 'Como Implantar e Manter', subtitle: 'Da terra vazia ao sistema vivo',
-    chapters: [
-      { n: '24', title: 'Implantação: Os Primeiros 12 Meses' },
-      { n: '25', title: 'Muvuca de Sementes: Implantação com Baixo Custo e Alta Diversidade' },
-      { n: '26', title: 'Lendo o Sistema: Como Saber se Está Funcionando' },
-      { n: '27', title: 'É Difícil. É Verdade. E Vale a Pena.' },
-    ],
-  },
-]
+// Sumário do livro: fonte única em lib/livro.ts
+const ALL_PARTS = PARTES.map(p => ({ ...p, chapters: p.chapters.map(c => ({ ...c, n: padCap(c.n) })) }))
 
 const INFOGRAPHICS = [
   { src: '/infograficos/cap1.png',  label: 'O Ciclo da Agricultura Convencional',       cap: 'Capítulo 01' },
@@ -323,47 +277,27 @@ const TESTIMONIALS = [
   },
 ]
 
-const FAQ_ITEMS = [
-  { q: 'Posso imprimir o guia?', a: 'Sim. O PDF não tem restrição de impressão. Você pode imprimir quantas vezes quiser para uso pessoal.' },
-  { q: 'Preciso ter terra para aproveitar?', a: 'Não. O guia é teórico-prático. Você pode estudar e planejar antes de plantar: a lógica é útil em qualquer escala e em qualquer fase.' },
-  { q: 'O conteúdo funciona para qualquer clima ou região?', a: 'Sim. A lógica sintrópica é universal. O guia ensina os princípios, não um receituário específico de uma região. Você leva para qualquer bioma.' },
-  { q: 'É só teoria ou tem parte prática?', a: 'As 6 práticas operacionais (cap. 03) e o exercício de leitura de paisagem (cap. 04) são completamente aplicáveis desde a primeira leitura.' },
-  { q: 'Como acesso depois de comprar?', a: 'Imediatamente após a confirmação do pagamento você recebe acesso à plataforma por e-mail, com leitura online e download do PDF.' },
-  { q: 'Este guia é baseado no trabalho de Ernst Götsch?', a: 'Sim. O guia é baseado nos princípios desenvolvidos por Götsch ao longo de décadas e aprofundados pela comunidade sintrópica brasileira.' },
-  { q: 'Tem garantia?', a: 'Sim. 7 dias. Se você ler o guia e não achar que valeu cada centavo, devolvemos o pagamento integralmente, sem burocracia.' },
-  { q: 'Como solicito devolução?', a: 'Acesse a página de devolução, informe o e-mail da compra e o motivo (opcional). Retornamos em até 24h.', link: { href: '/reembolso', label: 'Solicitar devolução →' } },
-  { q: 'Perdi o link de acesso. Como baixo novamente?', a: 'Acesse a página de reenvio, informe o e-mail da compra e enviaremos um novo link imediatamente.', link: { href: '/reenviar', label: 'Receber novo link →' } },
-]
-
+// <details> mantém a resposta no HTML (o Google indexa) mesmo fechada.
 function FaqItem({ q, a, link }: { q: string; a: string; link?: { href: string; label: string } }) {
-  const [open, setOpen] = useState(false)
   return (
-    <div className="border-b-2 border-[#E8E0D4]">
-      <button onClick={() => setOpen(v => !v)} className="w-full text-left py-6 flex items-center justify-between gap-4">
-        <span className="font-bold text-[#141F0C] text-lg leading-snug">{q}</span>
-        <span className="flex-shrink-0 w-8 h-8 rounded-full border-2 border-[#7DC142] text-[#7DC142] font-bold text-xl flex items-center justify-center leading-none">
-          {open ? '−' : '+'}
+    <details className="group border-b-2 border-[#EADBC8]">
+      <summary className="w-full text-left py-6 flex items-center justify-between gap-4 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+        <h3 className="font-bold text-[#2B1A15] text-lg leading-snug">{q}</h3>
+        <span className="flex-shrink-0 w-8 h-8 rounded-full border-2 border-[#E98059] text-[#E98059] font-bold text-xl flex items-center justify-center leading-none">
+          <span className="group-open:hidden">+</span>
+          <span className="hidden group-open:inline">−</span>
         </span>
-      </button>
-      {open && (
-        <div className="pb-6 pr-8">
-          <p className="text-base text-gray-600 leading-relaxed">{a}</p>
-          {link && (
-            <a href={link.href} className="inline-block mt-3 text-sm font-bold hover:underline" style={{ color: '#476B18' }}>
-              {link.label}
-            </a>
-          )}
-        </div>
-      )}
-    </div>
+      </summary>
+      <div className="pb-6 pr-8">
+        <p className="text-base text-gray-600 leading-relaxed">{a}</p>
+        {link && (
+          <a href={link.href} className="inline-block mt-3 text-sm font-bold hover:underline" style={{ color: '#7C3A5B' }}>
+            {link.label}
+          </a>
+        )}
+      </div>
+    </details>
   )
-}
-
-function formatWhatsapp(value: string) {
-  const digits = value.replace(/\D/g, '').slice(0, 11)
-  if (digits.length <= 2) return digits
-  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
-  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
 }
 
 function formatCpf(value: string) {
@@ -483,7 +417,7 @@ function CheckoutForm() {
     return () => { stopped = true }
   }, [pixChargeId, downloadUrl])
 
-  const inputCls = "border-2 border-gray-200 rounded-xl px-5 py-4 text-base text-gray-800 bg-white focus:outline-none focus:border-[#7DC142] transition-colors"
+  const inputCls = "border-2 border-gray-200 rounded-xl px-5 py-4 text-base text-gray-800 bg-white focus:outline-none focus:border-[#E98059] transition-colors"
 
   async function handleBuy(e: React.FormEvent) {
     e.preventDefault()
@@ -590,10 +524,10 @@ function CheckoutForm() {
       <div className="fixed inset-0 z-50 bg-white overflow-y-auto">
       <div className="max-w-sm mx-auto px-6 py-8 flex flex-col gap-5 items-center text-center">
         {downloadUrl ? (
-          <div className="w-full rounded-2xl px-6 py-8 text-center" style={{ backgroundColor: '#f0fdf4', border: '2px solid #7DC142' }}>
+          <div className="w-full rounded-2xl px-6 py-8 text-center" style={{ backgroundColor: '#FFF6EC', border: '2px solid #E98059' }}>
             <p className="text-3xl mb-3">✓</p>
-            <p className="font-bold text-[#141F0C] text-xl mb-1">PIX confirmado!</p>
-            <p className="text-[#476B18] text-sm mb-1">Seu guia está pronto. O link também foi enviado por e-mail.</p>
+            <p className="font-bold text-[#2B1A15] text-xl mb-1">PIX confirmado!</p>
+            <p className="text-[#7C3A5B] text-sm mb-1">Seu guia está pronto. O link também foi enviado por e-mail.</p>
             <p className="text-gray-400 text-xs mb-6">Não encontrou? Verifique a caixa de spam ou promoções.</p>
             <a
               href={downloadUrl}
@@ -608,14 +542,14 @@ function CheckoutForm() {
             <div className="w-full flex items-center gap-4">
               <Image src="/capa_livro_nobg.png" alt="Capa do ebook" width={128} height={160} loading="lazy" className="w-32 sm:w-24 h-auto flex-shrink-0" />
               <div className="text-left">
-                <p className="text-sm font-black text-[#141F0C] leading-tight">Ebook Agrofloresta Sintrópica</p>
-                <p className="text-lg font-black mt-1" style={{ color: '#52b788' }}>R$ 87,00</p>
+                <p className="text-sm font-black text-[#2B1A15] leading-tight">Ebook Agrofloresta Sintrópica</p>
+                <p className="text-lg font-black mt-1" style={{ color: '#7C3A5B' }}>R$ 87,00</p>
               </div>
             </div>
 
             <div>
-              <p className="text-lg font-black text-[#141F0C] mb-1">Pague o PIX e seu acesso</p>
-              <p className="text-lg font-black mb-3" style={{ color: '#52b788' }}>é liberado na hora, automaticamente.</p>
+              <p className="text-lg font-black text-[#2B1A15] mb-1">Pague o PIX e seu acesso</p>
+              <p className="text-lg font-black mb-3" style={{ color: '#7C3A5B' }}>é liberado na hora, automaticamente.</p>
               <p className="text-xs text-gray-400">Cole o código abaixo no app do seu banco.</p>
             </div>
 
@@ -624,7 +558,7 @@ function CheckoutForm() {
                 type="button"
                 onClick={handleCopy}
                 className="w-full py-5 rounded-2xl text-base font-black transition-all shadow-md active:scale-95"
-                style={{ backgroundColor: copied ? '#2d6a4f' : LIME, color: DARK }}
+                style={{ backgroundColor: copied ? '#7C3A5B' : LIME, color: DARK }}
               >
                 {copied ? '✓ Código copiado!' : 'Copiar código PIX'}
               </button>
@@ -668,10 +602,10 @@ function CheckoutForm() {
       <div className="fixed inset-0 z-50 bg-white overflow-y-auto">
       <div className="max-w-sm mx-auto px-8 py-8 flex flex-col gap-6">
         {downloadUrl ? (
-          <div className="w-full rounded-2xl px-6 py-8 text-center" style={{ backgroundColor: '#f0fdf4', border: '2px solid #7DC142' }}>
+          <div className="w-full rounded-2xl px-6 py-8 text-center" style={{ backgroundColor: '#FFF6EC', border: '2px solid #E98059' }}>
             <p className="text-3xl mb-3">✓</p>
-            <p className="font-bold text-[#141F0C] text-xl mb-1">Pagamento confirmado!</p>
-            <p className="text-[#476B18] text-sm mb-1">Seu guia está pronto. O link também foi enviado por e-mail.</p>
+            <p className="font-bold text-[#2B1A15] text-xl mb-1">Pagamento confirmado!</p>
+            <p className="text-[#7C3A5B] text-sm mb-1">Seu guia está pronto. O link também foi enviado por e-mail.</p>
             <p className="text-gray-400 text-xs mb-6">Não encontrou? Verifique a caixa de spam ou promoções.</p>
             <a
               href={downloadUrl}
@@ -684,8 +618,8 @@ function CheckoutForm() {
         ) : (
           <div className="text-center flex flex-col gap-3">
             <p className="text-3xl">✓</p>
-            <p className="font-bold text-[#141F0C] text-lg">Pagamento confirmado!</p>
-            <p className="text-[#476B18] text-sm leading-relaxed">Você receberá o link de download do ebook por e-mail em instantes.</p>
+            <p className="font-bold text-[#2B1A15] text-lg">Pagamento confirmado!</p>
+            <p className="text-[#7C3A5B] text-sm leading-relaxed">Você receberá o link de download do ebook por e-mail em instantes.</p>
             <p className="text-gray-400 text-xs">Não encontrou? Verifique a caixa de spam ou promoções.</p>
           </div>
         )}
@@ -711,7 +645,7 @@ function CheckoutForm() {
   return (
     <>
       {/* cabeçalho escuro com preço */}
-      <div className="px-8 py-7 text-center" style={{ backgroundColor: '#0D1608' }}>
+      <div className="px-8 py-7 text-center" style={{ backgroundColor: '#4A1F35' }}>
         <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Ebook Digital — PDF · +200 páginas</p>
         <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Leia onde quiser ou imprima</p>
         <p className="text-xs font-bold uppercase tracking-widest mb-4" style={{ color: LIME }}>Acesso permanente · entrega imediata</p>
@@ -732,12 +666,12 @@ function CheckoutForm() {
           <div className="flex rounded-xl overflow-hidden border-2 border-gray-200">
             <button type="button" onClick={() => setPaymentMethod('pix')}
               className="flex-1 py-3.5 text-base font-bold transition-colors"
-              style={paymentMethod === 'pix' ? { backgroundColor: LIME, color: '#fff' } : { backgroundColor: '#fff', color: FOREST }}>
+              style={paymentMethod === 'pix' ? { backgroundColor: CORAL, color: '#fff' } : { backgroundColor: '#fff', color: FOREST }}>
               PIX
             </button>
             <button type="button" onClick={() => setPaymentMethod('card')}
               className="flex-1 py-3.5 text-base font-bold transition-colors border-l-2 border-gray-200"
-              style={paymentMethod === 'card' ? { backgroundColor: LIME, color: '#fff' } : { backgroundColor: '#fff', color: FOREST }}>
+              style={paymentMethod === 'card' ? { backgroundColor: CORAL, color: '#fff' } : { backgroundColor: '#fff', color: FOREST }}>
               Cartão de crédito
             </button>
           </div>
@@ -746,11 +680,12 @@ function CheckoutForm() {
           <input type="email" required name="email" autoComplete="email" placeholder="Seu melhor e-mail" value={email} onChange={e => setEmail(e.target.value)} className={inputCls} />
           <input type="text" required inputMode="numeric" placeholder="CPF (somente números)" value={cpf}
             onChange={e => setCpf(formatCpf(e.target.value))} className={inputCls} />
-          <input type="text" inputMode="numeric"
+          <input type="tel" inputMode="tel" autoComplete="tel"
             placeholder={paymentMethod === 'card' ? 'Celular com DDD (obrigatório para cartão)' : 'WhatsApp'}
             required={paymentMethod === 'card'}
             value={whatsapp}
-            onChange={e => setWhatsapp(formatWhatsapp(e.target.value))} className={inputCls} />
+            onChange={e => setWhatsapp(formatPhoneInput(e.target.value))} className={inputCls} />
+          <p className="-mt-2 text-xs text-gray-400">Fora do Brasil? Comece com + e o código do país (ex.: +351912345678).</p>
 
           {paymentMethod === 'card' && (
             <div className="flex flex-col gap-3">
@@ -764,7 +699,7 @@ function CheckoutForm() {
                     <button key={n} type="button" onClick={() => setInstallmentCount(n)}
                       className={`flex-1 py-3 rounded-xl text-xs font-bold border-2 transition-colors ${
                         installmentCount === n
-                          ? 'border-[#7DC142] bg-[#7DC142]/10 text-[#141F0C]'
+                          ? 'border-[#E98059] bg-[#E98059]/10 text-[#2B1A15]'
                           : 'border-gray-200 text-gray-500 hover:border-gray-300'
                       }`}>
                       {label}
@@ -843,7 +778,7 @@ function UpsellBump({
   upsellCardAddressNumber, setUpsellCardAddressNumber,
   handleUpsell,
 }: UpsellBumpProps) {
-  const inputCls = "border-2 border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 bg-white focus:outline-none focus:border-[#7DC142] transition-colors"
+  const inputCls = "border-2 border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 bg-white focus:outline-none focus:border-[#E98059] transition-colors"
 
   async function handleCopyUpsell() {
     if (!upsellPixData) return
@@ -854,10 +789,10 @@ function UpsellBump({
 
   if (upsellSuccess) {
     return (
-      <div className="w-full rounded-2xl px-6 py-5 text-center" style={{ backgroundColor: '#f0fdf4', border: '2px solid #d8f3dc' }}>
+      <div className="w-full rounded-2xl px-6 py-5 text-center" style={{ backgroundColor: '#FFF6EC', border: '2px solid #F3DCCB' }}>
         <p className="text-2xl mb-2">✓</p>
-        <p className="font-bold text-[#141F0C] text-base">Sessão adicionada!</p>
-        <p className="text-[#476B18] text-sm mt-1">Você receberá o link de agendamento por e-mail em instantes.</p>
+        <p className="font-bold text-[#2B1A15] text-base">Sessão adicionada!</p>
+        <p className="text-[#7C3A5B] text-sm mt-1">Você receberá o link de agendamento por e-mail em instantes.</p>
         <p className="text-gray-400 text-xs mt-2">Não encontrou? Verifique a caixa de spam ou promoções.</p>
       </div>
     )
@@ -865,10 +800,10 @@ function UpsellBump({
 
   if (upsellPixData) {
     return (
-      <div className="w-full rounded-2xl px-6 py-5 flex flex-col gap-4" style={{ border: '2px dashed #7DC142', backgroundColor: '#f0fdf4' }}>
-        <p className="font-bold text-[#141F0C] text-sm text-center">PIX da sessão — escaneie para concluir</p>
+      <div className="w-full rounded-2xl px-6 py-5 flex flex-col gap-4" style={{ border: '2px dashed #E98059', backgroundColor: '#FFF6EC' }}>
+        <p className="font-bold text-[#2B1A15] text-sm text-center">PIX da sessão — escaneie para concluir</p>
         <div className="flex justify-center">
-          <img src={`data:image/png;base64,${upsellPixData.qrCode}`} alt="QR Code PIX Sessão" className="w-44 h-44 rounded-xl border-2 border-[#7DC142]" />
+          <img src={`data:image/png;base64,${upsellPixData.qrCode}`} alt="QR Code PIX Sessão" className="w-44 h-44 rounded-xl border-2 border-[#E98059]" />
         </div>
         <div className="flex flex-col gap-2">
           <input
@@ -878,18 +813,18 @@ function UpsellBump({
             onClick={e => (e.target as HTMLInputElement).select()}
             onFocus={e => e.target.select()}
           />
-          <button type="button" onClick={handleCopyUpsell} className="w-full py-2.5 text-white rounded-xl text-xs font-bold" style={{ backgroundColor: LIME }}>
+          <button type="button" onClick={handleCopyUpsell} className="w-full py-2.5 text-white rounded-xl text-xs font-bold" style={{ backgroundColor: CORAL }}>
             {upsellCopied ? '✓ Código copiado!' : 'Copiar código PIX'}
           </button>
         </div>
-        <p className="text-xs text-[#476B18] text-center">Você receberá o link de agendamento assim que o PIX for confirmado.</p>
+        <p className="text-xs text-[#7C3A5B] text-center">Você receberá o link de agendamento assim que o PIX for confirmado.</p>
       </div>
     )
   }
 
   return (
-    <div className="w-full rounded-2xl overflow-hidden flex flex-col" style={{ border: '3px solid #7DC142', backgroundColor: '#f9fff5', boxShadow: '0 4px 24px 0 rgba(125,193,66,0.18)' }}>
-      <div className="w-full px-5 py-2.5 flex items-center gap-2" style={{ backgroundColor: LIME }}>
+    <div className="w-full rounded-2xl overflow-hidden flex flex-col" style={{ border: '3px solid #E98059', backgroundColor: '#FFFDF9', boxShadow: '0 4px 24px 0 rgba(233,128,89,0.18)' }}>
+      <div className="w-full px-5 py-2.5 flex items-center gap-2" style={{ backgroundColor: CORAL }}>
         <span className="text-white text-xs">⚡</span>
         <p className="font-black text-white text-xs tracking-wide uppercase">Consulte o especialista</p>
       </div>
@@ -898,26 +833,26 @@ function UpsellBump({
       </div>
       <div className="px-6 py-5 flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-          <p className="font-black text-[#141F0C] text-lg leading-tight">Consultoria individual de agrofloresta sintrópica</p>
-          <p className="text-[#476B18] text-sm leading-relaxed">
+          <p className="font-black text-[#2B1A15] text-lg leading-tight">Consultoria individual de agrofloresta sintrópica</p>
+          <p className="text-[#7C3A5B] text-sm leading-relaxed">
             <strong>1 hora 1:1</strong> para desbloquear o que está impedindo você de avançar com o seu projeto — tire suas dúvidas numa consulta.
           </p>
       </div>
       <div className="flex items-center gap-3">
         <span className="text-gray-400 text-sm line-through">R$180</span>
-        <span className="font-black text-[#141F0C] text-2xl">R$120</span>
-        <span className="text-xs font-black px-2.5 py-1 rounded-full text-white" style={{ backgroundColor: LIME }}>economia de R$60</span>
+        <span className="font-black text-[#2B1A15] text-2xl">R$120</span>
+        <span className="text-xs font-black px-2.5 py-1 rounded-full text-white" style={{ backgroundColor: CORAL }}>economia de R$60</span>
       </div>
       <form onSubmit={handleUpsell} className="flex flex-col gap-3">
         <div className="flex rounded-xl overflow-hidden border-2 border-gray-200">
           <button type="button" onClick={() => setUpsellPaymentMethod('pix')}
             className="flex-1 py-3 text-sm font-bold transition-colors"
-            style={upsellPaymentMethod === 'pix' ? { backgroundColor: LIME, color: '#fff' } : { backgroundColor: '#fff', color: FOREST }}>
+            style={upsellPaymentMethod === 'pix' ? { backgroundColor: CORAL, color: '#fff' } : { backgroundColor: '#fff', color: FOREST }}>
             PIX
           </button>
           <button type="button" onClick={() => setUpsellPaymentMethod('card')}
             className="flex-1 py-3 text-sm font-bold transition-colors border-l-2 border-gray-200"
-            style={upsellPaymentMethod === 'card' ? { backgroundColor: LIME, color: '#fff' } : { backgroundColor: '#fff', color: FOREST }}>
+            style={upsellPaymentMethod === 'card' ? { backgroundColor: CORAL, color: '#fff' } : { backgroundColor: '#fff', color: FOREST }}>
             Cartão
           </button>
         </div>
@@ -965,7 +900,7 @@ function InfographicsCarousel() {
     <section className="py-20 px-6 bg-white overflow-hidden">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
-          <h2 className="font-serif font-black leading-tight mb-4" style={{ fontSize: 'clamp(2rem, 4.5vw, 3.2rem)', color: DARK }}>
+          <h2 className="font-medium leading-tight mb-4" style={{ fontSize: 'clamp(2rem, 4.5vw, 3.2rem)', color: DARK }}>
             Tudo que você precisa saber antes de plantar sua primeira agrofloresta.
           </h2>
           <p className="text-lg text-gray-500 max-w-xl mx-auto leading-relaxed">
@@ -987,7 +922,7 @@ function InfographicsCarousel() {
           />
           {/* legenda */}
           <div className="absolute bottom-0 inset-x-0 px-6 py-5"
-            style={{ background: 'linear-gradient(to top, rgba(20,31,12,0.92) 0%, transparent 100%)' }}>
+            style={{ background: 'linear-gradient(to top, rgba(39,22,18,0.92) 0%, transparent 100%)' }}>
             <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: LIME }}>
               {INFOGRAPHICS[active].cap}
             </p>
@@ -1136,7 +1071,7 @@ export default function EbookLandingPage({ serverEventId }: { serverEventId: str
   }
 
   return (
-    <div className="min-h-screen bg-white text-[#141F0C]">
+    <div className="min-h-screen bg-[#FFFDF9] text-[#2B1A15]">
 
       {/* ── BANNER URGÊNCIA ──────────────────────────────── */}
       {recentBuyers.length > 0 && (
@@ -1162,7 +1097,7 @@ export default function EbookLandingPage({ serverEventId }: { serverEventId: str
       )}
 
       {/* ── HERO ─────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden px-6 py-8 md:py-16" style={{ backgroundColor: DARK }}>
+      <section className="relative overflow-hidden px-6 py-8 md:py-16" style={{ backgroundColor: PLUM }}>
         {/* background: hero_capa embaçada e escurecida */}
         <div className="absolute inset-0 overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1172,17 +1107,21 @@ export default function EbookLandingPage({ serverEventId }: { serverEventId: str
             style={{ filter: 'brightness(0.75) saturate(0.9)', transformOrigin: 'center' }} />
         </div>
         {/* overlay: transparente no topo, escurece na base para leitura */}
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(10,16,6,0.05) 0%, rgba(10,16,6,0.55) 100%)' }} />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(to bottom, rgba(39,22,18,0.05) 0%, rgba(39,22,18,0.55) 100%)' }} />
 
         {/* grid: mobile 1 col (título→capa→corpo), desktop 2 col (esq: título+corpo | dir: capa) */}
         <div className="relative z-10 max-w-6xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-16 md:items-center">
 
           {/* 1 — título (mobile: row 1 | desktop: col 1 rows 1-2) */}
           <div className="md:row-start-1 md:row-end-3 md:col-start-1 min-w-0 text-center md:text-left flex flex-col justify-center">
-            <h1 className="font-serif font-black text-white leading-tight mb-4"
+            {/* H1 com a palavra-chave para SEO; a headline de venda segue como destaque visual */}
+            <h1 className="uppercase tracking-[0.2em] text-xs md:text-sm font-semibold mb-3" style={{ color: LIME }}>
+              Livro · Guia de Agrofloresta Sintrópica
+            </h1>
+            <p className="font-medium text-white leading-tight mb-4"
               style={{ fontSize: 'clamp(1.8rem, 4.5vw, 3.2rem)' }}>
               Do sonho ao projeto: entenda a lógica da sua agrofloresta antes de plantar a primeira muda.
-            </h1>
+            </p>
             {/* VSL — 9:16 vertical, limitado para não ficar enorme em desktop */}
             <div className="w-full flex justify-center">
               <div className="w-full" style={{ maxWidth: 340 }}>
@@ -1230,7 +1169,7 @@ export default function EbookLandingPage({ serverEventId }: { serverEventId: str
             <p className="uppercase tracking-[0.2em] text-sm font-semibold mb-4" style={{ color: FOREST }}>
               Veja por dentro
             </p>
-            <h2 className="font-serif font-black leading-tight mb-4" style={{ fontSize: 'clamp(2rem, 4.5vw, 3.2rem)', color: DARK }}>
+            <h2 className="font-medium leading-tight mb-4" style={{ fontSize: 'clamp(2rem, 4.5vw, 3.2rem)', color: DARK }}>
               Espie por dentro do ebook.
             </h2>
             <p className="text-xl text-gray-500 max-w-xl mx-auto leading-relaxed">
@@ -1276,7 +1215,7 @@ export default function EbookLandingPage({ serverEventId }: { serverEventId: str
           <p className="uppercase tracking-[0.2em] text-sm font-semibold mb-4" style={{ color: FOREST }}>
             Conteúdo completo do ebook
           </p>
-          <h2 className="font-serif font-black leading-tight mb-4" style={{ fontSize: 'clamp(2rem, 4.5vw, 3.2rem)', color: DARK }}>
+          <h2 className="font-medium leading-tight mb-4" style={{ fontSize: 'clamp(2rem, 4.5vw, 3.2rem)', color: DARK }}>
             5 partes · 27 capítulos.
           </h2>
           <p className="text-xl text-gray-500 mb-14 max-w-xl leading-relaxed">
@@ -1287,8 +1226,8 @@ export default function EbookLandingPage({ serverEventId }: { serverEventId: str
             {ALL_PARTS.map(part => (
               <div key={part.num}>
                 {/* cabeçalho da parte */}
-                <div className="flex items-baseline gap-4 mb-5 pb-4 border-b-2" style={{ borderColor: LIME }}>
-                  <span className="font-serif font-black leading-none" style={{ fontSize: '2.8rem', color: LIME, minWidth: '2.4rem' }}>
+                <div className="flex items-baseline gap-4 mb-5 pb-4 border-b-2" style={{ borderColor: CORAL }}>
+                  <span className="font-medium leading-none" style={{ fontSize: '2.8rem', color: CORAL, minWidth: '2.4rem' }}>
                     {part.num}
                   </span>
                   <div>
@@ -1300,10 +1239,13 @@ export default function EbookLandingPage({ serverEventId }: { serverEventId: str
                 <div className="grid sm:grid-cols-2 gap-1">
                   {part.chapters.map(ch => (
                     <div key={ch.n} className="flex items-start gap-3 py-2.5 px-3 rounded-lg hover:bg-white/70 transition-colors">
-                      <span className="font-serif font-black text-base flex-shrink-0 mt-px" style={{ color: GOLD, minWidth: '1.8rem' }}>
+                      <span className="font-medium text-base flex-shrink-0 mt-px" style={{ color: GOLD, minWidth: '1.8rem' }}>
                         {ch.n}
                       </span>
-                      <span className="text-sm font-medium leading-snug" style={{ color: DARK }}>{ch.title}</span>
+                      <span className="leading-snug">
+                        <span className="block text-sm font-medium" style={{ color: DARK }}>{ch.title}</span>
+                        <span className="block text-xs text-gray-500 mt-0.5">{ch.desc}</span>
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -1347,7 +1289,7 @@ export default function EbookLandingPage({ serverEventId }: { serverEventId: str
       {/* ── AGITAÇÃO ─────────────────────────────────────────── */}
       <section style={{ backgroundColor: CREAM }} className="py-24 px-6">
         <div className="max-w-5xl mx-auto">
-          <h2 className="font-serif font-black text-center mb-16 leading-tight" style={{ fontSize: 'clamp(1.8rem, 4vw, 3rem)', color: DARK }}>
+          <h2 className="font-medium text-center mb-16 leading-tight" style={{ fontSize: 'clamp(1.8rem, 4vw, 3rem)', color: DARK }}>
             A maioria começa errado. E só descobre depois.
           </h2>
 
@@ -1368,8 +1310,8 @@ export default function EbookLandingPage({ serverEventId }: { serverEventId: str
             ].map(card => (
               <div key={card.title} className="flex flex-col gap-3">
                 <div className="w-8 h-px" style={{ backgroundColor: FOREST, opacity: 0.5 }} />
-                <h3 className="font-serif font-black text-xl leading-snug" style={{ color: DARK }}>{card.title}</h3>
-                <p className="text-base leading-relaxed" style={{ color: '#4a5240' }}>{card.body}</p>
+                <h3 className="font-medium text-xl leading-snug" style={{ color: DARK }}>{card.title}</h3>
+                <p className="text-base leading-relaxed" style={{ color: '#6E5248' }}>{card.body}</p>
               </div>
             ))}
           </div>
@@ -1379,7 +1321,7 @@ export default function EbookLandingPage({ serverEventId }: { serverEventId: str
       {/* ── QUALIFICAÇÃO — "Este guia é para você se..." ────── */}
       <section style={{ backgroundColor: CREAM }} className="pb-24 px-6">
         <div className="max-w-2xl mx-auto">
-          <p className="font-sans text-sm md:text-base uppercase tracking-widest mb-8 font-bold text-center" style={{ color: FOREST }}>
+          <p className="text-sm md:text-base uppercase tracking-widest mb-8 font-bold text-center" style={{ color: FOREST }}>
             Este guia é para você. Especialmente se:
           </p>
           <div className="flex flex-col gap-4">
@@ -1392,7 +1334,7 @@ export default function EbookLandingPage({ serverEventId }: { serverEventId: str
             ].map((line, i) => (
               <div key={i} className="flex items-start gap-4 rounded-2xl px-6 py-5 bg-white shadow-sm">
                 <span className="mt-[6px] w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: LIME }} />
-                <p className="font-sans text-gray-800 text-lg leading-snug font-semibold">{line}</p>
+                <p className="text-gray-800 text-lg leading-snug font-semibold">{line}</p>
               </div>
             ))}
           </div>
@@ -1412,12 +1354,12 @@ export default function EbookLandingPage({ serverEventId }: { serverEventId: str
       </section>
 
       {/* ── PRIMEIRO GUIA PONTA A PONTA ──────────────────────── */}
-      <section style={{ backgroundColor: DARK }} className="py-28 px-6">
+      <section style={{ backgroundColor: PLUM }} className="py-28 px-6">
         <div className="max-w-5xl mx-auto">
           <p className="text-center font-semibold uppercase tracking-[0.2em] text-sm mb-5" style={{ color: LIME }}>
             O que faltava
           </p>
-          <h2 className="font-serif font-black text-center mb-6 leading-tight text-white" style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)' }}>
+          <h2 className="font-medium text-center mb-6 leading-tight text-white" style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)' }}>
             O primeiro guia de ponta a ponta<br />sobre agrofloresta sintrópica.
           </h2>
           <p className="text-center text-gray-400 text-xl mb-16 max-w-2xl mx-auto leading-relaxed">
@@ -1426,7 +1368,7 @@ export default function EbookLandingPage({ serverEventId }: { serverEventId: str
 
           <div className="grid md:grid-cols-3 gap-6 mb-16">
             {PAIN_CARDS.map((card, i) => (
-              <div key={card.title} className="rounded-2xl p-8 flex flex-col gap-4" style={{ backgroundColor: '#1A3410', border: '1px solid #2D5420' }}>
+              <div key={card.title} className="rounded-2xl p-8 flex flex-col gap-4" style={{ backgroundColor: '#55253D', border: '1px solid #7C3A5B' }}>
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-bold uppercase tracking-widest" style={{ color: LIME }}>{card.label}</p>
                   <span className="text-xs font-bold tracking-widest" style={{ color: LIME, opacity: 0.4 }}>0{i + 1}</span>
@@ -1449,7 +1391,7 @@ export default function EbookLandingPage({ serverEventId }: { serverEventId: str
           <p className="uppercase tracking-[0.2em] text-sm font-semibold mb-6" style={{ color: FOREST }}>
             A virada de perspectiva
           </p>
-          <blockquote className="font-serif font-black italic leading-tight mb-10" style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', color: DARK }}>
+          <blockquote className="font-medium italic leading-tight mb-10" style={{ fontSize: 'clamp(1.6rem, 3.5vw, 2.4rem)', color: DARK }}>
             "E se criássemos o ambiente certo para as plantas, em vez de adaptar as plantas ao ambiente que não é o ideal para elas?"
           </blockquote>
 
@@ -1516,7 +1458,7 @@ export default function EbookLandingPage({ serverEventId }: { serverEventId: str
               <p className="text-gray-600 text-lg leading-relaxed">
                 Se você ler o guia e não achar que valeu cada centavo, devolvemos o pagamento integralmente.
                 Sem perguntas, sem processo complicado.
-                <strong className="text-[#141F0C]"> Você tem 7 dias a partir da compra.</strong>
+                <strong className="text-[#2B1A15]"> Você tem 7 dias a partir da compra.</strong>
               </p>
             </div>
           </div>
@@ -1524,7 +1466,7 @@ export default function EbookLandingPage({ serverEventId }: { serverEventId: str
       </section>
 
       {/* ── COMPRAR ───────────────────────────────────────────── */}
-      <section id="comprar" style={{ backgroundColor: DARK }} className="py-20 md:py-28 px-6">
+      <section id="comprar" style={{ backgroundColor: PLUM }} className="py-20 md:py-28 px-6">
         <div className="max-w-xl mx-auto">
 
           {/* cabeçalho da seção */}
@@ -1533,7 +1475,7 @@ export default function EbookLandingPage({ serverEventId }: { serverEventId: str
               style={{ backgroundColor: LIME, color: DARK }}>
               ⚡ Preço de lançamento · encerra em {nextSundayLabel()}
             </div>
-            <h2 className="font-serif font-black text-white leading-tight mb-3"
+            <h2 className="font-medium text-white leading-tight mb-3"
               style={{ fontSize: 'clamp(1.8rem, 5vw, 2.8rem)' }}>
               Dê o primeiro passo com segurança.
             </h2>
@@ -1554,10 +1496,12 @@ export default function EbookLandingPage({ serverEventId }: { serverEventId: str
         </div>
       </section>
 
+      <AboutBook />
+
       {/* ── FAQ ──────────────────────────────────────────────── */}
       <section style={{ backgroundColor: CREAM }} className="py-28 px-6">
         <div className="max-w-2xl mx-auto">
-          <h2 className="font-serif font-black text-center mb-14" style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', color: DARK }}>
+          <h2 className="font-medium text-center mb-14" style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', color: DARK }}>
             Dúvidas frequentes
           </h2>
           {FAQ_ITEMS.map(item => <FaqItem key={item.q} q={item.q} a={item.a} link={item.link} />)}
@@ -1565,9 +1509,12 @@ export default function EbookLandingPage({ serverEventId }: { serverEventId: str
       </section>
 
       {/* ── FOOTER ───────────────────────────────────────────── */}
-      <footer style={{ backgroundColor: DARK, borderTop: `3px solid ${LIME}` }} className="py-10 px-6">
+      <footer style={{ backgroundColor: PLUM, borderTop: `3px solid ${LIME}` }} className="py-10 px-6">
         <div className="max-w-4xl mx-auto flex flex-col items-center gap-6">
           <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-gray-400">
+            <a href="/" className="hover:text-white transition-colors">Manejo na Prática</a>
+            <a href="/artigos" className="hover:text-white transition-colors">Artigos</a>
+            <a href="/sobre" className="hover:text-white transition-colors">Sobre o autor</a>
             <a href="/reenviar" className="hover:text-white transition-colors">Já comprei</a>
             <a href="/reembolso" className="hover:text-white transition-colors">Pedir devolução</a>
           </div>

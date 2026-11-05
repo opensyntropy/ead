@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import AdminActions from '../AdminActions'
 import AdminHeader from '../AdminHeader'
 import { type PixCharge } from '../AdminAccessTabs'
+import { toWaNumber } from '@/lib/phone'
 
 export const dynamic = 'force-dynamic'
 
@@ -90,8 +91,7 @@ export default async function AguardandoPage() {
                     <p className="font-medium text-gray-800 text-sm">{row.email}</p>
                     {row.name && <p className="text-xs text-gray-400">{row.name}</p>}
                     {row.whatsapp && (() => {
-                      const digits = row.whatsapp.replace(/\D/g, '')
-                      const waNumber = digits.startsWith('55') ? digits : `55${digits}`
+                      const waNumber = toWaNumber(row.whatsapp)
                       return (
                         <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer"
                           className="text-xs text-green-600 hover:text-green-800 hover:underline">

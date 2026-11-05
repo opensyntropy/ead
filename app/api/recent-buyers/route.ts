@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
+import { isInternationalPhone } from '@/lib/phone'
 
 const DDD_REGION: Record<string, string> = {
   '11': 'São Paulo', '12': 'São Paulo', '13': 'São Paulo', '14': 'São Paulo',
@@ -34,7 +35,7 @@ const DDD_REGION: Record<string, string> = {
 }
 
 function getRegion(whatsapp: string | null): string | null {
-  if (!whatsapp) return null
+  if (!whatsapp || isInternationalPhone(whatsapp)) return null
   const digits = whatsapp.replace(/\D/g, '')
   // Remove prefixo 55 se presente
   const local = digits.startsWith('55') ? digits.slice(2) : digits

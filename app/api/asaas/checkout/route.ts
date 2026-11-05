@@ -5,6 +5,7 @@ import { createServiceClient } from '@/lib/supabase/server'
 import { createDownloadToken } from '@/lib/download'
 import { sendDownloadEmail, sendSessionPurchaseEmail, sendPurchaseNotification } from '@/lib/email'
 import { sendPurchaseEvent } from '@/lib/meta-pixel'
+import { toBrazilianLocal } from '@/lib/phone'
 
 export async function POST(request: Request) {
   const body = await request.json()
@@ -149,7 +150,8 @@ export async function POST(request: Request) {
           cpfCnpj,
           postalCode: cardPostalCode.replace(/\D/g, ''),
           addressNumber: cardAddressNumber.trim(),
-          mobilePhone: (whatsapp || '').replace(/\D/g, '') || undefined,
+          // Asaas só valida celular brasileiro; estrangeiro fica só no nosso banco.
+          mobilePhone: toBrazilianLocal(whatsapp || '') ?? undefined,
         },
       })
     } catch (cardErr) {

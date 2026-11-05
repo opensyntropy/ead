@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import AdminActions from './AdminActions'
+import { toWaNumber } from '@/lib/phone'
 
 const PAGE_SIZE = 25
 
@@ -230,8 +231,7 @@ function AccessTable({ rows, pixUtmMap, pixByBuyer, downloadedSet, emptyMsg }: {
               <td className="px-4 py-3 text-sm whitespace-nowrap">
                 {pix?.whatsapp
                   ? (() => {
-                      const digits = pix.whatsapp!.replace(/\D/g, '')
-                      const waNumber = digits.startsWith('55') ? digits : `55${digits}`
+                      const waNumber = toWaNumber(pix.whatsapp!)
                       return (
                         <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noopener noreferrer"
                           className="text-green-600 hover:text-green-800 hover:underline font-medium">
